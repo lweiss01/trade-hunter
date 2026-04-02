@@ -1,0 +1,143 @@
+﻿# Trade Hunter
+
+Trade Hunter is a lightweight local app for spotting unusual activity in prediction markets before you decide whether a setup is worth deeper investigation.
+
+This MVP is built around four ideas:
+
+- a live dashboard you can keep open locally
+- a generic event ingest API so outside tools can push alerts into one place
+- a custom spike detector tuned for volume and price moves
+- optional Discord webhook notifications when a market crosses your thresholds
+
+It is deliberately conservative about automation. The goal is to help you notice signal faster, not auto-trade your account.
+
+## What is included
+
+- Local web dashboard at `http://127.0.0.1:8765`
+- In-memory event store with recent markets and recent spike signals
+- Rolling spike detector using per-market baselines and cooldowns
+- Generic `POST /api/events` ingest endpoint
+- Alias ingest endpoint at `POST /api/alerts/polyalerthub`
+- Optional `pykalshi` feed adapter for Kalshi WebSocket streaming
+- Discord webhook notifier
+- Built-in simulation feed so you can test the app without credentials
+
+## Why this shape
+
+You mentioned three components:
+
+- PolyAlertHub for alerting
+- Polymarket Analytics for cross-platform visibility
+- `pykalshi` for custom Kalshi streaming and a Discord ping path
+
+This repo gives you a clean hub for those pieces. Instead of hard-coding a single vendor workflow first, the app starts with a stable center:
+
+- one dashboard
+- one detector
+- one notifier
+- multiple feed adapters over time
+
+That lets us plug in a PolyAlertHub relay, a Polymarket/analytics importer, and Kalshi live streams without rewriting the core logic.
+
+## Quick start
+
+1. Copy `.env.example` to `.env`
+2. Start the app:
+
+```powershell
+py -m app
+```
+
+3. Open `http://127.0.0.1:8765`
+
+By default, the simulation feed is enabled so the dashboard has data immediately.
+
+## Smoke test
+
+```powershell
+py -m app --smoke-test
+```
+
+This injects a small sequence of fake events and confirms that the detector can produce a signal.
+
+## Optional Kalshi integration
+
+Install the optional package:
+
+```powershell
+py -m pip install .[integrations]
+```
+
+Then add your credentials to `.env`:
+
+```env
+ENABLE_KALSHI=true
+KALSHI_API_KEY_ID=your-key-id
+KALSHI_PRIVATE_KEY_PATH=C:\path\to\kalshi.key
+KALSHI_MARKETS=KXBTC-26DEC31-B110000,KELECT-28NOV04-TX-D
+```
+
+The adapter subscribes to ticker and trade updates and normalizes them into the internal event format. It is intentionally defensive because upstream message fields can vary by stream type.
+
+## Discord alerts
+
+Set:
+
+```env
+DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
+```
+
+Every confirmed spike will send a compact webhook message with the market, platform, reason, and score.
+
+## Ingesting outside signals
+
+Send a JSON event to:
+
+```text
+POST /api/events
+```
+
+Example payload:
+
+```json
+{
+  "source": "polyalerthub",
+  "platform": "polymarket",
+  "market_id": "will-fed-cut-rates-in-june",
+  "title": "Will the Fed cut rates in June?",
+  "yes_price": 0.58,
+  "volume": 1450,
+  "volume_kind": "cumulative",
+  "timestamp": "2026-04-02T14:05:00Z"
+}
+```
+
+You can also post arrays of events.
+
+If you set `INGEST_API_TOKEN`, include:
+
+```text
+Authorization: Bearer your-token
+```
+
+## Example curl
+
+```powershell
+curl.exe -X POST http://127.0.0.1:8765/api/events ^
+  -H "Content-Type: application/json" ^
+  -d "{\"platform\":\"polymarket\",\"market_id\":\"demo-market\",\"title\":\"Demo market\",\"yes_price\":0.49,\"volume\":1000}"
+```
+
+## Suggested next steps
+
+1. Wire a small relay that transforms PolyAlertHub output into `POST /api/events`
+2. Add a persisted SQLite store so you can review historical spikes
+3. Add cross-platform spread views for equivalent Kalshi and Polymarket contracts
+4. Add watchlists by topic like elections, macro, sports, and crypto
+5. Add a Discord slash-command bot for acknowledging or snoozing alerts
+
+## Notes
+
+- This app is informational only and does not place trades.
+- A trading spike is not automatically an edge; it is a prompt to investigate context, liquidity, and market structure.
+- The current store is in-memory, so data resets when the app restarts.

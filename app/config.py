@@ -1,0 +1,102 @@
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def _load_env_file(path: Path) -> None:
+    if not path.exists():
+        return
+
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        os.environ.setdefault(key, value)
+
+
+def _bool(name: str, default: bool) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _int(name: str, default: int) -> int:
+    value = os.getenv(name)
+    return int(value) if value else default
+
+
+def _float(name: str, default: float) -> float:
+    value = os.getenv(name)
+    return float(value) if value else default
+
+
+def _csv(name: str) -> list[str]:
+    value = os.getenv(name, "")
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
+def _kv_pairs(name: str) -> dict[str, str]:
+    value = os.getenv(name, "")
+    if not value:
+        return {}
+
+    pairs: dict[str, str] = {}
+    for raw_item in value.replace("\n", ";").split(";"):
+        item = raw_item.strip()
+        if not item or "=" not in item:
+            continue
+        key, mapped = item.split("=", 1)
+        key = key.strip().lower()
+        mapped = mapped.strip()
+        if key and mapped:
+            pairs[key] = mapped
+    return pairs
+
+
+@dataclass(frozen=True)
+class Settings:
+    host: str
+    port: int
+    enable_simulation: bool
+    enable_kalshi: bool
+    discord_webhook_url: str | None
+    discord_webhook_routes: dict[str, str]
+    ingest_api_token: str | None
+    spike_min_volume_delta: float
+    spike_min_price_move: float
+    spike_score_threshold: float
+    spike_baseline_points: int
+    spike_cooldown_seconds: int
+    kalshi_markets: list[str]
+    kalshi_api_key_id: str | None
+    kalshi_private_key_path: str | None
+
+
+def load_settings() -> Settings:
+    _load_env_file(ROOT / ".env")
+    return Settings(
+        host=os.getenv("APP_HOST", "127.0.0.1"),
+        port=_int("APP_PORT", 8765),
+        enable_simulation=_bool("ENABLE_SIMULATION", True),
+        enable_kalshi=_bool("ENABLE_KALSHI", False),
+        discord_webhook_url=os.getenv("DISCORD_WEBHOOK_URL") or None,
+        discord_webhook_routes=_kv_pairs("DISCORD_WEBHOOK_ROUTES"),
+        ingest_api_token=os.getenv("INGEST_API_TOKEN") or None,
+        spike_min_volume_delta=_float("SPIKE_MIN_VOLUME_DELTA", 120.0),
+        spike_min_price_move=_float("SPIKE_MIN_PRICE_MOVE", 0.03),
+        spike_score_threshold=_float("SPIKE_SCORE_THRESHOLD", 3.0),
+        spike_baseline_points=_int("SPIKE_BASELINE_POINTS", 24),
+        spike_cooldown_seconds=_int("SPIKE_COOLDOWN_SECONDS", 300),
+        kalshi_markets=_csv("KALSHI_MARKETS"),
+        kalshi_api_key_id=os.getenv("KALSHI_API_KEY_ID") or None,
+        kalshi_private_key_path=os.getenv("KALSHI_PRIVATE_KEY_PATH") or None,
+    )

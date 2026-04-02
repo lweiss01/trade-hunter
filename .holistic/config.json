@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "autoInferSessions": true,
+  "autoSync": true,
+  "sync": {
+    "strategy": "state-branch",
+    "remote": "origin",
+    "syncOnCheckpoint": true,
+    "syncOnHandoff": true,
+    "postHandoffPush": true,
+    "restoreOnStartup": true,
+    "trackedPaths": [
+      "HOLISTIC.md",
+      "AGENTS.md",
+      "HISTORY.md",
+      "CLAUDE.md",
+      "GEMINI.md",
+      ".cursorrules",
+      ".windsurfrules",
+      ".github/copilot-instructions.md",
+      ".holistic"
+    ],
+    "stateRef": "refs/holistic/state"
+  },
+  "daemon": {
+    "intervalSeconds": 30,
+    "agent": "unknown"
+  }
+}

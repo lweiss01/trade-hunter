@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Trade Hunter</title>
+    <link rel="stylesheet" href="/static/dashboard.css">
+  </head>
+  <body>
+    <div class="noise"></div>
+    <main class="page-shell">
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Prediction Market Signal Desk</p>
+          <h1>Trade Hunter</h1>
+          <p class="lede">
+            A local signal board for unusual activity across the markets you care about.
+            Keep one eye on spikes, then decide where deeper research is worth your time.
+          </p>
+        </div>
+        <div class="hero-panel">
+          <button id="demo-spike" class="action">Trigger Demo Spike</button>
+          <p class="caption">Use the demo button to test the detector and Discord webhook path.</p>
+        </div>
+      </section>
+
+      <section class="metrics" id="metrics"></section>
+
+      <section class="grid">
+        <article class="panel">
+          <div class="panel-head">
+            <h2>Recent Signals</h2>
+            <span class="badge">custom detector</span>
+          </div>
+          <div id="signals" class="stack"></div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <h2>Live Trade Flow</h2>
+            <span class="badge">recent events</span>
+          </div>
+          <div id="activity" class="stack"></div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <h2>Feed Status</h2>
+            <span class="badge">live adapters</span>
+          </div>
+          <div id="feeds" class="stack"></div>
+        </article>
+      </section>
+
+      <section class="panel markets-panel">
+        <div class="panel-head">
+          <h2>Market Tape</h2>
+          <span class="badge">latest activity</span>
+        </div>
+        <div id="markets" class="market-table"></div>
+      </section>
+    </main>
+
+    <script src="/static/dashboard.js"></script>
+  </body>
+</html>
