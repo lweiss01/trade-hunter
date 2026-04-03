@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import logging
+import os
 import threading
 import time
 from datetime import UTC, datetime, timedelta
 from typing import Any
+
+log = logging.getLogger(__name__)
 
 from .config import Settings, persist_kalshi_markets
 from .detector import SpikeDetector
@@ -13,6 +17,7 @@ from .models import MarketEvent
 from .notifiers import DiscordWebhookNotifier
 from .retention import cleanup_old_events
 from .store import MarketStore
+from .analyst import SignalAnalyst
 
 
 LIVE_FRESHNESS_WINDOW_MINUTES = 10
@@ -32,6 +37,17 @@ class TradeHunterService:
         self._cleanup_stop = threading.Event()
         self._last_cleanup: dict[str, Any] | None = None
         self._kalshi_lock = threading.Lock()
+
+        # Optional signal analyst (requires ANTHROPIC_API_KEY)
+        from .config import _load_env_file, ROOT
+        _load_env_file(ROOT / ".env")
+        anthropic_key = os.environ.get("ANTHROPIC_API_KEY") or ""
+        if anthropic_key:
+            self._analyst: SignalAnalyst | None = SignalAnalyst(anthropic_key)
+            log.info("signal analyst enabled (claude haiku)")
+        else:
+            self._analyst = None
+            log.info("signal analyst disabled (no ANTHROPIC_API_KEY)")
 
         # Enforce exactly one operating mode: live OR simulation.
         self._active_mode = "none"
@@ -114,6 +130,10 @@ class TradeHunterService:
             return False
         self.store.record_signal(signal)
         self.notifier.notify(signal)
+        # Enqueue analyst interpretation (non-blocking background thread)
+        if self._analyst:
+            recent_flow = [e.to_dict() for e in self.store.recent_events(market_id=event.market_id, limit=30)]
+            self._analyst.enqueue(signal.to_dict(), recent_flow)
         return True
 
     def ingest_payload(self, payload: Any, default_source: str = "manual") -> list[bool]:
@@ -310,6 +330,20 @@ class TradeHunterService:
             "kalshi_last_event_at": (feeds.get("kalshi-pykalshi") or {}).get("last_event_at"),
             "subscribed_tickers": _safe_len(self.settings.kalshi_markets),
         }
+
+        # Attach analyst reads to signals if available
+        if self._analyst:
+            enriched = []
+            for sig in state.get("signals", []):
+                read = self._analyst.get(sig)
+                pending = self._analyst.pending(sig)
+                sig = dict(sig)
+                if read:
+                    sig["analyst"] = read
+                elif pending:
+                    sig["analyst"] = {"pending": True}
+                enriched.append(sig)
+            state["signals"] = enriched
 
         state["config"] = {
             "host": self.settings.host,

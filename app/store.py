@@ -147,6 +147,24 @@ class MarketStore:
             ))
             self._get_connection().commit()
     
+    def recent_events(self, market_id: str | None = None, limit: int = 30) -> list:
+        """Return recent MarketEvent objects, optionally filtered by market_id."""
+        from .models import MarketEvent
+        with self._lock:
+            cursor = self._get_connection().cursor()
+            if market_id:
+                cursor.execute(
+                    "SELECT * FROM events WHERE market_id = ? ORDER BY timestamp DESC LIMIT ?",
+                    (market_id, limit),
+                )
+            else:
+                cursor.execute(
+                    "SELECT * FROM events ORDER BY timestamp DESC LIMIT ?",
+                    (limit,),
+                )
+            rows = cursor.fetchall()
+        return [self._row_to_market_event(row) for row in rows]
+
     def dashboard_state(self) -> dict[str, Any]:
         """Return dashboard data from SQLite."""
         with self._lock:

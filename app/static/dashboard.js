@@ -245,6 +245,30 @@ function renderSignals(signals) {
 
   signalsEl.innerHTML = ordered.map((signal) => {
     const freshness = signalFreshness(signal.detected_at);
+    const analyst = signal.analyst || null;
+
+    let analystHtml = "";
+    if (analyst?.pending) {
+      analystHtml = `<div class="analyst-row analyst-pending">⏳ analysing…</div>`;
+    } else if (analyst) {
+      const conf = analyst.confidence || "low";
+      const ns = analyst.noise_or_signal || "uncertain";
+      const dir = analyst.direction || "unclear";
+      const confClass = conf === "high" ? "analyst-high" : conf === "medium" ? "analyst-med" : "analyst-low";
+      const nsIcon = ns === "signal" ? "▲" : ns === "noise" ? "✕" : "~";
+      const nsClass = ns === "signal" ? "analyst-signal" : ns === "noise" ? "analyst-noise" : "analyst-uncertain";
+      analystHtml = `
+        <div class="analyst-row">
+          <span class="analyst-badge ${nsClass}">${nsIcon} ${ns}</span>
+          <span class="analyst-badge ${confClass}">${dir} · ${conf} confidence</span>
+          <span class="analyst-rationale">${escapeHtml(analyst.rationale)}</span>
+        </div>
+        ${analyst.threshold_note && analyst.threshold_note !== "none"
+          ? `<div class="analyst-threshold">⚙ ${escapeHtml(analyst.threshold_note)}</div>`
+          : ""}
+      `;
+    }
+
     return `
     <article class="signal-card compact">
       <div class="signal-row-main">
@@ -259,6 +283,7 @@ function renderSignals(signals) {
         ${escapeHtml(signal.event.platform)} · ${escapeHtml(signal.event.market_id)} · ${escapeHtml(signal.source_label || signal.event.source)} · ${formatTimestamp(signal.detected_at)}
       </div>
       <div class="signal-why">${escapeHtml(summarizeReason(signal.reason))}</div>
+      ${analystHtml}
     </article>
   `;
   }).join("");

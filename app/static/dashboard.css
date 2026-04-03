@@ -460,6 +460,55 @@ h1 {
   line-height: 1.35;
 }
 
+.analyst-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.analyst-pending {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-style: italic;
+}
+
+.analyst-badge {
+  font-family: Consolas, "Liberation Mono", monospace;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.12);
+  white-space: nowrap;
+}
+
+.analyst-signal  { border-color: rgba(75,191,201,0.5); color: var(--success); }
+.analyst-noise   { border-color: rgba(248,85,37,0.4);  color: var(--danger);  }
+.analyst-uncertain { border-color: rgba(200,169,106,0.4); color: var(--info); }
+.analyst-high    { border-color: rgba(75,191,201,0.4); color: var(--success); }
+.analyst-med     { border-color: rgba(250,169,104,0.4); color: var(--warn);  }
+.analyst-low     { border-color: rgba(255,255,255,0.15); color: var(--muted); }
+
+.analyst-rationale {
+  font-size: 0.8rem;
+  color: var(--text);
+  line-height: 1.4;
+  flex: 1;
+  min-width: 200px;
+}
+
+.analyst-threshold {
+  margin-top: 4px;
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
 .signal-card:hover {
   transform: translateY(-1px);
   box-shadow: 
