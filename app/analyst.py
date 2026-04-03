@@ -7,11 +7,14 @@ from __future__ import annotations
 import logging
 import os
 import threading
+from collections import OrderedDict
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
 log = logging.getLogger(__name__)
+
+MAX_SIGNAL_ANALYST_CACHE = 500
 
 
 @dataclass
@@ -46,6 +49,12 @@ def _build_prompt(signal: dict[str, Any], recent_flow: list[dict[str, Any]]) -> 
     score = signal.get("score")
     tier = signal.get("tier", "watch")
     reason = signal.get("reason", "")
+    baseline_1h = signal.get("baseline_1h")
+    baseline_24h = signal.get("baseline_24h")
+    price_move_1m = signal.get("price_move_1m")
+    price_move_5m = signal.get("price_move_5m")
+    price_move_30m = signal.get("price_move_30m")
+    leading_events = signal.get("leading_events") or []
 
     # Recent flow for this market
     market_flow = [e for e in recent_flow if e.get("market_id") == market_id][-20:]
@@ -58,6 +67,25 @@ def _build_prompt(signal: dict[str, Any], recent_flow: list[dict[str, Any]]) -> 
         delta = prices[-1] - prices[0]
         price_trend = f"trending {'up' if delta > 0 else 'down'} {abs(delta):.3f} over last {len(prices)} ticks"
 
+    def fmt_number(value: Any, decimals: int = 0) -> str:
+        if value is None:
+            return "n/a"
+        return f"{float(value):,.{decimals}f}"
+
+    def fmt_pct(value: Any) -> str:
+        if value is None:
+            return "n/a"
+        return f"{float(value) * 100:.1f}%"
+
+    leading_lines = []
+    for lead in leading_events[-5:]:
+        lead_side = lead.get("trade_side") or "-"
+        leading_lines.append(
+            f"    - {lead.get('event_kind', 'event')} @ {lead.get('timestamp', 'unknown time')} "
+            f"price={fmt_number(lead.get('yes_price'), 3)} vol={fmt_number(lead.get('volume'), 0)} side={lead_side}"
+        )
+    leading_summary = "\n".join(leading_lines) if leading_lines else "    - none"
+
     prompt = f"""You are a prediction market analyst. A spike detector has flagged unusual activity on a Kalshi market.
 
 MARKET
@@ -68,8 +96,15 @@ MARKET
 SPIKE DETAILS
   Score: {score} (tier: {tier})
   Volume delta: {volume_delta:,.0f} vs baseline {baseline:,.0f} ({f'{volume_delta/baseline:.1f}x' if baseline else 'n/a'} baseline)
-  Price move: {f'{price_move*100:.1f}%' if price_move is not None else 'n/a'}
+  Price move: {fmt_pct(price_move)}
   Detector reason: {reason}
+
+ENRICHED DETECTOR CONTEXT
+  1h baseline delta: {fmt_number(baseline_1h, 0)}
+  24h baseline delta: {fmt_number(baseline_24h, 0)}
+  Price moves: 1m={fmt_pct(price_move_1m)}, 5m={fmt_pct(price_move_5m)}, 30m={fmt_pct(price_move_30m)}
+  Leading events before spike:
+{leading_summary}
 
 RECENT FLOW ({len(market_flow)} events)
   Price history: {', '.join(f'{p:.3f}' for p in prices[-10:]) if prices else 'none'}
@@ -221,7 +256,7 @@ class SignalAnalyst:
         self._perplexity_key = perplexity_key
         self._anthropic_model = anthropic_model
         self._perplexity_model = perplexity_model
-        self._cache: dict[str, dict[str, Any]] = {}
+        self._cache: OrderedDict[str, dict[str, Any]] = OrderedDict()
         self._lock = threading.Lock()
         self._in_flight: set[str] = set()
 
@@ -250,6 +285,13 @@ class SignalAnalyst:
         )
         t.start()
 
+    def _remember_result(self, signal_id: str, payload: dict[str, Any]) -> None:
+        with self._lock:
+            self._cache[signal_id] = payload
+            self._cache.move_to_end(signal_id)
+            while len(self._cache) > MAX_SIGNAL_ANALYST_CACHE:
+                self._cache.popitem(last=False)
+
     def _run(self, signal_id: str, signal: dict, flow: list) -> None:
         try:
             result = analyze_signal(
@@ -260,8 +302,7 @@ class SignalAnalyst:
                 perplexity_model=self._perplexity_model,
             )
             if result:
-                with self._lock:
-                    self._cache[signal_id] = result.to_dict()
+                self._remember_result(signal_id, result.to_dict())
         finally:
             with self._lock:
                 self._in_flight.discard(signal_id)
@@ -270,7 +311,11 @@ class SignalAnalyst:
         event = signal.get("event") or {}
         signal_id = f"{event.get('market_id', 'unknown')}@{signal.get('detected_at', '')}"
         with self._lock:
-            return self._cache.get(signal_id)
+            payload = self._cache.get(signal_id)
+            if payload is None:
+                return None
+            self._cache.move_to_end(signal_id)
+            return payload
 
     def pending(self, signal: dict[str, Any]) -> bool:
         event = signal.get("event") or {}

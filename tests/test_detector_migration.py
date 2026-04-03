@@ -316,3 +316,90 @@ def test_detector_regression_known_sequence():
     assert spike_signal.volume_delta == 2000.0
     assert spike_signal.baseline_volume_delta == baseline
     assert spike_signal.score > 10.0  # Very high score
+
+
+def test_notable_requires_half_percent_absolute_price_move():
+    """High-score spikes below 0.5% move should stay watch, not notable."""
+    settings = make_settings(
+        spike_min_volume_delta=500,
+        spike_min_price_move=0.05,
+        spike_score_threshold=3.0,
+    )
+    detector = SpikeDetector(settings)
+
+    tier = detector._tier(
+        event=MarketEvent(
+            source="test",
+            platform="polymarket",
+            market_id="notable-floor-test",
+            title="Test",
+            yes_price=0.503,
+            volume=1200,
+            volume_kind="delta",
+            timestamp=datetime.now(UTC),
+        ),
+        score=4.8,
+        volume_delta=1200.0,
+        price_move=0.003,
+        baseline=100.0,
+    )
+
+    assert tier == "watch"
+
+
+def test_notable_promotes_once_half_percent_price_move_is_met():
+    """The notable tier should still promote when the absolute move reaches 0.5%."""
+    settings = make_settings(
+        spike_min_volume_delta=500,
+        spike_min_price_move=0.05,
+        spike_score_threshold=3.0,
+    )
+    detector = SpikeDetector(settings)
+
+    tier = detector._tier(
+        event=MarketEvent(
+            source="test",
+            platform="polymarket",
+            market_id="notable-floor-test",
+            title="Test",
+            yes_price=0.505,
+            volume=1200,
+            volume_kind="delta",
+            timestamp=datetime.now(UTC),
+        ),
+        score=4.8,
+        volume_delta=1200.0,
+        price_move=0.005,
+        baseline=100.0,
+    )
+
+    assert tier == "notable"
+
+
+def test_high_conviction_flow_still_bypasses_notable_floor():
+    """Existing high-conviction rules should remain unchanged by the notable-only gate."""
+    settings = make_settings(
+        spike_min_volume_delta=500,
+        spike_min_price_move=0.05,
+        spike_score_threshold=3.0,
+    )
+    detector = SpikeDetector(settings)
+
+    tier = detector._tier(
+        event=MarketEvent(
+            source="test",
+            platform="polymarket",
+            market_id="high-conviction-test",
+            title="Test",
+            yes_price=0.60,
+            volume=1500,
+            volume_kind="delta",
+            timestamp=datetime.now(UTC),
+        ),
+        score=6.5,
+        volume_delta=1500.0,
+        price_move=0.09,
+        baseline=400.0,
+    )
+
+    assert tier == "high conviction flow"

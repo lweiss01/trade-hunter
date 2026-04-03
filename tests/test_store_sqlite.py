@@ -73,6 +73,19 @@ def test_record_signal(test_db):
         timestamp=datetime.now(UTC),
     )
     store.upsert_event(event)
+
+    leading_event = MarketEvent(
+        source="test",
+        platform="polymarket",
+        market_id="spike-market",
+        title="Spike Market",
+        event_kind="trade",
+        yes_price=0.41,
+        volume=120.0,
+        volume_kind="delta",
+        trade_side="yes",
+        timestamp=datetime.now(UTC),
+    )
     
     signal = SpikeSignal(
         event=event,
@@ -83,6 +96,12 @@ def test_record_signal(test_db):
         reason="Large volume spike",
         tier="alert",
         detected_at=datetime.now(UTC),
+        baseline_1h=300.0,
+        baseline_24h=180.0,
+        price_move_1m=0.02,
+        price_move_5m=0.08,
+        price_move_30m=0.14,
+        leading_events=[leading_event],
     )
     store.record_signal(signal)
     
@@ -91,6 +110,14 @@ def test_record_signal(test_db):
     assert len(state["signals"]) == 1
     assert state["signals"][0]["score"] == 5.2
     assert state["signals"][0]["reason"] == "Large volume spike"
+    assert state["signals"][0]["baseline_1h"] == 300.0
+    assert state["signals"][0]["baseline_24h"] == 180.0
+    assert state["signals"][0]["price_move_1m"] == 0.02
+    assert state["signals"][0]["price_move_5m"] == 0.08
+    assert state["signals"][0]["price_move_30m"] == 0.14
+    assert len(state["signals"][0]["leading_events"]) == 1
+    assert state["signals"][0]["leading_events"][0]["event_kind"] == "trade"
+    assert state["signals"][0]["leading_events"][0]["trade_side"] == "yes"
 
 
 def test_update_feed_status(test_db):

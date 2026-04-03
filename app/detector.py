@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict, deque
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from .config import Settings
 from .models import MarketEvent, SpikeSignal
@@ -124,15 +124,18 @@ class SpikeDetector:
             return "cross-venue divergence"
 
         volume_multiple = volume_delta / max(baseline, 1.0)
+        notable_min_price_move = 0.005
         if (
             score >= 6.0
             and price_move >= (self.settings.spike_min_price_move * 1.75)
             and volume_multiple >= 3.0
         ):
             return "high conviction flow"
-        if score >= 4.0 or (
-            price_move >= (self.settings.spike_min_price_move * 1.2)
-            and volume_multiple >= 2.4
+        if price_move >= notable_min_price_move and (
+            score >= 4.0 or (
+                price_move >= (self.settings.spike_min_price_move * 1.2)
+                and volume_multiple >= 2.4
+            )
         ):
             return "notable"
         return "watch"
@@ -193,91 +196,64 @@ class SpikeDetector:
         return hard_move or outlier_move
     
     def _multi_window_baselines(self, window: MarketWindow) -> tuple[float | None, float | None]:
-        """Calculate 1-hour and 24-hour volume baselines from event history."""
-        if not window.event_history or len(window.event_history) < 2:
+        """Calculate 1-hour and 24-hour volume baselines from real event timestamps."""
+        if not window.event_history or len(window.event_history) < 3:
             return None, None
-        
-        # For MVP, use event count as proxy for time windows
-        # 1h baseline: last ~6 events (assuming 10min cadence)
-        # 24h baseline: last ~24 events (current spike_baseline_points)
-        
+
         history = list(window.event_history)
-        
-        # Calculate 1h baseline (last 6 events)
-        baseline_1h = None
-        if len(history) >= 6:
-            recent_deltas = []
-            for i in range(1, min(7, len(history))):
-                prev_event = history[-(i+1)]
-                curr_event = history[-i]
-                delta = self._volume_delta(curr_event, prev_event)
+        prior_history = history[:-1]
+        now = history[-1].timestamp
+
+        def avg_delta_since(duration: timedelta) -> float | None:
+            cutoff = now - duration
+            deltas: list[float] = []
+            for previous, current in zip(prior_history, prior_history[1:]):
+                if current.timestamp < cutoff:
+                    continue
+                delta = self._volume_delta(current, previous)
                 if delta > 0:
-                    recent_deltas.append(delta)
-            if recent_deltas:
-                baseline_1h = sum(recent_deltas) / len(recent_deltas)
-        
-        # Calculate 24h baseline (last 24 events or all available)
-        baseline_24h = None
-        if len(history) >= 3:
-            all_deltas = []
-            for i in range(1, min(25, len(history))):
-                prev_event = history[-(i+1)]
-                curr_event = history[-i]
-                delta = self._volume_delta(curr_event, prev_event)
-                if delta > 0:
-                    all_deltas.append(delta)
-            if all_deltas:
-                baseline_24h = sum(all_deltas) / len(all_deltas)
-        
-        return baseline_1h, baseline_24h
-    
+                    deltas.append(delta)
+            if not deltas:
+                return None
+            return sum(deltas) / len(deltas)
+
+        return avg_delta_since(timedelta(hours=1)), avg_delta_since(timedelta(hours=24))
+
     def _multi_window_price_moves(self, window: MarketWindow, current_event: MarketEvent) -> tuple[float | None, float | None, float | None]:
-        """Calculate price moves over 1-minute, 5-minute, and 30-minute windows."""
+        """Calculate price moves over real 1-minute, 5-minute, and 30-minute windows."""
         if not window.event_history or len(window.event_history) < 2:
             return None, None, None
-        
+
         if current_event.yes_price is None:
             return None, None, None
-        
+
         history = list(window.event_history)
-        
-        # For MVP, use event count as proxy for time windows
-        # 1m: last 1-2 events
-        # 5m: last 3-5 events
-        # 30m: last 10-15 events
-        
-        price_move_1m = None
-        if len(history) >= 2:
-            prev_event = history[-2]
-            if prev_event.yes_price is not None:
-                price_move_1m = abs(current_event.yes_price - prev_event.yes_price)
-        
-        price_move_5m = None
-        if len(history) >= 5:
-            prev_event = history[-5]
-            if prev_event.yes_price is not None:
-                price_move_5m = abs(current_event.yes_price - prev_event.yes_price)
-        
-        price_move_30m = None
-        if len(history) >= 15:
-            prev_event = history[-15]
-            if prev_event.yes_price is not None:
-                price_move_30m = abs(current_event.yes_price - prev_event.yes_price)
-        
-        return price_move_1m, price_move_5m, price_move_30m
-    
+        prior_history = history[:-1]
+
+        def price_move_since(duration: timedelta) -> float | None:
+            cutoff = current_event.timestamp - duration
+            for event in prior_history:
+                if event.timestamp >= cutoff and event.yes_price is not None:
+                    return abs(current_event.yes_price - event.yes_price)
+            return None
+
+        return (
+            price_move_since(timedelta(minutes=1)),
+            price_move_since(timedelta(minutes=5)),
+            price_move_since(timedelta(minutes=30)),
+        )
+
     def _get_leading_events(self, window: MarketWindow, current_event: MarketEvent) -> list[MarketEvent]:
         """Get last 5 events before the current spike event."""
         if not window.event_history:
             return []
-        
+
         history = list(window.event_history)
-        
+
         # Get last 5 events before current (current is already in history at -1)
         # So get events from -6 to -2 (5 events)
         if len(history) >= 6:
             return history[-6:-1]
-        elif len(history) >= 2:
+        if len(history) >= 2:
             return history[:-1]  # All except current
-        else:
-            return []
+        return []

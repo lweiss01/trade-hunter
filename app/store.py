@@ -105,8 +105,11 @@ class MarketStore:
                 INSERT INTO signals (
                     market_id, score, volume_delta, price_move,
                     baseline_volume_delta, reason, tier, topic,
-                    source_label, detected_at, event_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    source_label, detected_at, event_id,
+                    baseline_1h, baseline_24h,
+                    price_move_1m, price_move_5m, price_move_30m,
+                    leading_events_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 signal.event.market_id,
                 signal.score,
@@ -119,6 +122,12 @@ class MarketStore:
                 signal.source_label,
                 signal.detected_at.isoformat(),
                 event_id,
+                signal.baseline_1h,
+                signal.baseline_24h,
+                signal.price_move_1m,
+                signal.price_move_5m,
+                signal.price_move_30m,
+                json.dumps([event.to_dict() for event in signal.leading_events]),
             ))
             self._get_connection().commit()
     
@@ -231,6 +240,15 @@ class MarketStore:
                     topic=row["topic"],
                     source_label=row["source_label"],
                     detected_at=datetime.fromisoformat(row["detected_at"]),
+                    baseline_1h=row["baseline_1h"],
+                    baseline_24h=row["baseline_24h"],
+                    price_move_1m=row["price_move_1m"],
+                    price_move_5m=row["price_move_5m"],
+                    price_move_30m=row["price_move_30m"],
+                    leading_events=[
+                        self._dict_to_market_event(item)
+                        for item in json.loads(row["leading_events_json"] or "[]")
+                    ],
                 )
                 signals.append(signal)
             
@@ -287,6 +305,28 @@ class MarketStore:
             deduped.append(event)
 
         return deduped
+
+    def _dict_to_market_event(self, payload: dict[str, Any]) -> MarketEvent:
+        """Convert a serialized event dict back into a MarketEvent."""
+        return MarketEvent(
+            source=str(payload.get("source") or "unknown"),
+            platform=str(payload.get("platform") or "unknown"),
+            market_id=str(payload.get("market_id") or "unknown"),
+            title=str(payload.get("title") or payload.get("market_id") or "unknown"),
+            event_kind=str(payload.get("event_kind") or "quote"),
+            yes_price=payload.get("yes_price"),
+            no_price=payload.get("no_price"),
+            volume=payload.get("volume"),
+            volume_kind=str(payload.get("volume_kind") or "cumulative"),
+            trade_size=payload.get("trade_size"),
+            trade_side=payload.get("trade_side"),
+            liquidity=payload.get("liquidity"),
+            live=bool(payload.get("live", True)),
+            topic=payload.get("topic"),
+            market_url=payload.get("market_url"),
+            timestamp=datetime.fromisoformat(str(payload.get("timestamp"))),
+            metadata=payload.get("metadata") or {},
+        )
 
     def _row_to_market_event(self, row: sqlite3.Row, offset: int = 0) -> MarketEvent:
         """Convert database row to MarketEvent, optionally with column offset."""

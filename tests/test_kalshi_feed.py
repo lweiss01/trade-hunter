@@ -5,9 +5,10 @@ TradeMessage fields:  market_ticker, ticker, trade_id, count_fp, yes_price_dolla
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import UTC, datetime
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 
@@ -219,3 +220,49 @@ def test_market_id_stringified(feed_instance):
 
     assert emit_fn.call_count == 1
     assert emit_fn.call_args[0][0].market_id == "12345"
+
+
+@pytest.mark.asyncio
+async def test_run_with_reconnect_retries_until_success(feed_instance):
+    """Transient feed errors should increment reconnects and retry until success."""
+    feed, _, status_fn = feed_instance
+    attempts = 0
+
+    async def flaky_run():
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            raise RuntimeError("socket dropped")
+
+    feed._run = flaky_run
+    feed._sleep_with_stop = AsyncMock(return_value=False)
+
+    await feed._run_with_reconnect()
+
+    assert attempts == 2
+    assert feed._reconnects == 1
+    assert feed._error_count == 1
+    assert status_fn.call_count >= 1
+    assert "reconnecting in 5s" in status_fn.call_args_list[-1][0][1]["detail"]
+
+
+@pytest.mark.asyncio
+async def test_run_with_reconnect_stops_during_backoff(feed_instance):
+    """Shutdown during backoff should exit promptly instead of waiting full backoff duration."""
+    feed, _, _ = feed_instance
+
+    async def always_fail():
+        raise RuntimeError("temporary outage")
+
+    async def stop_immediately(seconds: float) -> bool:
+        feed._stop.set()
+        return True
+
+    feed._run = always_fail
+    feed._sleep_with_stop = stop_immediately
+
+    await feed._run_with_reconnect()
+
+    assert feed._reconnects == 1
+    assert feed._error_count == 1
+    assert feed._stop.is_set()

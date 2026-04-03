@@ -44,6 +44,12 @@ CREATE TABLE IF NOT EXISTS signals (
     source_label TEXT,
     detected_at TEXT NOT NULL,
     event_id INTEGER,
+    baseline_1h REAL,
+    baseline_24h REAL,
+    price_move_1m REAL,
+    price_move_5m REAL,
+    price_move_30m REAL,
+    leading_events_json TEXT,
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
 );

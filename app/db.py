@@ -11,6 +11,26 @@ ROOT = Path(__file__).resolve().parent.parent
 SCHEMA_PATH = ROOT / "app" / "schema.sql"
 DEFAULT_DB_PATH = ROOT / "trade_hunter.db"
 
+_SIGNAL_COLUMN_MIGRATIONS: dict[str, str] = {
+    "baseline_1h": "ALTER TABLE signals ADD COLUMN baseline_1h REAL",
+    "baseline_24h": "ALTER TABLE signals ADD COLUMN baseline_24h REAL",
+    "price_move_1m": "ALTER TABLE signals ADD COLUMN price_move_1m REAL",
+    "price_move_5m": "ALTER TABLE signals ADD COLUMN price_move_5m REAL",
+    "price_move_30m": "ALTER TABLE signals ADD COLUMN price_move_30m REAL",
+    "leading_events_json": "ALTER TABLE signals ADD COLUMN leading_events_json TEXT",
+}
+
+
+def _ensure_signal_columns(conn: sqlite3.Connection) -> None:
+    """Backfill newer signal columns into existing local databases."""
+    existing_columns = {
+        row["name"]
+        for row in conn.execute("PRAGMA table_info(signals)").fetchall()
+    }
+    for column, statement in _SIGNAL_COLUMN_MIGRATIONS.items():
+        if column not in existing_columns:
+            conn.execute(statement)
+
 
 def connect(db_path: str | Path | None = None, *, in_memory: bool = False) -> sqlite3.Connection:
     """
@@ -42,6 +62,7 @@ def connect(db_path: str | Path | None = None, *, in_memory: bool = False) -> sq
     # Initialize schema
     schema_sql = SCHEMA_PATH.read_text(encoding="utf-8")
     conn.executescript(schema_sql)
+    _ensure_signal_columns(conn)
     conn.commit()
     
     return conn

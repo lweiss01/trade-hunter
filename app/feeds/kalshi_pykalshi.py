@@ -81,6 +81,41 @@ class KalshiPykalshiFeed(FeedAdapter):
                 },
             )
 
+    async def _run_with_reconnect(self) -> None:
+        backoff_seconds = 5
+        while not self._stop.is_set():
+            try:
+                await self._run()
+                return
+            except ImportError:
+                raise
+            except Exception as exc:
+                self._error_count += 1
+                self._reconnects += 1
+                self.publish_status(
+                    self.name,
+                    {
+                        "running": False,
+                        "detail": f"error: {exc} (reconnecting in {backoff_seconds}s)",
+                        "last_event_at": self._last_event_at.isoformat() if self._last_event_at else None,
+                        "error_count": self._error_count,
+                        "reconnects": self._reconnects,
+                    },
+                )
+                log.warning("kalshi feed error, reconnecting in %ss: %s", backoff_seconds, exc)
+                if await self._sleep_with_stop(backoff_seconds):
+                    return
+                backoff_seconds = min(backoff_seconds * 2, 300)
+
+    async def _sleep_with_stop(self, seconds: float) -> bool:
+        deadline = asyncio.get_running_loop().time() + seconds
+        while not self._stop.is_set():
+            remaining = deadline - asyncio.get_running_loop().time()
+            if remaining <= 0:
+                return False
+            await asyncio.sleep(min(0.25, remaining))
+        return True
+
     async def _run(self) -> None:
         from pykalshi import Feed, KalshiClient
 
