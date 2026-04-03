@@ -10,6 +10,8 @@ A real-time prediction market monitoring dashboard. Subscribes to live Kalshi We
 
 - Live WebSocket subscription to Kalshi markets with automatic series/event resolution
 - Custom spike detector with per-market rolling baselines and cooldown
+- **Per-signal AI analyst** that labels spikes as `signal`, `noise`, or `uncertain`
+- **Tuning advisor** that looks across analysed signals and suggests threshold changes
 - Discord webhook notifications on confirmed signals
 - PolyAlertHub relay endpoint for third-party alert ingestion
 - SQLite persistence — data survives restarts
@@ -70,7 +72,8 @@ Expired or closed tickers are detected and skipped automatically. The feed statu
 The dashboard updates every 3 seconds and shows:
 
 - **Status pills** — mode, freshness window, last event age, Kalshi message counters, ticker count
-- **Recent Signals** — spike alerts from the detector, sortable by newest or score
+- **Recent Signals** — spike alerts from the detector, sortable by newest or score, with inline analyst reads
+- **Tuning Advisor** — aggregate false-positive pattern analysis and next-step threshold suggestions
 - **Live Trade Flow** — compact chronological event stream with T/Q kind badges, prices, volumes, trade sides, and per-market sparklines
 - **Market Tape** — latest state per market within the freshness window
 - **Tracked Kalshi Tickers** — add/remove tickers live without restarting
@@ -80,7 +83,42 @@ The dashboard updates every 3 seconds and shows:
 
 ---
 
-## Discord notifications
+## AI analyst and tuning advisor
+
+Trade Hunter can optionally use cloud LLMs to reduce false positives and help interpret flow.
+
+### Per-signal analyst
+When a new spike fires, the analyst reviews:
+- current yes price / implied probability
+- volume spike vs baseline
+- recent price history and trade-side mix
+- whether the move looks informed, mechanical, or ambiguous
+
+It returns:
+- `noise_or_signal`
+- `direction`
+- `confidence`
+- plain-English rationale
+- a one-line detector tuning note
+
+The dashboard shows this inline on each signal card.
+
+### Tuning advisor
+A second pass looks across recent analyst-labelled signals and suggests threshold changes to reduce recurring false positives.
+
+Its recommendations are shown in the **Tuning Advisor** panel and also written to the durable backlog file:
+
+- `docs/TUNING-BACKLOG.md`
+
+Use that file as the source of truth for what was suggested, what was applied, and what is still planned.
+
+### Provider order
+The analyst stack supports provider fallback:
+1. **Anthropic Claude Haiku** (primary)
+2. **Perplexity Sonar** (fallback)
+
+If Anthropic is unavailable, Trade Hunter automatically tries Perplexity instead.
+
 
 ```env
 DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
@@ -193,6 +231,8 @@ POST /api/demo/spike                     trigger a demo signal
 | `KALSHI_MARKETS` | — | Comma-separated tickers/slugs |
 | `POLYALERTHUB_TOKEN` | — | PolyAlertHub auth token |
 | `INGEST_API_TOKEN` | — | Generic ingest endpoint auth |
+| `ANTHROPIC_API_KEY` | — | Enables the signal analyst (primary provider) |
+| `PERPLEXITY_API_KEY` | — | Enables analyst fallback and tuning-advisor provider |
 | `DISCORD_WEBHOOK_URL` | — | Default Discord webhook |
 | `DISCORD_WEBHOOK_ROUTES` | — | Topic-routed webhooks (key=url;...) |
 | `SPIKE_MIN_VOLUME_DELTA` | `120` | Detector volume threshold |
@@ -214,6 +254,7 @@ app/
   service.py           orchestration, ingest, dashboard state
   server.py            HTTP server + API routes
   store.py             SQLite-backed event/signal store
+  analyst.py           per-signal analyst + aggregate tuning advisor
   detector.py          spike detection algorithm
   notifiers.py         Discord webhook notifier
   retention.py         automated DB cleanup

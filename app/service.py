@@ -17,7 +17,7 @@ from .models import MarketEvent
 from .notifiers import DiscordWebhookNotifier
 from .retention import cleanup_old_events
 from .store import MarketStore
-from .analyst import SignalAnalyst
+from .analyst import SignalAnalyst, TuningAdvisor
 
 
 LIVE_FRESHNESS_WINDOW_MINUTES = 10
@@ -48,8 +48,13 @@ class TradeHunterService:
                 anthropic_key=anthropic_key,
                 perplexity_key=perplexity_key,
             )
+            self._tuning_advisor: TuningAdvisor | None = TuningAdvisor(
+                anthropic_key=anthropic_key,
+                perplexity_key=perplexity_key,
+            )
         else:
             self._analyst = None
+            self._tuning_advisor = None
             log.info("signal analyst disabled (no API keys configured)")
 
         # Enforce exactly one operating mode: live OR simulation.
@@ -347,6 +352,15 @@ class TradeHunterService:
                     sig["analyst"] = {"pending": True}
                 enriched.append(sig)
             state["signals"] = enriched
+
+        # Kick and attach the second-pass tuning advisor
+        if self._tuning_advisor:
+            self._tuning_advisor.maybe_enqueue(state.get("signals", []))
+            tuning = self._tuning_advisor.get()
+            if tuning:
+                state["tuning_advisor"] = tuning
+            elif self._tuning_advisor.pending():
+                state["tuning_advisor"] = {"pending": True}
 
         state["config"] = {
             "host": self.settings.host,

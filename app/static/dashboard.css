@@ -898,6 +898,42 @@ h1 {
   cursor: default;
 }
 
+.tuning-panel {
+  margin-bottom: 20px;
+}
+
+.tuning-advisor-body {
+  display: grid;
+  gap: 10px;
+}
+
+.tuning-summary {
+  color: var(--text);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.tuning-global {
+  color: var(--text);
+  font-size: 0.82rem;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(75,191,201,0.06);
+  border: 1px solid rgba(75,191,201,0.18);
+}
+
+.tuning-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.tuning-list li + li {
+  margin-top: 4px;
+}
+
 .ticker-form {
   display: grid;
   grid-template-columns: auto minmax(180px, 1fr) auto;

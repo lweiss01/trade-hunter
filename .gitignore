@@ -26,3 +26,10 @@ vendor/
 coverage/
 .cache/
 tmp/
+
+# Local runtime / secrets / generated state
+.bg-shell/
+.kalshi-keys/
+trade_hunter.db-shm
+trade_hunter.db-wal
+trade_hunter.db.bak-*

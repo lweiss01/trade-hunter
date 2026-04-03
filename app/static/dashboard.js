@@ -16,6 +16,7 @@ const categoryForm = document.querySelector("#category-form");
 const categoryInput = document.querySelector("#category-input");
 const categoryResultsEl = document.querySelector("#category-results");
 const categoryMessageEl = document.querySelector("#category-message");
+const tuningAdvisorEl = document.querySelector("#tuning-advisor");
 
 let tickerMutationInFlight = false;
 let trackedTickers = [];
@@ -227,6 +228,25 @@ function normalizeSignals(signals) {
   }
 
   return result;
+}
+
+function renderTuningAdvisor(state) {
+  if (!tuningAdvisorEl) return;
+  const advisor = state.tuning_advisor || null;
+  if (!advisor) {
+    tuningAdvisorEl.innerHTML = `<div class="empty">Waiting for enough analysed signals to recommend threshold tweaks.</div>`;
+    return;
+  }
+  if (advisor.pending) {
+    tuningAdvisorEl.innerHTML = `<div class="empty">Analysing recent false-positive patterns…</div>`;
+    return;
+  }
+  const recs = advisor.recommendations || [];
+  tuningAdvisorEl.innerHTML = `
+    <div class="tuning-summary">${escapeHtml(advisor.summary || "")}</div>
+    <div class="tuning-global"><strong>Best next tweak:</strong> ${escapeHtml(advisor.global_recommendation || "")}</div>
+    ${recs.length ? `<ul class="tuning-list">${recs.map(r => `<li>${escapeHtml(r)}</li>`).join("")}</ul>` : ""}
+  `;
 }
 
 function renderSignals(signals) {
@@ -497,6 +517,7 @@ async function refresh() {
     renderMetrics(state);
     renderModeUI(state.config || {});
     renderSignals(state.signals || []);
+    renderTuningAdvisor(state);
     renderActivity(state.activity || [], state.telemetry || {}, state.config || {});
     renderFeeds(state);
     renderMarkets(state.markets || [], state.telemetry || {}, state.config || {});

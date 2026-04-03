@@ -186,6 +186,22 @@ def analyze_signal(
     return None
 
 
+@dataclass
+class TuningAdvice:
+    summary: str
+    global_recommendation: str
+    recommendations: list[str]
+    generated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "summary": self.summary,
+            "global_recommendation": self.global_recommendation,
+            "recommendations": self.recommendations,
+            "generated_at": self.generated_at.isoformat(),
+        }
+
+
 class SignalAnalyst:
     """Background analyst that enriches signals with LLM reads.
 
@@ -261,3 +277,131 @@ class SignalAnalyst:
         signal_id = f"{event.get('market_id', 'unknown')}@{signal.get('detected_at', '')}"
         with self._lock:
             return signal_id in self._in_flight
+
+
+def _build_tuning_prompt(signals: list[dict[str, Any]]) -> str:
+    lines = []
+    for sig in signals[:20]:
+        event = sig.get("event") or {}
+        analyst = sig.get("analyst") or {}
+        lines.append(
+            f"- {event.get('market_id')} | tier={sig.get('tier')} score={sig.get('score')} "
+            f"yes={event.get('yes_price')} volΔ={sig.get('volume_delta')} priceΔ={sig.get('price_move')} "
+            f"analyst={analyst.get('noise_or_signal')}/{analyst.get('direction')}/{analyst.get('confidence')} "
+            f"note={analyst.get('threshold_note', 'none')}"
+        )
+
+    return f"""You are a tuning advisor for a prediction-market spike detector.
+You are looking across recent signals that already have analyst labels.
+Your goal is to reduce false positives without muting genuinely informative flow.
+
+RECENT SIGNALS
+{chr(10).join(lines)}
+
+Return JSON only, no markdown:
+{{
+  "summary": "<1-2 sentence summary of the current false-positive pattern>",
+  "global_recommendation": "<single best next threshold or rule change>",
+  "recommendations": [
+    "<short concrete tweak 1>",
+    "<short concrete tweak 2>",
+    "<short concrete tweak 3>"
+  ]
+}}
+"""
+
+
+def analyze_tuning(
+    signals: list[dict[str, Any]],
+    anthropic_key: str = "",
+    perplexity_key: str = "",
+    anthropic_model: str = "claude-haiku-4-5",
+    perplexity_model: str = "sonar",
+) -> TuningAdvice | None:
+    prompt = _build_tuning_prompt(signals)
+    providers = []
+    if anthropic_key:
+        providers.append(("anthropic", lambda: _analyze_via_anthropic(prompt, anthropic_key, anthropic_model)))
+    if perplexity_key:
+        providers.append(("perplexity", lambda: _analyze_via_perplexity(prompt, perplexity_key, perplexity_model)))
+
+    last_error = None
+    for provider_name, call in providers:
+        try:
+            raw = call()
+            data = _parse_json_response(raw)
+            log.info("tuning-advisor[%s]: generated", provider_name)
+            recs = data.get("recommendations") or []
+            return TuningAdvice(
+                summary=str(data.get("summary", "")),
+                global_recommendation=str(data.get("global_recommendation", "")),
+                recommendations=[str(x) for x in recs[:5]],
+            )
+        except Exception as exc:
+            log.warning("tuning-advisor[%s]: failed: %s", provider_name, exc)
+            last_error = exc
+            continue
+
+    if last_error:
+        log.warning("tuning-advisor: all providers failed, last error: %s", last_error)
+    return None
+
+
+class TuningAdvisor:
+    """Background second-pass advisor over analyst-labelled signals."""
+
+    def __init__(
+        self,
+        anthropic_key: str = "",
+        perplexity_key: str = "",
+        anthropic_model: str = "claude-haiku-4-5",
+        perplexity_model: str = "sonar",
+    ) -> None:
+        self._anthropic_key = anthropic_key
+        self._perplexity_key = perplexity_key
+        self._anthropic_model = anthropic_model
+        self._perplexity_model = perplexity_model
+        self._lock = threading.Lock()
+        self._in_flight = False
+        self._cache: dict[str, Any] | None = None
+        self._last_signature = ""
+
+    def maybe_enqueue(self, signals: list[dict[str, Any]]) -> None:
+        analyzed = [s for s in signals if s.get("analyst") and not s.get("analyst", {}).get("pending")]
+        if len(analyzed) < 2:
+            return
+        signature = "|".join(
+            f"{(s.get('event') or {}).get('market_id')}@{s.get('detected_at')}:{(s.get('analyst') or {}).get('noise_or_signal')}"
+            for s in analyzed[:12]
+        )
+        with self._lock:
+            if self._in_flight or signature == self._last_signature:
+                return
+            self._in_flight = True
+            self._last_signature = signature
+        t = threading.Thread(target=self._run, args=(analyzed[:20],), daemon=True, name="tuning-advisor")
+        t.start()
+
+    def _run(self, signals: list[dict[str, Any]]) -> None:
+        try:
+            result = analyze_tuning(
+                signals,
+                anthropic_key=self._anthropic_key,
+                perplexity_key=self._perplexity_key,
+                anthropic_model=self._anthropic_model,
+                perplexity_model=self._perplexity_model,
+            )
+            if result:
+                with self._lock:
+                    self._cache = result.to_dict()
+        finally:
+            with self._lock:
+                self._in_flight = False
+
+    def get(self) -> dict[str, Any] | None:
+        with self._lock:
+            return dict(self._cache) if self._cache else None
+
+    def pending(self) -> bool:
+        with self._lock:
+            return self._in_flight

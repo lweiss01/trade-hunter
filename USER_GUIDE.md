@@ -168,6 +168,20 @@ The detector fires when a market shows unusual volume or price movement.
 **Latest per market toggle:**  
 When on, shows only the single most recent signal per market ID. Useful when one market is firing repeatedly and you want one summary view per ticker rather than a list of duplicates. When off, all signals are shown in order.
 
+**Inline analyst read:**
+Each signal can also show an AI read with:
+- `signal` / `noise` / `uncertain`
+- direction (`yes`, `no`, or `unclear`)
+- confidence (`low`, `medium`, `high`)
+- plain-English rationale
+- threshold note when the analyst sees a recurring false-positive pattern
+
+Provider order:
+1. **Anthropic Claude Haiku** (primary)
+2. **Perplexity Sonar** (fallback)
+
+If Anthropic fails or is unavailable, the app automatically tries Perplexity so analysis can still land.
+
 **Signal tiers:**
 | Tier | Score | Meaning |
 |---|---|---|
@@ -176,6 +190,33 @@ When on, shows only the single most recent signal per market ID. Useful when one
 | `high conviction flow` | ≥ 6.0 | Strong signal with multiple confirmations |
 
 **Score formula:** `(volume_multiple × 0.75) + (price_score × 1.25)`
+
+---
+
+## Tuning Advisor
+
+The tuning advisor is the second AI pass. Instead of reading one signal in isolation, it looks across recent **analyst-labelled** signals and suggests concrete detector changes to reduce false positives.
+
+It returns:
+- a short summary of the current false-positive pattern
+- one **best next tweak**
+- 2–3 concrete tuning recommendations
+
+Examples:
+- require minimum price movement before promoting a spike
+- tighten rules for ultra-low-price or illiquid markets
+- add directional coherence checks between trade flow and price movement
+
+### Durable backlog
+Advisor suggestions are not just ephemeral UI text. They are tracked in:
+
+- `docs/TUNING-BACKLOG.md`
+
+Use that file as the durable source of truth for:
+- applied recommendations
+- planned next tweaks
+- rejected ideas
+- superseded rules
 
 ---
 
@@ -189,8 +230,10 @@ When on, shows only the single most recent signal per market ID. Useful when one
 | `SPIKE_BASELINE_POINTS` | 24 | Events used for rolling baseline |
 | `SPIKE_COOLDOWN_SECONDS` | 300 | Minimum time between repeat alerts per market |
 
-**Too many false positives:** raise `SPIKE_SCORE_THRESHOLD` (try 4.0–5.0) or `SPIKE_MIN_VOLUME_DELTA`  
-**Missing moves:** lower `SPIKE_MIN_VOLUME_DELTA` (try 80) or `SPIKE_SCORE_THRESHOLD`  
+Current planned tuning work is tracked in the roadmap milestone **M005** and in `docs/TUNING-BACKLOG.md`.
+
+**Too many false positives:** raise `SPIKE_SCORE_THRESHOLD`, raise `SPIKE_MIN_PRICE_MOVE`, or implement one of the backlog heuristics for thin/flat-price markets  
+**Missing moves:** lower `SPIKE_MIN_VOLUME_DELTA` (carefully) or lower `SPIKE_SCORE_THRESHOLD`  
 **Too many duplicates:** raise `SPIKE_COOLDOWN_SECONDS` (try 600)
 
 ---
