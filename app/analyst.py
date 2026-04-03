@@ -10,7 +10,7 @@ import threading
 from collections import OrderedDict
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Callable
 
 log = logging.getLogger(__name__)
 
@@ -267,7 +267,12 @@ class SignalAnalyst:
             providers.append(f"perplexity/{perplexity_model}")
         log.info("signal analyst ready, providers: %s", " → ".join(providers) or "none")
 
-    def enqueue(self, signal: dict[str, Any], recent_flow: list[dict[str, Any]]) -> None:
+    def enqueue(
+        self,
+        signal: dict[str, Any],
+        recent_flow: list[dict[str, Any]],
+        on_complete: Callable[[dict[str, Any], dict[str, Any]], None] | None = None,
+    ) -> None:
         """Fire-and-forget: analyze signal in background thread."""
         event = signal.get("event") or {}
         signal_id = f"{event.get('market_id', 'unknown')}@{signal.get('detected_at', '')}"
@@ -279,7 +284,7 @@ class SignalAnalyst:
 
         t = threading.Thread(
             target=self._run,
-            args=(signal_id, signal, list(recent_flow)),
+            args=(signal_id, signal, list(recent_flow), on_complete),
             daemon=True,
             name=f"analyst-{signal_id[:30]}",
         )
@@ -292,7 +297,13 @@ class SignalAnalyst:
             while len(self._cache) > MAX_SIGNAL_ANALYST_CACHE:
                 self._cache.popitem(last=False)
 
-    def _run(self, signal_id: str, signal: dict, flow: list) -> None:
+    def _run(
+        self,
+        signal_id: str,
+        signal: dict,
+        flow: list,
+        on_complete: Callable[[dict[str, Any], dict[str, Any]], None] | None = None,
+    ) -> None:
         try:
             result = analyze_signal(
                 signal, flow,
@@ -302,7 +313,10 @@ class SignalAnalyst:
                 perplexity_model=self._perplexity_model,
             )
             if result:
-                self._remember_result(signal_id, result.to_dict())
+                payload = result.to_dict()
+                self._remember_result(signal_id, payload)
+                if on_complete:
+                    on_complete(signal, payload)
         finally:
             with self._lock:
                 self._in_flight.discard(signal_id)

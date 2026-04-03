@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 
@@ -37,6 +37,11 @@ def _int(name: str, default: int) -> int:
 def _float(name: str, default: float) -> float:
     value = os.getenv(name)
     return float(value) if value else default
+
+
+def _text(name: str, default: str) -> str:
+    value = os.getenv(name)
+    return value.strip() if value else default
 
 
 def _csv(name: str) -> list[str]:
@@ -95,15 +100,18 @@ class Settings:
     enable_kalshi: bool
     discord_webhook_url: str | None
     discord_webhook_routes: dict[str, str]
-    ingest_api_token: str | None
-    spike_min_volume_delta: float
-    spike_min_price_move: float
-    spike_score_threshold: float
-    spike_baseline_points: int
-    spike_cooldown_seconds: int
-    kalshi_markets: list[str]
-    kalshi_api_key_id: str | None
-    kalshi_private_key_path: str | None
+    discord_alert_mode: str = "all"
+    discord_analyst_followup: bool = True
+    discord_analyst_min_confidence: str = "medium"
+    ingest_api_token: str | None = None
+    spike_min_volume_delta: float = 120.0
+    spike_min_price_move: float = 0.03
+    spike_score_threshold: float = 3.0
+    spike_baseline_points: int = 24
+    spike_cooldown_seconds: int = 300
+    kalshi_markets: list[str] = field(default_factory=list)
+    kalshi_api_key_id: str | None = None
+    kalshi_private_key_path: str | None = None
     polyalerthub_token: str | None = None
     retention_days: int = 7
     quiet_mode: bool = False
@@ -118,6 +126,9 @@ def load_settings() -> Settings:
         enable_kalshi=_bool("ENABLE_KALSHI", False),
         discord_webhook_url=os.getenv("DISCORD_WEBHOOK_URL") or None,
         discord_webhook_routes=_kv_pairs("DISCORD_WEBHOOK_ROUTES"),
+        discord_alert_mode=_text("DISCORD_ALERT_MODE", "all"),
+        discord_analyst_followup=_bool("DISCORD_ANALYST_FOLLOWUP", True),
+        discord_analyst_min_confidence=_text("DISCORD_ANALYST_MIN_CONFIDENCE", "medium"),
         ingest_api_token=os.getenv("INGEST_API_TOKEN") or None,
         polyalerthub_token=os.getenv("POLYALERTHUB_TOKEN") or None,
         spike_min_volume_delta=_float("SPIKE_MIN_VOLUME_DELTA", 120.0),

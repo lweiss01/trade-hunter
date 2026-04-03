@@ -31,12 +31,17 @@ class TradeHunterService:
         self.notifier = DiscordWebhookNotifier(
             settings.discord_webhook_url,
             settings.discord_webhook_routes,
+            alert_mode=_normalize_discord_alert_mode(getattr(settings, "discord_alert_mode", "all")),
+            analyst_followup=bool(getattr(settings, "discord_analyst_followup", True)),
+            analyst_min_confidence=_normalize_analyst_confidence(getattr(settings, "discord_analyst_min_confidence", "medium")),
         )
         self.feeds = []
         self._cleanup_thread: threading.Thread | None = None
         self._cleanup_stop = threading.Event()
         self._last_cleanup: dict[str, Any] | None = None
         self._kalshi_lock = threading.Lock()
+        self._analyst_followups_sent: set[str] = set()
+        self._analyst_followups_lock = threading.Lock()
 
         # Optional signal analyst (Anthropic primary, Perplexity fallback)
         from .config import _load_env_file, ROOT
@@ -137,11 +142,17 @@ class TradeHunterService:
         if not signal:
             return False
         self.store.record_signal(signal)
-        self.notifier.notify(signal)
+        signal_dict = signal.to_dict()
+        if self.notifier.should_send_detector_alert():
+            self.notifier.notify(signal)
         # Enqueue analyst interpretation (non-blocking background thread)
         if self._analyst:
             recent_flow = [e.to_dict() for e in self.store.recent_events(market_id=event.market_id, limit=30)]
-            self._analyst.enqueue(signal.to_dict(), recent_flow)
+            self._analyst.enqueue(
+                signal_dict,
+                recent_flow,
+                on_complete=self._handle_analyst_complete,
+            )
         return True
 
     def ingest_payload(self, payload: Any, default_source: str = "manual") -> list[bool]:
@@ -189,6 +200,16 @@ class TradeHunterService:
             metadata=metadata,
         )
         return [self.ingest_event(event)]
+
+    def _handle_analyst_complete(self, signal: dict[str, Any], analyst: dict[str, Any]) -> None:
+        signal_id = _signal_id(signal)
+        with self._analyst_followups_lock:
+            if signal_id in self._analyst_followups_sent:
+                return
+        if self.notifier.should_send_analyst_followup() or self.notifier.should_send_analyst_signal_only(analyst):
+            if self.notifier.notify_analyst_followup(signal, analyst):
+                with self._analyst_followups_lock:
+                    self._analyst_followups_sent.add(signal_id)
 
     def get_kalshi_markets(self) -> list[str]:
         return list(self.settings.kalshi_markets)
@@ -375,6 +396,21 @@ class TradeHunterService:
             "spike_score_threshold": self.settings.spike_score_threshold,
         }
         return state
+
+
+def _signal_id(signal: dict[str, Any]) -> str:
+    event = signal.get("event") or {}
+    return f"{event.get('market_id', 'unknown')}@{signal.get('detected_at', '')}"
+
+
+def _normalize_discord_alert_mode(value: Any) -> str:
+    normalized = str(value or "all").strip().lower()
+    return normalized if normalized in {"all", "detector-only", "analyst-signals-only"} else "all"
+
+
+def _normalize_analyst_confidence(value: Any) -> str:
+    normalized = str(value or "medium").strip().lower()
+    return normalized if normalized in {"low", "medium", "high"} else "medium"
 
 
 def _maybe_float(value: Any) -> float | None:

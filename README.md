@@ -122,6 +122,9 @@ If Anthropic is unavailable, Trade Hunter automatically tries Perplexity instead
 
 ```env
 DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
+DISCORD_ALERT_MODE=all
+DISCORD_ANALYST_FOLLOWUP=true
+DISCORD_ANALYST_MIN_CONFIDENCE=medium
 ```
 
 Route different market topics to different channels:
@@ -129,6 +132,14 @@ Route different market topics to different channels:
 ```env
 DISCORD_WEBHOOK_ROUTES=crypto=https://...,elections=https://...
 ```
+
+Discord alert modes:
+
+- `all` — send the detector alert immediately and, when enabled, send an analyst follow-up later
+- `detector-only` — send only the immediate detector alert
+- `analyst-signals-only` — suppress the raw detector alert and notify Discord only when the analyst labels the spike as a `signal`
+
+`DISCORD_ANALYST_MIN_CONFIDENCE` applies to `analyst-signals-only` mode and accepts `low`, `medium`, or `high`.
 
 ---
 
@@ -235,6 +246,9 @@ POST /api/demo/spike                     trigger a demo signal
 | `PERPLEXITY_API_KEY` | — | Enables analyst fallback and tuning-advisor provider |
 | `DISCORD_WEBHOOK_URL` | — | Default Discord webhook |
 | `DISCORD_WEBHOOK_ROUTES` | — | Topic-routed webhooks (key=url;...) |
+| `DISCORD_ALERT_MODE` | `all` | `all`, `detector-only`, or `analyst-signals-only` Discord delivery policy |
+| `DISCORD_ANALYST_FOLLOWUP` | `true` | When `DISCORD_ALERT_MODE=all`, send a second Discord message after analyst completion |
+| `DISCORD_ANALYST_MIN_CONFIDENCE` | `medium` | Minimum analyst confidence for `analyst-signals-only` alerts (`low`/`medium`/`high`) |
 | `SPIKE_MIN_VOLUME_DELTA` | `120` | Detector volume threshold |
 | `SPIKE_MIN_PRICE_MOVE` | `0.03` | Detector price threshold |
 | `SPIKE_SCORE_THRESHOLD` | `3.0` | Alert score cutoff |
