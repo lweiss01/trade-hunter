@@ -187,17 +187,64 @@ def test_no_market_id_skipped(feed_instance, caplog):
     assert "no market_id" in caplog.text
 
 
-def test_unknown_message_type_skipped(feed_instance, caplog):
-    """Unknown type name is skipped gracefully."""
+def test_unknown_message_type_warns_and_is_counted(feed_instance, caplog):
+    """Unknown payload shapes should be warned about and counted visibly."""
     feed, emit_fn, _ = feed_instance
 
     class WeirdMessage:
         market_ticker = "TEST"
 
-    with caplog.at_level(logging.DEBUG):
-        feed._process_message(WeirdMessage())
+    with caplog.at_level(logging.WARNING):
+        processed = feed._process_message(WeirdMessage())
 
+    assert processed is False
     assert emit_fn.call_count == 0
+    assert feed._other_count == 1
+    assert "Unhandled feed message type" in caplog.text
+
+
+def test_shape_based_quote_dispatch_does_not_require_exact_class_name(feed_instance):
+    """Quote-like payloads should route by field shape even if upstream class names drift."""
+    feed, emit_fn, _ = feed_instance
+
+    class QuotePayload:
+        def __init__(self):
+            self.market_ticker = "SHAPE-QUOTE"
+            self.yes_bid_dollars = 0.44
+            self.volume_fp = 250.0
+
+    processed = feed._process_message(QuotePayload())
+
+    assert processed is True
+    assert emit_fn.call_count == 1
+    event = emit_fn.call_args[0][0]
+    assert event.event_kind == "quote"
+    assert event.market_id == "SHAPE-QUOTE"
+    assert event.yes_price == 0.44
+    assert event.volume == 250.0
+
+
+def test_shape_based_trade_dispatch_does_not_require_exact_class_name(feed_instance):
+    """Trade-like payloads should route by field shape even if upstream class names drift."""
+    feed, emit_fn, _ = feed_instance
+
+    class TradePayload:
+        def __init__(self):
+            self.market_ticker = "SHAPE-TRADE"
+            self.count_fp = 7.0
+            self.yes_price_dollars = 0.51
+            self.taker_side = "yes"
+
+    processed = feed._process_message(TradePayload())
+
+    assert processed is True
+    assert emit_fn.call_count == 1
+    event = emit_fn.call_args[0][0]
+    assert event.event_kind == "trade"
+    assert event.market_id == "SHAPE-TRADE"
+    assert event.yes_price == 0.51
+    assert event.volume == 7.0
+    assert event.trade_side == "yes"
 
 
 def test_zero_price_handled(feed_instance):

@@ -418,7 +418,8 @@ class KalshiPykalshiFeed(FeedAdapter):
             return
 
         try:
-            self._process_message(message)
+            if not self._process_message(message):
+                return
             self._message_count += 1
             self._last_event_at = datetime.now(UTC)
             self.publish_status(self.name, self._status_payload())
@@ -433,14 +434,42 @@ class KalshiPykalshiFeed(FeedAdapter):
                 },
             )
 
-    def _process_message(self, message) -> None:
+    def _classify_message(self, message) -> str | None:
+        """Classify feed payloads by shape first, not only by concrete class name."""
+        trade_markers = (
+            "count_fp",
+            "taker_side",
+            "yes_price_dollars",
+            "no_price_dollars",
+            "trade_id",
+        )
+        quote_markers = (
+            "volume_fp",
+            "yes_bid_dollars",
+            "yes_ask_dollars",
+            "price_dollars",
+        )
+
+        trade_score = sum(1 for field in trade_markers if hasattr(message, field))
+        quote_score = sum(1 for field in quote_markers if hasattr(message, field))
+        message_type = type(message).__name__
+
+        if trade_score and trade_score >= quote_score:
+            return "TradeMessage"
+        if quote_score:
+            return "TickerMessage"
+        if message_type in {"TradeMessage", "TickerMessage"}:
+            return message_type
+        return None
+
+    def _process_message(self, message) -> bool:
         """Extract fields from TickerMessage or TradeMessage and emit MarketEvent."""
         market_id = getattr(message, "market_ticker", None) or getattr(message, "ticker", None)
         if not market_id:
             log.debug("Skipping message with no market_id: %s", type(message).__name__)
-            return
+            return False
 
-        message_type = type(message).__name__
+        message_type = self._classify_message(message)
 
         if message_type == "TradeMessage":
             event_kind = "trade"
@@ -459,8 +488,17 @@ class KalshiPykalshiFeed(FeedAdapter):
             trade_side = None
             trade_size = None
         else:
-            log.debug("Skipping unhandled message type: %s", message_type)
-            return
+            self._other_count += 1
+            log.warning(
+                "Unhandled feed message type: %s",
+                type(message).__name__,
+                extra={
+                    "message_type": type(message).__name__,
+                    "message_attrs": dir(message),
+                    "message_repr": repr(message),
+                },
+            )
+            return False
 
         event = MarketEvent(
             source="pykalshi",
@@ -475,6 +513,7 @@ class KalshiPykalshiFeed(FeedAdapter):
             trade_side=trade_side if trade_side else None,
             live=True,
             timestamp=datetime.now(UTC),
-            metadata={"message_type": message_type},
+            metadata={"message_type": type(message).__name__},
         )
         self.emit(event)
+        return True
