@@ -226,13 +226,24 @@ class TuningAdvice:
     summary: str
     global_recommendation: str
     recommendations: list[str]
+    suggested_min_volume_delta: float | None = None
+    suggested_min_price_move: float | None = None
+    suggested_score_threshold: float | None = None
     generated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def to_dict(self) -> dict[str, Any]:
+        suggested: dict[str, float] = {}
+        if self.suggested_min_volume_delta is not None:
+            suggested["min_volume_delta"] = self.suggested_min_volume_delta
+        if self.suggested_min_price_move is not None:
+            suggested["min_price_move"] = self.suggested_min_price_move
+        if self.suggested_score_threshold is not None:
+            suggested["score_threshold"] = self.suggested_score_threshold
         return {
             "summary": self.summary,
             "global_recommendation": self.global_recommendation,
             "recommendations": self.recommendations,
+            "suggested_thresholds": suggested,  # empty dict when no structured suggestion
             "generated_at": self.generated_at.isoformat(),
         }
 
@@ -354,10 +365,16 @@ def _build_tuning_prompt(signals: list[dict[str, Any]]) -> str:
 You are looking across recent signals that already have analyst labels.
 Your goal is to reduce false positives without muting genuinely informative flow.
 
+CURRENT THRESHOLDS
+- spike_min_volume_delta: minimum volume delta to trigger detection
+- spike_min_price_move: minimum fractional price move (e.g. 0.03 = 3%)
+- spike_score_threshold: minimum combined score to emit a signal
+
 RECENT SIGNALS
 {chr(10).join(lines)}
 
-Return JSON only, no markdown:
+Return JSON only, no markdown. Include suggested_thresholds only when you have a concrete
+numeric recommendation; omit a key (or set it to null) when you have no specific suggestion:
 {{
   "summary": "<1-2 sentence summary of the current false-positive pattern>",
   "global_recommendation": "<single best next threshold or rule change>",
@@ -365,7 +382,12 @@ Return JSON only, no markdown:
     "<short concrete tweak 1>",
     "<short concrete tweak 2>",
     "<short concrete tweak 3>"
-  ]
+  ],
+  "suggested_thresholds": {{
+    "min_volume_delta": <float or null>,
+    "min_price_move": <float or null>,
+    "score_threshold": <float or null>
+  }}
 }}
 """
 
@@ -391,10 +413,22 @@ def analyze_tuning(
             data = _parse_json_response(raw)
             log.info("tuning-advisor[%s]: generated", provider_name)
             recs = data.get("recommendations") or []
+            suggested = data.get("suggested_thresholds") or {}
+
+            def _opt_float(key: str) -> float | None:
+                v = suggested.get(key)
+                try:
+                    return float(v) if v is not None else None
+                except (TypeError, ValueError):
+                    return None
+
             return TuningAdvice(
                 summary=str(data.get("summary", "")),
                 global_recommendation=str(data.get("global_recommendation", "")),
                 recommendations=[str(x) for x in recs[:5]],
+                suggested_min_volume_delta=_opt_float("min_volume_delta"),
+                suggested_min_price_move=_opt_float("min_price_move"),
+                suggested_score_threshold=_opt_float("score_threshold"),
             )
         except Exception as exc:
             log.warning("tuning-advisor[%s]: failed: %s", provider_name, exc)

@@ -374,14 +374,16 @@ class TradeHunterService:
                 enriched.append(sig)
             state["signals"] = enriched
 
-        # Kick and attach the second-pass tuning advisor
+        # Kick and attach the second-pass tuning advisor.
+        # suggested_thresholds inside tuning_advisor are SUGGESTED values only —
+        # they are never auto-applied. Active thresholds live exclusively in config.applied_thresholds.
         if self._tuning_advisor:
             self._tuning_advisor.maybe_enqueue(state.get("signals", []))
             tuning = self._tuning_advisor.get()
             if tuning:
-                state["tuning_advisor"] = tuning
+                state["tuning_advisor"] = {**tuning, "status": "suggested"}
             elif self._tuning_advisor.pending():
-                state["tuning_advisor"] = {"pending": True}
+                state["tuning_advisor"] = {"pending": True, "status": "pending"}
 
         state["config"] = {
             "host": self.settings.host,
@@ -391,6 +393,13 @@ class TradeHunterService:
             "active_mode": self._active_mode,
             "kalshi_markets": self.settings.kalshi_markets,
             "discord_routes": sorted(self.settings.discord_webhook_routes.keys()),
+            # applied_thresholds — these are the live detector settings, not suggestions
+            "applied_thresholds": {
+                "min_volume_delta": self.settings.spike_min_volume_delta,
+                "min_price_move": self.settings.spike_min_price_move,
+                "score_threshold": self.settings.spike_score_threshold,
+            },
+            # Keep flat keys for backward compat
             "spike_min_volume_delta": self.settings.spike_min_volume_delta,
             "spike_min_price_move": self.settings.spike_min_price_move,
             "spike_score_threshold": self.settings.spike_score_threshold,
