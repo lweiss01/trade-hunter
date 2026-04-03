@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import sqlite3
 from datetime import UTC, datetime
-from threading import Lock
+from threading import Lock, local
 from typing import Any
 
 from . import db
@@ -15,12 +15,19 @@ class MarketStore:
     
     def __init__(self, db_path: str | None = None) -> None:
         self._lock = Lock()
-        self._conn = db.connect(db_path) if db_path else db.connect()
+        self._db_path = db_path
+        self._thread_local = local()
+    
+    def _get_connection(self) -> sqlite3.Connection:
+        """Get or create thread-local database connection."""
+        if not hasattr(self._thread_local, 'conn'):
+            self._thread_local.conn = db.connect(self._db_path) if self._db_path else db.connect()
+        return self._thread_local.conn
     
     def upsert_event(self, event: MarketEvent) -> None:
         """Insert event and update market metadata."""
         with self._lock:
-            cursor = self._conn.cursor()
+            cursor = self._get_connection().cursor()
             
             # Insert event
             cursor.execute("""
@@ -72,12 +79,12 @@ class MarketStore:
                 datetime.now(UTC).isoformat(),
             ))
             
-            self._conn.commit()
+            self._get_connection().commit()
     
     def record_signal(self, signal: SpikeSignal) -> None:
         """Insert spike signal with optional event link."""
         with self._lock:
-            cursor = self._conn.cursor()
+            cursor = self._get_connection().cursor()
             
             # Try to find the event_id for this signal's event
             event_id = None
@@ -109,12 +116,12 @@ class MarketStore:
                 signal.detected_at.isoformat(),
                 event_id,
             ))
-            self._conn.commit()
+            self._get_connection().commit()
     
     def update_feed_status(self, name: str, payload: dict[str, Any]) -> None:
         """Upsert feed health status."""
         with self._lock:
-            cursor = self._conn.cursor()
+            cursor = self._get_connection().cursor()
             cursor.execute("""
                 INSERT INTO feed_health (feed_name, running, detail, last_event_at, error_count, reconnects, updated_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -134,12 +141,12 @@ class MarketStore:
                 payload.get("reconnects", 0),
                 datetime.now(UTC).isoformat(),
             ))
-            self._conn.commit()
+            self._get_connection().commit()
     
     def dashboard_state(self) -> dict[str, Any]:
         """Return dashboard data from SQLite."""
         with self._lock:
-            cursor = self._conn.cursor()
+            cursor = self._get_connection().cursor()
             
             # Get latest event per market (top 50)
             cursor.execute("""
