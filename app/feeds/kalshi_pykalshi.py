@@ -37,49 +37,36 @@ class KalshiPykalshiFeed(FeedAdapter):
         self._thread = threading.Thread(target=self._run_loop, name="kalshi-feed", daemon=True)
         self._thread.start()
 
+    def _stopped_payload(self, detail: str) -> dict[str, object]:
+        """Build a running=False status payload with common counters."""
+        return {
+            "running": False,
+            "detail": detail,
+            "last_event_at": self._last_event_at.isoformat() if self._last_event_at else None,
+            "error_count": self._error_count,
+            "reconnects": self._reconnects,
+            "unhandled_count": self._other_count,
+        }
+
     def stop(self) -> None:
         self._stop.set()
         if self._thread and self._thread.is_alive():
             self._thread.join(timeout=5)
         self._thread = None
-        self.publish_status(
-            self.name,
-            {
-                "running": False,
-                "detail": "stopped",
-                "last_event_at": self._last_event_at.isoformat() if self._last_event_at else None,
-                "error_count": self._error_count,
-                "reconnects": self._reconnects,
-            },
-        )
+        self.publish_status(self.name, self._stopped_payload("stopped"))
 
     def _run_loop(self) -> None:
         try:
-            asyncio.run(self._run())
+            asyncio.run(self._run_with_reconnect())
         except ImportError:
             self._error_count += 1
             self.publish_status(
                 self.name,
-                {
-                    "running": False,
-                    "detail": "pykalshi is not installed. Run: py -m pip install .[integrations]",
-                    "last_event_at": self._last_event_at.isoformat() if self._last_event_at else None,
-                    "error_count": self._error_count,
-                    "reconnects": self._reconnects,
-                },
+                self._stopped_payload("pykalshi is not installed. Run: py -m pip install .[integrations]"),
             )
         except Exception as exc:
             self._error_count += 1
-            self.publish_status(
-                self.name,
-                {
-                    "running": False,
-                    "detail": f"error: {exc}",
-                    "last_event_at": self._last_event_at.isoformat() if self._last_event_at else None,
-                    "error_count": self._error_count,
-                    "reconnects": self._reconnects,
-                },
-            )
+            self.publish_status(self.name, self._stopped_payload(f"fatal error: {exc}"))
 
     async def _run_with_reconnect(self) -> None:
         backoff_seconds = 5
@@ -94,13 +81,7 @@ class KalshiPykalshiFeed(FeedAdapter):
                 self._reconnects += 1
                 self.publish_status(
                     self.name,
-                    {
-                        "running": False,
-                        "detail": f"error: {exc} (reconnecting in {backoff_seconds}s)",
-                        "last_event_at": self._last_event_at.isoformat() if self._last_event_at else None,
-                        "error_count": self._error_count,
-                        "reconnects": self._reconnects,
-                    },
+                    self._stopped_payload(f"error: {exc} (reconnecting in {backoff_seconds}s)"),
                 )
                 log.warning("kalshi feed error, reconnecting in %ss: %s", backoff_seconds, exc)
                 if await self._sleep_with_stop(backoff_seconds):
@@ -120,16 +101,7 @@ class KalshiPykalshiFeed(FeedAdapter):
         from pykalshi import Feed, KalshiClient
 
         if not self.settings.kalshi_markets:
-            self.publish_status(
-                self.name,
-                {
-                    "running": False,
-                    "detail": "no KALSHI_MARKETS configured",
-                    "last_event_at": self._last_event_at.isoformat() if self._last_event_at else None,
-                    "error_count": self._error_count,
-                    "reconnects": self._reconnects,
-                },
-            )
+            self.publish_status(self.name, self._stopped_payload("no KALSHI_MARKETS configured"))
             return
 
         client = KalshiClient()
@@ -155,13 +127,7 @@ class KalshiPykalshiFeed(FeedAdapter):
         if not valid_tickers:
             self.publish_status(
                 self.name,
-                {
-                    "running": False,
-                    "detail": f"all configured tickers are expired or invalid: {', '.join(dead_tickers)}",
-                    "last_event_at": None,
-                    "error_count": self._error_count,
-                    "reconnects": self._reconnects,
-                },
+                self._stopped_payload(f"all configured tickers are expired or invalid: {', '.join(dead_tickers)}"),
             )
             return
 
@@ -246,8 +212,9 @@ class KalshiPykalshiFeed(FeedAdapter):
         return valid, dead
 
     async def _resolve_all_tickers(self, ticker: str, base: str, ureq) -> list[str]:
-        """Like _resolve_ticker but returns ALL matching open market tickers.
+        """Resolve a configured ticker to all matching active market tickers.
 
+        Resolution order: direct market lookup → series slug → event slug (fan-out).
         Fan-out events (many sub-markets per event) return all sub-markets
         so the feed gets full coverage of the event.
         """
@@ -292,56 +259,6 @@ class KalshiPykalshiFeed(FeedAdapter):
             log.debug("kalshi event lookup failed for %s: %s", ticker, exc)
 
         return []
-
-    async def _resolve_ticker(self, ticker: str, base: str, ureq) -> str | None:
-        """Return the concrete market ticker for a given input.
-
-        Resolution order:
-        1. Direct market lookup (specific ticker like KXBTC15M-26APR030145-45)
-        2. Series ticker search (series slug like KXBTC15M)
-        3. Event ticker search (event slug like KXTOPCHEF-26DEC31 with sub-markets)
-
-        Returns the first resolved ticker, or None if nothing active is found.
-        """
-        # 1. Direct market lookup.
-        try:
-            req = ureq.Request(f"{base}/{ticker}", headers={"User-Agent": "trade-hunter/1.0"})
-            data = json.load(ureq.urlopen(req, timeout=5))
-            m = data.get("market", data)
-            if m.get("status") == "active":
-                return m.get("ticker", ticker)
-            log.debug("kalshi ticker %s exists but status=%s — skipping", ticker, m.get("status"))
-            return None
-        except Exception:
-            pass
-
-        # 2. Series ticker search.
-        try:
-            url = f"{base}?series_ticker={ticker}&status=open&limit=5"
-            req = ureq.Request(url, headers={"User-Agent": "trade-hunter/1.0"})
-            data = json.load(ureq.urlopen(req, timeout=5))
-            markets = data.get("markets", [])
-            if markets:
-                resolved = markets[0].get("ticker")
-                log.info("kalshi: resolved series %s → %s (%d open)", ticker, resolved, len(markets))
-                return resolved
-        except Exception as exc:
-            log.debug("kalshi series lookup failed for %s: %s", ticker, exc)
-
-        # 3. Event ticker search — covers KXTOPCHEF-26DEC31 style event slugs.
-        try:
-            url = f"{base}?event_ticker={ticker}&status=open&limit=5"
-            req = ureq.Request(url, headers={"User-Agent": "trade-hunter/1.0"})
-            data = json.load(ureq.urlopen(req, timeout=5))
-            markets = data.get("markets", [])
-            if markets:
-                resolved = markets[0].get("ticker")
-                log.info("kalshi: resolved event %s → %s (%d open sub-markets)", ticker, resolved, len(markets))
-                return resolved
-        except Exception as exc:
-            log.debug("kalshi event lookup failed for %s: %s", ticker, exc)
-
-        return None
 
     def _register_callback_handlers(self, feed) -> None:
         """Register ticker/trade + lifecycle probe callbacks."""
@@ -394,7 +311,10 @@ class KalshiPykalshiFeed(FeedAdapter):
             if isinstance(since_last, (int, float)):
                 transport_parts.append(f"since_last:{int(since_last)}s")
 
-        transport_parts.append(f"ticker:{self._ticker_count} trade:{self._trade_count} lifecycle:{self._lifecycle_count} handled:{self._message_count}")
+        msg_parts = f"ticker:{self._ticker_count} trade:{self._trade_count} lifecycle:{self._lifecycle_count} handled:{self._message_count}"
+        if self._other_count:
+            msg_parts += f" unhandled:{self._other_count}"
+        transport_parts.append(msg_parts)
         transport = ", ".join(transport_parts)
 
         if self._ticker_count + self._trade_count > 0:
@@ -410,6 +330,7 @@ class KalshiPykalshiFeed(FeedAdapter):
             "last_event_at": self._last_event_at.isoformat() if self._last_event_at else None,
             "error_count": self._error_count,
             "reconnects": self._reconnects,
+            "unhandled_count": self._other_count,
         }
 
     def _handle_message(self, message) -> None:
