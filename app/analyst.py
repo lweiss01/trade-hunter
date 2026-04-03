@@ -93,65 +93,128 @@ Return only the JSON object. No markdown, no preamble.
     return prompt
 
 
+def _parse_json_response(raw: str) -> dict:
+    """Strip markdown fences and parse JSON from LLM response."""
+    raw = raw.strip()
+    if raw.startswith("```"):
+        raw = raw.split("```")[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+    raw = raw.strip()
+    # Strip trailing citation markers like [1][2] added by Perplexity
+    import re
+    raw = re.sub(r"\[\d+\]", "", raw).strip()
+    return __import__("json").loads(raw)
+
+
+def _analyze_via_anthropic(prompt: str, api_key: str, model: str) -> str:
+    """Call Claude API and return raw response text."""
+    import anthropic
+    client = anthropic.Anthropic(api_key=api_key)
+    msg = client.messages.create(
+        model=model,
+        max_tokens=512,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return msg.content[0].text
+
+
+def _analyze_via_perplexity(prompt: str, api_key: str, model: str) -> str:
+    """Call Perplexity API (OpenAI-compatible) and return raw response text."""
+    import json as _json
+    import urllib.request as _ureq
+    payload = _json.dumps({
+        "model": model,
+        "max_tokens": 512,
+        "messages": [{"role": "user", "content": prompt}],
+    }).encode()
+    req = _ureq.Request(
+        "https://api.perplexity.ai/chat/completions",
+        data=payload,
+        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+    )
+    resp = _json.load(_ureq.urlopen(req, timeout=20))
+    return resp["choices"][0]["message"]["content"]
+
+
 def analyze_signal(
     signal: dict[str, Any],
     recent_flow: list[dict[str, Any]],
-    api_key: str,
-    model: str = "claude-haiku-4-5",
+    anthropic_key: str = "",
+    perplexity_key: str = "",
+    anthropic_model: str = "claude-haiku-4-5",
+    perplexity_model: str = "sonar",
 ) -> AnalystRead | None:
-    """Synchronous signal analysis. Call from a background thread."""
-    try:
-        import anthropic
-        client = anthropic.Anthropic(api_key=api_key)
-        prompt = _build_prompt(signal, recent_flow)
+    """Synchronous signal analysis with provider fallback.
 
-        msg = client.messages.create(
-            model=model,
-            max_tokens=512,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        raw = msg.content[0].text.strip()
+    Tries Anthropic first (if key present), falls back to Perplexity (if key present).
+    Returns None only if both providers fail or both keys are absent.
+    """
+    prompt = _build_prompt(signal, recent_flow)
+    event = signal.get("event") or {}
+    signal_id = f"{event.get('market_id', 'unknown')}@{signal.get('detected_at', '')}"
 
-        import json
-        # Claude sometimes wraps JSON in markdown fences — strip them
-        if raw.startswith("```"):
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
-        raw = raw.strip()
-        log.debug("analyst raw response: %s", raw[:200])
-        data = json.loads(raw)
+    providers = []
+    if anthropic_key:
+        providers.append(("anthropic", lambda: _analyze_via_anthropic(prompt, anthropic_key, anthropic_model)))
+    if perplexity_key:
+        providers.append(("perplexity", lambda: _analyze_via_perplexity(prompt, perplexity_key, perplexity_model)))
 
-        event = signal.get("event") or {}
-        signal_id = f"{event.get('market_id', 'unknown')}@{signal.get('detected_at', '')}"
+    last_error = None
+    for provider_name, call in providers:
+        try:
+            raw = call()
+            log.debug("analyst[%s] raw: %s", provider_name, raw[:200])
+            data = _parse_json_response(raw)
+            log.info("analyst[%s]: %s → %s/%s/%s", provider_name, signal_id[:40],
+                     data.get("noise_or_signal"), data.get("direction"), data.get("confidence"))
+            return AnalystRead(
+                signal_id=signal_id,
+                noise_or_signal=str(data.get("noise_or_signal", "uncertain")),
+                direction=str(data.get("direction", "unclear")),
+                confidence=str(data.get("confidence", "low")),
+                rationale=str(data.get("rationale", "")),
+                threshold_note=str(data.get("threshold_note", "none")),
+            )
+        except Exception as exc:
+            log.warning("analyst[%s]: failed: %s", provider_name, exc)
+            last_error = exc
+            continue
 
-        return AnalystRead(
-            signal_id=signal_id,
-            noise_or_signal=str(data.get("noise_or_signal", "uncertain")),
-            direction=str(data.get("direction", "unclear")),
-            confidence=str(data.get("confidence", "low")),
-            rationale=str(data.get("rationale", "")),
-            threshold_note=str(data.get("threshold_note", "none")),
-        )
-    except Exception as exc:
-        log.warning("analyst: failed to analyze signal: %s | raw=%r", exc, locals().get('raw', '')[:200])
-        return None
+    if last_error:
+        log.warning("analyst: all providers failed, last error: %s", last_error)
+    return None
 
 
 class SignalAnalyst:
     """Background analyst that enriches signals with LLM reads.
 
+    Tries Anthropic first, falls back to Perplexity if Anthropic fails or is unavailable.
     Analysis runs in a daemon thread so it never blocks ingestion.
-    Results are stored in a local cache keyed by signal_id and fetched
-    by the dashboard via the state response.
+    Results are stored in a local cache keyed by signal_id.
     """
 
-    def __init__(self, api_key: str, model: str = "claude-haiku-4-5") -> None:
-        self._api_key = api_key
-        self._model = model
+    def __init__(
+        self,
+        anthropic_key: str = "",
+        perplexity_key: str = "",
+        anthropic_model: str = "claude-haiku-4-5",
+        perplexity_model: str = "sonar",
+    ) -> None:
+        self._anthropic_key = anthropic_key
+        self._perplexity_key = perplexity_key
+        self._anthropic_model = anthropic_model
+        self._perplexity_model = perplexity_model
         self._cache: dict[str, dict[str, Any]] = {}
         self._lock = threading.Lock()
         self._in_flight: set[str] = set()
+
+        providers = []
+        if anthropic_key:
+            providers.append(f"anthropic/{anthropic_model}")
+        if perplexity_key:
+            providers.append(f"perplexity/{perplexity_model}")
+        log.info("signal analyst ready, providers: %s", " → ".join(providers) or "none")
 
     def enqueue(self, signal: dict[str, Any], recent_flow: list[dict[str, Any]]) -> None:
         """Fire-and-forget: analyze signal in background thread."""
@@ -173,15 +236,16 @@ class SignalAnalyst:
 
     def _run(self, signal_id: str, signal: dict, flow: list) -> None:
         try:
-            result = analyze_signal(signal, flow, self._api_key, self._model)
+            result = analyze_signal(
+                signal, flow,
+                anthropic_key=self._anthropic_key,
+                perplexity_key=self._perplexity_key,
+                anthropic_model=self._anthropic_model,
+                perplexity_model=self._perplexity_model,
+            )
             if result:
                 with self._lock:
                     self._cache[signal_id] = result.to_dict()
-                log.info(
-                    "analyst: %s → %s/%s/%s",
-                    signal_id[:40], result.noise_or_signal,
-                    result.direction, result.confidence,
-                )
         finally:
             with self._lock:
                 self._in_flight.discard(signal_id)

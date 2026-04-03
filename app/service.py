@@ -38,16 +38,19 @@ class TradeHunterService:
         self._last_cleanup: dict[str, Any] | None = None
         self._kalshi_lock = threading.Lock()
 
-        # Optional signal analyst (requires ANTHROPIC_API_KEY)
+        # Optional signal analyst (Anthropic primary, Perplexity fallback)
         from .config import _load_env_file, ROOT
         _load_env_file(ROOT / ".env")
         anthropic_key = os.environ.get("ANTHROPIC_API_KEY") or ""
-        if anthropic_key:
-            self._analyst: SignalAnalyst | None = SignalAnalyst(anthropic_key)
-            log.info("signal analyst enabled (claude haiku)")
+        perplexity_key = os.environ.get("PERPLEXITY_API_KEY") or ""
+        if anthropic_key or perplexity_key:
+            self._analyst: SignalAnalyst | None = SignalAnalyst(
+                anthropic_key=anthropic_key,
+                perplexity_key=perplexity_key,
+            )
         else:
             self._analyst = None
-            log.info("signal analyst disabled (no ANTHROPIC_API_KEY)")
+            log.info("signal analyst disabled (no API keys configured)")
 
         # Enforce exactly one operating mode: live OR simulation.
         self._active_mode = "none"
