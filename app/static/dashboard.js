@@ -170,41 +170,25 @@ function renderMetrics(state) {
   const config = state.config || {};
   const summary = state.summary || {};
   const telemetry = state.telemetry || {};
+  const routeCount = Object.keys(config.discord_routes || {}).length;
   const liveWindow = telemetry.freshness_window_minutes;
-  const routeCount = (config.discord_routes || []).length;
+  const windowLabel = liveWindow ? `in ${liveWindow}m window` : "active";
 
-  metricsEl.innerHTML = `
-    <article class="metric-card">
-      <div class="metric-label">Tracked Markets</div>
-      <div class="metric-value">${markets.length}</div>
-      <div class="metric-subtle">latest state within ${liveWindow || "active"}m window</div>
-    </article>
-    <article class="metric-card">
-      <div class="metric-label">Recent Signals</div>
-      <div class="metric-value">${signals.length}</div>
-      <div class="metric-subtle">detector hits within ${liveWindow || "active"}m window</div>
-    </article>
-    <article class="metric-card">
-      <div class="metric-label">Live Flow</div>
-      <div class="metric-value">${summary.live_events || 0}</div>
-      <div class="metric-subtle">recent live events in window</div>
-    </article>
-    <article class="metric-card">
-      <div class="metric-label">Trade Events</div>
-      <div class="metric-value">${summary.trade_events || 0}</div>
-      <div class="metric-subtle">recent trade-style updates</div>
-    </article>
-    <article class="metric-card">
-      <div class="metric-label">Feed Health</div>
-      <div class="metric-value">${Object.keys(feeds).length}</div>
-      <div class="metric-subtle">${config.kalshi ? "Kalshi enabled" : "Kalshi disabled"}</div>
-    </article>
-    <article class="metric-card">
-      <div class="metric-label">Discord Routes</div>
-      <div class="metric-value">${routeCount}</div>
-      <div class="metric-subtle">${routeCount ? config.discord_routes.join(", ") : "default only or disabled"}</div>
-    </article>
-  `;
+  const stats = [
+    { label: "tracked markets",  value: markets.length,              sub: windowLabel },
+    { label: "signals",          value: signals.length,              sub: windowLabel },
+    { label: "live flow events", value: (state.activity || []).length, sub: windowLabel },
+    { label: "trade events",     value: summary.trade_events || 0,   sub: windowLabel },
+    { label: "active feeds",     value: Object.keys(feeds).length,   sub: null },
+    { label: "discord routes",   value: routeCount,                  sub: routeCount ? null : "default or disabled" },
+  ];
+
+  metricsEl.innerHTML = `<div class="metric-strip">${
+    stats.map(s => {
+      const sub = s.sub ? `<span class="metric-chip-sub">${s.sub}</span>` : "";
+      return `<span class="metric-chip"><span class="metric-chip-val">${s.value}</span><span class="metric-chip-label">${s.label}</span>${sub}</span>`;
+    }).join("")
+  }</div>`;
 }
 
 function signalFreshness(value) {
