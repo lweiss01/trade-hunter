@@ -1,6 +1,7 @@
 """SQLite database connection and initialization."""
 from __future__ import annotations
 
+import os
 import sqlite3
 from pathlib import Path
 from typing import Any
@@ -26,6 +27,8 @@ def connect(db_path: str | Path | None = None, *, in_memory: bool = False) -> sq
         path = ":memory:"
     elif db_path:
         path = str(db_path)
+    elif os.getenv("PYTEST_CURRENT_TEST"):
+        path = ":memory:"
     else:
         path = str(DEFAULT_DB_PATH)
     

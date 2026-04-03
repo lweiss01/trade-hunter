@@ -1,629 +1,312 @@
-# Trade Hunter - User Guide
+# Trade Hunter — User Guide
 
-**Version:** 1.0.0 (M001)  
-**Last Updated:** 2026-04-03
+**Last updated:** 2026-04-03
 
-## What is Trade Hunter?
+---
 
-Trade Hunter is a real-time prediction market monitoring dashboard that tracks market activity across Kalshi and Polymarket, detects unusual price/volume movements, and sends alerts when significant events occur.
+## Operating modes
 
-**Key Features:**
-- Live WebSocket feed from Kalshi prediction markets
-- Webhook integration with PolyAlertHub for third-party alerts
-- Spike detection algorithm that identifies unusual market activity
-- Discord notifications for high-conviction signals
-- SQLite persistence (data survives restarts)
-- Feed health monitoring
+Trade Hunter runs in exactly **one** mode. Live and simulation are mutually exclusive.
 
-## Quick Start
+| Mode | What runs | How to enable |
+|---|---|---|
+| **live** | Kalshi WebSocket feed | `ENABLE_KALSHI=true` in `.env` |
+| **simulation** | Synthetic event generator | `ENABLE_SIMULATION=true` (default) |
 
-### Starting the Application
+When live mode is active, the simulation feed is suppressed entirely — no data, no pill in the dashboard. When you switch to live mode, set `ENABLE_SIMULATION=false` to be explicit.
+
+---
+
+## Kalshi ticker formats
+
+Kalshi uses a three-level market hierarchy. Trade Hunter accepts all three levels and resolves them automatically at startup.
+
+### Series slug
+`KXBTC15M`
+
+Resolves to the current open market in that recurring series. When one window closes and the next opens, restarting the app picks up the new one.
+
+### Event ticker  
+`KXTOPCHEF-26DEC31`
+
+A single event that contains multiple outcome sub-markets (e.g. "who wins Top Chef — Sierra? Sheridan? Rhodes?"). Trade Hunter subscribes to **all** open sub-markets under the event, so the full event gets coverage.
+
+### Specific market ticker
+`KXBTC15M-26APR030145-45`
+
+One exact contract. Use this when you want a specific window, not just the current one.
+
+### Expired tickers
+Tickers that 404 or have no open markets are detected at startup via the Kalshi REST API. The feed status detail reports `N active, M unresolved` — you can see exactly which slugs resolved and which didn't. `KXTRUMPSAY-25DEC08` is an example of a settled event that will never resolve.
+
+### Adding and removing tickers live
+You don't need to restart the app to change what you're tracking. Use the **Tracked Kalshi Tickers** panel on the dashboard or the API:
 
 ```bash
-# Activate virtual environment
-source venv/bin/activate  # Windows: venv\Scripts\activate
+# Add
+curl -X POST http://127.0.0.1:8765/api/kalshi/markets \
+  -H "Content-Type: application/json" \
+  -d '{"ticker": "KXBTC15M"}'
 
-# Start the app
+# Remove
+curl -X POST http://127.0.0.1:8765/api/kalshi/markets/remove \
+  -H "Content-Type: application/json" \
+  -d '{"ticker": "KXBTC15M"}'
+```
+
+Changes persist to `.env` automatically (restart-safe).
+
+---
+
+## Discovering markets with Category Search
+
+The **Category Search** panel lets you find active Kalshi markets without knowing the ticker in advance.
+
+1. Type a category — `Crypto`, `Elections`, `Sports`, `World`, `Climate and Weather`, etc.
+2. Click Search
+3. Results show event titles with their series/event slugs
+4. Click `+` on any result to add it to your tracked tickers immediately
+
+Internally this calls `GET /api/kalshi/categories?q=<category>` which queries the Kalshi public `/events` endpoint.
+
+---
+
+## The 10-minute freshness window
+
+In live mode, the dashboard only displays events that arrived in the last 10 minutes. Events older than that are stored in the database but hidden from the live panels.
+
+**Why this exists:** Without it, stale rows from hours ago appear alongside fresh data and are indistinguishable at a glance.
+
+**When panels appear empty in live mode:**
+1. Look at the status pills — `last event: Xm ago` shows when the last event arrived
+2. If it's within 10 minutes, data is flowing and the current markets are just quiet
+3. Check `kalshi seen: Xm ago` — if unknown, the feed hasn't processed a ticker/trade message yet
+4. Check the feed detail string in the status pills or via `/api/state`
+
+---
+
+## Reading the status pills
+
+| Pill | Meaning |
+|---|---|
+| `MODE: LIVE` (teal) | Live mode active |
+| `MODE: SIMULATION` | Simulation mode active |
+| `WINDOW: 10M` | 10-minute freshness filter in effect |
+| `LAST EVENT: Xm ago` | Age of the most recently stored event |
+| `KALSHI SEEN: Xm ago` | Age of the last Kalshi message processed by your handler |
+| `TICKERS: N` | Number of active subscriptions after resolution |
+| `FRESHNESS: Xm` | Age of the most recent event visible in the flow |
+| `DISCORD: DEFAULT WEBHOOK` | Discord configured, using default channel |
+| `DISCORD: ACTIVE` | Discord configured with topic routing |
+| `DISCORD: DISABLED` | No Discord webhook configured |
+| `KALSHI-PYKALSHI: RUNNING` | Feed connected and receiving traffic |
+| `POLYALERTHUB: RUNNING` | Relay endpoint active |
+
+---
+
+## Reading the feed status detail
+
+The Kalshi feed reports a diagnostic string visible in the status pills and in `/api/state → feeds.kalshi-pykalshi.detail`:
+
+```
+44 subscriptions (5 configured, 1 unresolved) markets
+(callback-startstop, ws_msgs:1298, since_last:21s,
+ ticker:357 trade:886 lifecycle:48 handled:1243)
+```
+
+| Field | Meaning |
+|---|---|
+| `44 subscriptions` | Resolved market tickers actually subscribed |
+| `5 configured` | Slugs in `KALSHI_MARKETS` |
+| `1 unresolved` | Slugs with no open market found |
+| `callback-startstop` | Feed API mode (start/stop with callbacks) |
+| `ws_msgs` | Total WebSocket frames received (includes internal acks) |
+| `since_last` | Seconds since last WebSocket frame |
+| `ticker` | Ticker channel messages dispatched to handler |
+| `trade` | Trade channel messages dispatched to handler |
+| `lifecycle` | Market state-change probe events (confirms dispatch works) |
+| `handled` | Total messages your handler processed |
+
+**If `ws_msgs` is growing but `ticker=0, trade=0`:** The WebSocket connection is alive, but those markets are producing no price or trade events right now. The market may be quiet, halted, or near settlement.
+
+**If `ws_msgs=0`:** The WebSocket connection isn't receiving anything. Check credentials and network.
+
+---
+
+## Live Trade Flow
+
+Each row shows one event in a compact format:
+
+```
+T  KXBTC15M-26APR030215-15  0.997  vol 25  yes  ≈≈≈  fresh 0m
+Q  KXBTC15M-26APR030215-15  0.996  vol 395k       ~~~  fresh 0m
+```
+
+| Element | Meaning |
+|---|---|
+| `T` (orange) | Trade — actual contract execution |
+| `Q` (gray) | Quote — price/orderbook update |
+| Market ID | Resolved ticker |
+| Price | `yes_price` (0.00–1.00 = 0%–100%) |
+| `vol N` | Volume for this event |
+| `yes`/`no` | Taker side (trade events only) |
+| Sparkline | Per-market yes_price trend over last 20 events |
+| Age pill | How long ago this event arrived |
+
+Identical consecutive events are collapsed with `×N`. The sparkline builds up over the first few refresh cycles.
+
+---
+
+## Recent Signals
+
+The detector fires when a market shows unusual volume or price movement.
+
+**Sort options:**
+- **Newest** (default) — most recently detected signal first
+- **Highest score** — strongest signal first regardless of time
+
+**Latest per market toggle:**  
+When on, shows only the single most recent signal per market ID. Useful when one market is firing repeatedly and you want one summary view per ticker rather than a list of duplicates. When off, all signals are shown in order.
+
+**Signal tiers:**
+| Tier | Score | Meaning |
+|---|---|---|
+| `watch` | ≥ 3.0 | Noticeable activity, worth monitoring |
+| `notable` | ≥ 4.0 | Significant move, worth investigating |
+| `high conviction flow` | ≥ 6.0 | Strong signal with multiple confirmations |
+
+**Score formula:** `(volume_multiple × 0.75) + (price_score × 1.25)`
+
+---
+
+## Spike detector tuning
+
+| Setting | Default | Effect |
+|---|---|---|
+| `SPIKE_MIN_VOLUME_DELTA` | 120 | Minimum volume change to consider |
+| `SPIKE_MIN_PRICE_MOVE` | 0.03 | Minimum price move (3%) |
+| `SPIKE_SCORE_THRESHOLD` | 3.0 | Minimum score to fire an alert |
+| `SPIKE_BASELINE_POINTS` | 24 | Events used for rolling baseline |
+| `SPIKE_COOLDOWN_SECONDS` | 300 | Minimum time between repeat alerts per market |
+
+**Too many false positives:** raise `SPIKE_SCORE_THRESHOLD` (try 4.0–5.0) or `SPIKE_MIN_VOLUME_DELTA`  
+**Missing moves:** lower `SPIKE_MIN_VOLUME_DELTA` (try 80) or `SPIKE_SCORE_THRESHOLD`  
+**Too many duplicates:** raise `SPIKE_COOLDOWN_SECONDS` (try 600)
+
+---
+
+## Multiple server instances
+
+Each bg_shell restart accumulates a new process. If you see alternating status strings in the feed detail (different ws_msgs counts on successive refreshes), there are stray instances running. Kill all and start one clean:
+
+```powershell
+# Windows
+Get-CimInstance Win32_Process |
+  Where-Object { $_.CommandLine -match "-m app" } |
+  ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+py -m app
+```
+
+```bash
+# macOS / Linux
+pkill -f "python -m app"
 python -m app
 ```
 
-The dashboard will be available at `http://127.0.0.1:8765` (or your configured APP_HOST:APP_PORT).
-
-### Dashboard Overview
-
-When you open the dashboard, you'll see:
-
-1. **Markets Table** - Latest state for each tracked market
-2. **Activity Stream** - Recent events (last 24 entries)
-3. **Signals Panel** - Spike alerts detected by the algorithm
-4. **Feed Status Panel** - Health of all data feeds
-5. **Summary Stats** - Live event counts, trade volume, source distribution
-
-## Understanding the Dashboard
-
-### Markets Table
-
-Shows the latest event for each unique market:
-
-| Column | Description |
-|--------|-------------|
-| **Market ID** | Unique identifier (e.g., KXBTC-26DEC31-B110000) |
-| **Title** | Human-readable market description |
-| **Source** | Data source (kalshi, polyalerthub, simulation) |
-| **Platform** | Trading platform (kalshi, polymarket) |
-| **Yes Price** | Current probability/price for YES outcome (0.00-1.00) |
-| **Volume** | Trading volume (cumulative or delta depending on source) |
-| **Event Kind** | Type of event (quote, trade, ticker) |
-| **Live** | Whether market is still active |
-| **Topic** | Category (crypto, elections, macro, sports, etc.) |
-| **Timestamp** | When this event occurred |
-
-**Interpreting Yes Price:**
-- 0.50 = 50% probability (even odds)
-- 0.75 = 75% probability (market expects YES outcome)
-- 0.25 = 25% probability (market expects NO outcome)
-
-### Activity Stream
-
-Chronological feed of recent market events:
-- Most recent events at top
-- Shows event_kind: quote (price update), trade (actual transaction), ticker (general update)
-- Trade events indicate actual money movement
-- Quote events show market maker price updates
-
-### Signals Panel
-
-Alerts generated by the spike detection algorithm when unusual activity occurs:
-
-**Signal Anatomy:**
-```
-[Tier] Market Title
-Score: X.XX | Volume: +ΔXXX vs baseline XXX | Price: ΔX.XX%
-Reason: [detailed explanation]
-Detected at: [timestamp]
-```
-
-**Tier Levels:**
-- **watch** (gray) - Noticeable activity, monitor for follow-through
-- **notable** (yellow) - Significant move, worth investigating
-- **high conviction flow** (red) - Strong signal with multiple confirmations
-
-**Understanding Scores:**
-- Score = (volume_multiple × 0.75) + (price_score × 1.25)
-- Score ≥ 3.0 triggers alert (configurable via SPIKE_SCORE_THRESHOLD)
-- Higher scores indicate stronger signals
-
-**Volume Delta:**
-- Shows change from previous event
-- Compared against rolling baseline (default: last 24 events)
-- "vs baseline" shows typical volume for this market
-
-**Price Move:**
-- Absolute change in yes_price from previous event
-- Displayed as percentage (e.g., 5.0% = 0.05 price move)
-
-### Feed Status Panel
-
-Shows health of all data sources:
-
-**Fields:**
-- **running** - Feed is actively connected and receiving data
-- **last_event_at** - Timestamp of most recent event from this feed
-- **error_count** - Number of errors since last successful event
-- **reconnects** - Count of reconnection attempts (WebSocket feeds)
-- **detail** - Human-readable status message
-
-**Feed Types:**
-- **kalshi** - Live WebSocket connection to Kalshi API
-- **polyalerthub** - Webhook relay endpoint (shows as running when configured)
-- **discord** - Discord notification bot status
-- **simulation** - Simulated data feed (should be disabled in production)
-
-**Healthy Feed:**
-```json
-{
-  "running": true,
-  "last_event_at": "2026-04-03T12:34:56Z",
-  "error_count": 0,
-  "reconnects": 0,
-  "detail": "connected"
-}
-```
-
-**Unhealthy Feed:**
-```json
-{
-  "running": false,
-  "last_event_at": "2026-04-03T10:00:00Z",
-  "error_count": 5,
-  "reconnects": 3,
-  "detail": "connection failed: authentication error"
-}
-```
-
-## Configuration
-
-### Environment Variables
-
-Edit `.env` file to configure:
-
-#### Application Settings
-```bash
-APP_HOST=127.0.0.1        # Dashboard host (0.0.0.0 for external access)
-APP_PORT=8765             # Dashboard port
-ENABLE_SIMULATION=false   # Disable fake data in production
-ENABLE_KALSHI=true        # Enable live Kalshi feed
-```
-
-#### Kalshi API
-```bash
-KALSHI_API_KEY_ID=your-api-key-id
-KALSHI_PRIVATE_KEY_PATH=/path/to/private_key.pem
-KALSHI_MARKETS=KXBTC-26DEC31-B110000,KELECT-28NOV04-TX-D
-```
-
-**Finding Kalshi Market Tickers:**
-1. Browse markets at https://kalshi.com/markets
-2. Click on a market
-3. Look for ticker in URL: `https://kalshi.com/markets/KXBTC-26DEC31-B110000`
-4. Add to KALSHI_MARKETS (comma-separated, no spaces)
-
-#### PolyAlertHub Webhook (Optional)
-```bash
-POLYALERTHUB_TOKEN=your-webhook-token
-```
-
-Configure in PolyAlertHub dashboard:
-- Webhook URL: `https://your-domain.com/api/alerts/polyalerthub`
-- Method: POST
-- Auth: Bearer token (use POLYALERTHUB_TOKEN value)
-
-#### Discord Notifications (Optional)
-```bash
-DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
-```
-
-**Creating Discord Webhook:**
-1. Open Discord server settings
-2. Integrations → Webhooks → New Webhook
-3. Choose channel for Trade Hunter alerts
-4. Copy webhook URL
-
-**Topic-Specific Channels (Advanced):**
-```bash
-DISCORD_WEBHOOK_ROUTES=crypto=https://...,macro=https://...,elections=https://...
-```
-
-#### Spike Detector Tuning
-```bash
-SPIKE_MIN_VOLUME_DELTA=120     # Minimum volume change to consider
-SPIKE_MIN_PRICE_MOVE=0.03      # Minimum price move (3%)
-SPIKE_SCORE_THRESHOLD=3.0      # Minimum score to trigger alert
-SPIKE_BASELINE_POINTS=24       # Events used for baseline calculation
-SPIKE_COOLDOWN_SECONDS=300     # 5 minutes between duplicate alerts
-```
-
-**Tuning Guidance:**
-
-*Too many false positives?*
-- Increase `SPIKE_SCORE_THRESHOLD` (try 4.0 or 5.0)
-- Increase `SPIKE_MIN_VOLUME_DELTA` (try 200 or 300)
-
-*Missing important moves?*
-- Decrease `SPIKE_MIN_VOLUME_DELTA` (try 80 or 100)
-- Decrease `SPIKE_SCORE_THRESHOLD` (try 2.5)
-
-*Markets too noisy?*
-- Increase `SPIKE_BASELINE_POINTS` (try 48 for 2x longer baseline)
-
-*Too many duplicate alerts?*
-- Increase `SPIKE_COOLDOWN_SECONDS` (try 600 for 10 minutes)
-
-#### Data Retention
-```bash
-RETENTION_DAYS=7    # Keep last 7 days of events
-```
-
-Database cleanup runs automatically every 24 hours. Events older than RETENTION_DAYS are deleted.
-
-**Storage Planning:**
-- 1000 events/day × 7 days = ~10MB database
-- Adjust RETENTION_DAYS based on available storage and analysis needs
-
-## Using the API
-
-### Health Check
-```bash
-curl http://127.0.0.1:8765/api/health
-```
-
-Returns feed status for all sources. Use for monitoring/alerting.
-
-### Dashboard State
-```bash
-curl http://127.0.0.1:8765/api/state
-```
-
-Returns complete dashboard state:
-- markets: latest event per market
-- activity: last 24 events
-- signals: recent spike alerts
-- feeds: feed health status
-- summary: aggregate stats
-
-### Manual Event Ingestion (Advanced)
-```bash
-curl -X POST http://127.0.0.1:8765/api/events \
-  -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer YOUR_INGEST_API_TOKEN' \
-  -d '{
-    "source": "custom",
-    "platform": "polymarket",
-    "market_id": "custom-market-1",
-    "title": "Custom Market",
-    "yes_price": 0.55,
-    "volume": 1000
-  }'
-```
-
-Requires `INGEST_API_TOKEN` set in .env for authentication.
-
-### PolyAlertHub Webhook
-```bash
-curl -X POST http://127.0.0.1:8765/api/alerts/polyalerthub \
-  -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer YOUR_POLYALERTHUB_TOKEN' \
-  -d '{
-    "platform": "polymarket",
-    "market_id": "crypto-market",
-    "title": "BTC above 100k",
-    "alert_type": "whale_trade",
-    "yes_price": 0.65,
-    "volume": 5000,
-    "timeframe": "1h"
-  }'
-```
-
-Accepts PolyAlertHub webhook payloads. See `docs/polyalerthub_payload_schema.md` for full schema.
-
-## Database Management
-
-### Viewing Database Contents
-
-**Using Python:**
-```python
-import sqlite3
-
-conn = sqlite3.connect('trade_hunter.db')
-cursor = conn.cursor()
-
-# Count events
-cursor.execute('SELECT COUNT(*) FROM events')
-print(f'Total events: {cursor.fetchone()[0]}')
-
-# Count by source
-cursor.execute('SELECT source, COUNT(*) FROM events GROUP BY source')
-for row in cursor.fetchall():
-    print(f'{row[0]}: {row[1]} events')
-
-# Recent signals
-cursor.execute('SELECT market_id, score, reason FROM signals ORDER BY detected_at DESC LIMIT 5')
-for row in cursor.fetchall():
-    print(f'{row[0]}: score={row[1]:.2f}, {row[2]}')
-```
-
-**Using SQLite CLI:**
-```bash
-sqlite3 trade_hunter.db
-
-# Inside sqlite3:
-.tables                           # List all tables
-SELECT COUNT(*) FROM events;      # Count events
-SELECT * FROM signals LIMIT 5;    # View recent signals
-.quit
-```
-
-### Manual Database Cleanup
-
-```python
-from app.retention import cleanup_old_events
-
-# Delete events older than 7 days
-result = cleanup_old_events(None, retention_days=7)
-print(f"Deleted {result['events_deleted']} events, {result['signals_deleted']} signals")
-```
-
-### Database Backup
-
-**Simple backup:**
-```bash
-cp trade_hunter.db backup/trade_hunter_$(date +%Y%m%d).db
-```
-
-**Automated backup script:** (see DEPLOYMENT.md for full script)
-
-### Database Size Monitoring
-
-```bash
-# Check current size
-ls -lh trade_hunter.db
-
-# Monitor growth
-watch -n 300 ls -lh trade_hunter.db
-```
+---
 
 ## Troubleshooting
 
-### Dashboard shows no events
+### Panels empty, all zeros
 
-**Check feed status:**
-1. Open dashboard → Feed Status panel
-2. Look for running=false or high error_count
-3. Check detail message for specific error
+Check the status pills first:
+- `last event: Xm ago` — if > 10m, freshness window is filtering everything out
+- `kalshi seen: unknown` — feed hasn't processed a ticker/trade message
+- Feed detail shows `N subscriptions ... ticker:0 trade:0` — markets are quiet
 
-**Common causes:**
-- ENABLE_KALSHI=false in .env
-- Invalid Kalshi API credentials
-- KALSHI_MARKETS empty or invalid tickers
-- Network connectivity issues
+This is usually correct behavior, not a bug. The markets may have low activity.
 
-**Fix:**
-1. Verify .env configuration
-2. Test Kalshi credentials: `python test_kalshi_connection.py`
-3. Check Kalshi API status: https://kalshi.com/status
-4. Restart app after fixing .env
+### Feed shows "all configured tickers unresolved"
+
+Every slug in `KALSHI_MARKETS` resolved to nothing. Causes:
+- Using specific expired tickers (e.g. `KXTRUMPSAY-25DEC08`) — use the series slug `KXTRUMPSAY` instead
+- Market has closed since you last configured it
+
+Use Category Search to find active markets, or check https://kalshi.com/markets.
 
 ### No spike alerts appearing
 
-**This is normal if:**
-- Markets are quiet (low volume/volatility)
-- Detector thresholds set too high
-- All recent spikes within cooldown period
+Normal when markets are quiet. To verify the detector is working:
+- Click **Trigger Demo Spike** in the dashboard (simulation mode) or `POST /api/demo/spike`
+- If a signal appears, the detector is healthy — markets are just below threshold
 
-**To verify detector is working:**
-1. Generate test spike: `python -m app --smoke-test`
-2. Check signals panel for triggered alert
-3. If smoke test triggers alert, detector is working correctly
+### Discord not sending
 
-**If smoke test doesn't trigger:**
-- Check SPIKE_SCORE_THRESHOLD (try lowering to 2.0 for testing)
-- Check SPIKE_MIN_VOLUME_DELTA (try lowering to 50)
-
-### Discord notifications not sending
-
-**Verify webhook URL:**
+Test the webhook directly:
 ```bash
 curl -X POST "$DISCORD_WEBHOOK_URL" \
-  -H 'Content-Type: application/json' \
+  -H "Content-Type: application/json" \
   -d '{"content": "Test from Trade Hunter"}'
 ```
 
-If test works but Trade Hunter doesn't send:
-1. Check /api/health → discord feed status
-2. Verify DISCORD_WEBHOOK_URL in .env is correct
-3. Check for typos (no quotes, no trailing spaces)
-4. Restart app after fixing .env
+If that works but Trade Hunter doesn't send, ensure `DISCORD_WEBHOOK_URL` is set in `.env` and the server was restarted after adding it.
 
-### PolyAlertHub webhooks not arriving
+---
 
-**Check endpoint is accessible:**
+## API quick reference
+
 ```bash
-curl -X POST http://your-domain.com/api/alerts/polyalerthub \
-  -H 'Content-Type: application/json' \
-  -H 'Authorization: Bearer YOUR_TOKEN' \
-  -d @tests/fixtures/sample_polyalerthub_payload.json
+# Dashboard state (activity, signals, markets, feeds, telemetry)
+curl http://127.0.0.1:8765/api/state
+
+# Feed health
+curl http://127.0.0.1:8765/api/health
+
+# Tracked tickers
+curl http://127.0.0.1:8765/api/kalshi/markets
+
+# Category search
+curl "http://127.0.0.1:8765/api/kalshi/categories?q=Crypto&limit=20"
+
+# Add ticker
+curl -X POST http://127.0.0.1:8765/api/kalshi/markets \
+  -H "Content-Type: application/json" \
+  -d '{"ticker": "KXBTC15M"}'
+
+# Remove ticker
+curl -X POST http://127.0.0.1:8765/api/kalshi/markets/remove \
+  -H "Content-Type: application/json" \
+  -d '{"ticker": "KXBTC15M"}'
+
+# Ingest custom event
+curl -X POST http://127.0.0.1:8765/api/events \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $INGEST_API_TOKEN" \
+  -d '{"source":"custom","platform":"polymarket","market_id":"m1","title":"Test","yes_price":0.55,"volume":1000}'
 ```
 
-**If 401 Unauthorized:**
-- Verify POLYALERTHUB_TOKEN matches in .env and PolyAlertHub dashboard
-- Check Authorization header format: `Bearer <token>` (with space)
+---
 
-**If connection refused:**
-- Verify APP_HOST=0.0.0.0 (not 127.0.0.1) for external access
-- Check firewall allows inbound on APP_PORT
-- Verify PolyAlertHub webhook URL points to correct server
+## Database
 
-### Database locked errors
+SQLite at `trade_hunter.db`. Survives restarts. Schema:
 
-**Cause:** Multiple app instances accessing same database
+| Table | Contents |
+|---|---|
+| `events` | All ingested market events |
+| `markets` | Latest state per market ID |
+| `signals` | Detected spike alerts |
+| `feed_status` | Feed health snapshots |
 
-**Fix:**
-```bash
-# Find all running instances
-ps aux | grep "python -m app"
+Automatic cleanup runs every 24 hours, keeping `RETENTION_DAYS` (default 7) of history.
 
-# Kill duplicate processes
-kill <pid>
-
-# Restart single instance
-python -m app
-```
-
-### High memory usage
-
-**Normal baseline:** ~50-100MB for idle app
-
-**High usage causes:**
-- Large event history in memory (check database size)
-- Many concurrent Kalshi subscriptions
-
-**Mitigation:**
-- Reduce RETENTION_DAYS to limit database size
-- Limit KALSHI_MARKETS to essential markets only
-- Restart app periodically (e.g., daily via cron)
-
-## Best Practices
-
-### Market Selection
-
-**Start focused:**
-- Begin with 5-10 markets you understand well
-- Add more markets gradually as you learn patterns
-- Remove noisy markets that generate false positives
-
-**Recommended market types:**
-- High liquidity (>$10k volume/day)
-- Clear resolution criteria
-- Relevant to your trading interests
-
-### Detector Tuning
-
-**Baseline period:**
-- Short baseline (12-24 points): More sensitive to recent changes
-- Long baseline (48-72 points): Filters out short-term noise
-
-**Testing changes:**
-1. Note current settings
-2. Change ONE parameter at a time
-3. Observe for 24 hours
-4. Revert if results worse
-
-### Alert Management
-
-**Discord channel organization:**
-- Create separate channels per topic (crypto, elections, macro)
-- Use DISCORD_WEBHOOK_ROUTES to route by topic
-- Set notification preferences per channel
-
-**Signal interpretation:**
-- Watch tier: Monitor but don't act immediately
-- Notable tier: Investigate what caused the move
-- High conviction tier: Strong signal, check fundamentals
-
-### Data Management
-
-**Retention strategy:**
-- Development: 1-3 days (fast iteration)
-- Production: 7-30 days (trend analysis)
-- Archival: Export to CSV before cleanup if needed
-
-**Backup schedule:**
-- Daily: Automated backup at low-traffic hour
-- Weekly: Offsite backup copy
-- Before updates: Manual backup before any app changes
-
-## Advanced Features
-
-### Custom Event Ingestion
-
-Send events from custom sources via API:
-
+Manual cleanup:
 ```python
-import requests
-
-response = requests.post(
-    'http://127.0.0.1:8765/api/events',
-    headers={
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer YOUR_INGEST_API_TOKEN'
-    },
-    json={
-        'source': 'my-scraper',
-        'platform': 'polymarket',
-        'market_id': 'custom-1',
-        'title': 'Custom Market',
-        'yes_price': 0.60,
-        'volume': 2500,
-        'metadata': {'custom_field': 'custom_value'}
-    }
-)
-
-print(response.json())
-# {'ok': True, 'signals_triggered': 0}
+from app.retention import cleanup_old_events
+cleanup_old_events(None, retention_days=7)
 ```
 
-### Querying Historical Data
-
-```python
-import sqlite3
-from datetime import datetime, timedelta, UTC
-
-conn = sqlite3.connect('trade_hunter.db')
-cursor = conn.cursor()
-
-# Events in last hour
-one_hour_ago = (datetime.now(UTC) - timedelta(hours=1)).isoformat()
-cursor.execute(
-    'SELECT market_id, yes_price, volume FROM events WHERE timestamp > ? ORDER BY timestamp',
-    (one_hour_ago,)
-)
-
-for row in cursor.fetchall():
-    print(row)
-```
-
-### Monitoring Feed Health
-
+Back up before major changes:
 ```bash
-#!/bin/bash
-# check-health.sh
-RESPONSE=$(curl -s http://127.0.0.1:8765/api/health)
-
-# Check if any feed is unhealthy
-echo "$RESPONSE" | jq -e '.feeds | to_entries[] | select(.value.running == false or .value.error_count > 0)' 
-if [ $? -eq 0 ]; then
-    echo "ALERT: Unhealthy feed detected!"
-    echo "$RESPONSE" | jq '.feeds'
-    exit 1
-fi
-
-echo "All feeds healthy"
+cp trade_hunter.db trade_hunter.db.bak-$(date +%Y%m%d)
 ```
-
-Add to crontab for periodic checks:
-```bash
-*/5 * * * * /path/to/check-health.sh
-```
-
-## Upgrading
-
-When new versions are released:
-
-```bash
-# Backup database
-cp trade_hunter.db backup/trade_hunter_$(date +%Y%m%d).db
-
-# Stop app
-# (Ctrl+C or systemctl stop trade-hunter)
-
-# Pull latest code
-git pull
-
-# Update dependencies
-pip install -r requirements.txt
-
-# Check for new .env variables
-diff .env.example .env
-
-# Restart app
-python -m app
-```
-
-## Getting Help
-
-- **Documentation:** `.gsd/milestones/M001/M001-SUMMARY.md`
-- **Deployment Guide:** `DEPLOYMENT.md`
-- **UAT Test Plans:** `.gsd/milestones/M001/slices/S0*/S0*-UAT.md`
-- **Integration Tests:** `integration_test_results*.md`
-- **Issue Tracker:** <repository-url>/issues
-
-## Appendix: Signal Tier Criteria
-
-### Watch Tier
-- Score ≥ 3.0 but < 4.0
-- OR volume_delta ≥ threshold AND price_move ≥ threshold
-- OR volume_delta ≥ 2.2× baseline
-
-### Notable Tier
-- Score ≥ 4.0
-- OR (price_move ≥ 1.2× threshold AND volume_multiple ≥ 2.4)
-
-### High Conviction Flow
-- Score ≥ 6.0
-- AND price_move ≥ 1.75× threshold
-- AND volume_multiple ≥ 3.0
-
-Where:
-- threshold = SPIKE_MIN_PRICE_MOVE or SPIKE_MIN_VOLUME_DELTA
-- volume_multiple = volume_delta / baseline
-- baseline = rolling average of last SPIKE_BASELINE_POINTS volume deltas

@@ -1,143 +1,230 @@
-﻿# Trade Hunter
+# Trade Hunter
 
-Trade Hunter is a lightweight local app for spotting unusual activity in prediction markets before you decide whether a setup is worth deeper investigation.
+A real-time prediction market monitoring dashboard. Subscribes to live Kalshi WebSocket feeds, detects unusual price and volume activity, and surfaces high-conviction signals for review.
 
-This MVP is built around four ideas:
+**This app is informational only. It does not place trades.**
 
-- a live dashboard you can keep open locally
-- a generic event ingest API so outside tools can push alerts into one place
-- a custom spike detector tuned for volume and price moves
-- optional Discord webhook notifications when a market crosses your thresholds
+---
 
-It is deliberately conservative about automation. The goal is to help you notice signal faster, not auto-trade your account.
+## What it does
 
-## What is included
+- Live WebSocket subscription to Kalshi markets with automatic series/event resolution
+- Custom spike detector with per-market rolling baselines and cooldown
+- Discord webhook notifications on confirmed signals
+- PolyAlertHub relay endpoint for third-party alert ingestion
+- SQLite persistence — data survives restarts
+- Local dashboard at `http://127.0.0.1:8765`
 
-- Local web dashboard at `http://127.0.0.1:8765`
-- In-memory event store with recent markets and recent spike signals
-- Rolling spike detector using per-market baselines and cooldowns
-- Generic `POST /api/events` ingest endpoint
-- Alias ingest endpoint at `POST /api/alerts/polyalerthub`
-- Optional `pykalshi` feed adapter for Kalshi WebSocket streaming
-- Discord webhook notifier
-- Built-in simulation feed so you can test the app without credentials
-
-## Why this shape
-
-You mentioned three components:
-
-- PolyAlertHub for alerting
-- Polymarket Analytics for cross-platform visibility
-- `pykalshi` for custom Kalshi streaming and a Discord ping path
-
-This repo gives you a clean hub for those pieces. Instead of hard-coding a single vendor workflow first, the app starts with a stable center:
-
-- one dashboard
-- one detector
-- one notifier
-- multiple feed adapters over time
-
-That lets us plug in a PolyAlertHub relay, a Polymarket/analytics importer, and Kalshi live streams without rewriting the core logic.
+---
 
 ## Quick start
 
-1. Copy `.env.example` to `.env`
-2. Start the app:
-
-```powershell
+```bash
+# Windows
 py -m app
+
+# macOS / Linux
+python -m app
 ```
 
-3. Open `http://127.0.0.1:8765`
+Open `http://127.0.0.1:8765`.
 
-By default, the simulation feed is enabled so the dashboard has data immediately.
+With `ENABLE_SIMULATION=true` (the default), the dashboard fills with synthetic data immediately. No credentials needed.
 
-## Smoke test
+---
 
-```powershell
-py -m app --smoke-test
-```
+## Kalshi live feed
 
-This injects a small sequence of fake events and confirms that the detector can produce a signal.
+Install the feed package:
 
-## Optional Kalshi integration
-
-Install the optional package:
-
-```powershell
+```bash
 py -m pip install .[integrations]
 ```
 
-Then add your credentials to `.env`:
+Add credentials to `.env`:
 
 ```env
 ENABLE_KALSHI=true
+ENABLE_SIMULATION=false
 KALSHI_API_KEY_ID=your-key-id
 KALSHI_PRIVATE_KEY_PATH=C:\path\to\kalshi.key
-KALSHI_MARKETS=KXBTC-26DEC31-B110000,KELECT-28NOV04-TX-D
+KALSHI_MARKETS=KXBTC15M,KXTOPCHEF-26DEC31,KXTRUMPSAY
 ```
 
-The adapter subscribes to ticker and trade updates and normalizes them into the internal event format. It is intentionally defensive because upstream message fields can vary by stream type.
+`KALSHI_MARKETS` accepts three kinds of identifiers — all auto-resolve at startup:
 
-## Discord alerts
+| Type | Example | Resolves to |
+|---|---|---|
+| Series slug | `KXBTC15M` | Current open market in that series |
+| Event ticker | `KXTOPCHEF-26DEC31` | All open sub-markets for that event |
+| Specific ticker | `KXBTC15M-26APR030145-45` | That exact contract |
 
-Set:
+Expired or closed tickers are detected and skipped automatically. The feed status detail in the dashboard shows `N active, M unresolved` so you know what's live.
+
+**Live mode and simulation are mutually exclusive.** When `ENABLE_KALSHI=true`, simulation is suppressed entirely.
+
+---
+
+## Dashboard
+
+The dashboard updates every 3 seconds and shows:
+
+- **Status pills** — mode, freshness window, last event age, Kalshi message counters, ticker count
+- **Recent Signals** — spike alerts from the detector, sortable by newest or score
+- **Live Trade Flow** — compact chronological event stream with T/Q kind badges, prices, volumes, trade sides, and per-market sparklines
+- **Market Tape** — latest state per market within the freshness window
+- **Tracked Kalshi Tickers** — add/remove tickers live without restarting
+- **Category Search** — discover Kalshi markets by category (Crypto, Elections, Sports, etc.) and add them with one click
+
+**Freshness window:** In live mode, only events from the last 10 minutes appear. If panels are empty, the status pills show when the last event arrived and whether the feed is receiving WebSocket traffic.
+
+---
+
+## Discord notifications
 
 ```env
 DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
 ```
 
-Every confirmed spike will send a compact webhook message with the market, platform, reason, and score.
+Route different market topics to different channels:
 
-## Ingesting outside signals
-
-Send a JSON event to:
-
-```text
-POST /api/events
+```env
+DISCORD_WEBHOOK_ROUTES=crypto=https://...,elections=https://...
 ```
 
-Example payload:
+---
 
-```json
-{
-  "source": "polyalerthub",
-  "platform": "polymarket",
-  "market_id": "will-fed-cut-rates-in-june",
-  "title": "Will the Fed cut rates in June?",
-  "yes_price": 0.58,
-  "volume": 1450,
-  "volume_kind": "cumulative",
-  "timestamp": "2026-04-02T14:05:00Z"
-}
+## PolyAlertHub relay
+
+```env
+POLYALERTHUB_TOKEN=your-token
 ```
 
-You can also post arrays of events.
+Configure PolyAlertHub to POST to:
 
-If you set `INGEST_API_TOKEN`, include:
-
-```text
+```
+POST http://your-host:8765/api/alerts/polyalerthub
 Authorization: Bearer your-token
 ```
 
-## Example curl
+---
 
-```powershell
-curl.exe -X POST http://127.0.0.1:8765/api/events ^
-  -H "Content-Type: application/json" ^
-  -d "{\"platform\":\"polymarket\",\"market_id\":\"demo-market\",\"title\":\"Demo market\",\"yes_price\":0.49,\"volume\":1000}"
+## Custom event ingestion
+
+```bash
+curl -X POST http://127.0.0.1:8765/api/events \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $INGEST_API_TOKEN" \
+  -d '{
+    "source": "my-scraper",
+    "platform": "polymarket",
+    "market_id": "will-fed-cut-june",
+    "title": "Will the Fed cut rates in June?",
+    "yes_price": 0.58,
+    "volume": 1450
+  }'
 ```
 
-## Suggested next steps
+Set `INGEST_API_TOKEN` in `.env` to require authentication. Omit the header to allow unauthenticated ingestion.
 
-1. Wire a small relay that transforms PolyAlertHub output into `POST /api/events`
-2. Add a persisted SQLite store so you can review historical spikes
-3. Add cross-platform spread views for equivalent Kalshi and Polymarket contracts
-4. Add watchlists by topic like elections, macro, sports, and crypto
-5. Add a Discord slash-command bot for acknowledging or snoozing alerts
+---
 
-## Notes
+## Spike detector
 
-- This app is informational only and does not place trades.
-- A trading spike is not automatically an edge; it is a prompt to investigate context, liquidity, and market structure.
-- The current store is in-memory, so data resets when the app restarts.
+Fires when a market shows unusual volume or price movement relative to its recent baseline.
+
+**Score formula:** `(volume_multiple × 0.75) + (price_score × 1.25)`
+
+| Tier | Condition |
+|---|---|
+| `watch` | Score ≥ 3.0 |
+| `notable` | Score ≥ 4.0 |
+| `high conviction flow` | Score ≥ 6.0, price ≥ 1.75× threshold, volume ≥ 3× baseline |
+
+Tuning knobs in `.env`:
+
+```env
+SPIKE_MIN_VOLUME_DELTA=120    # minimum volume change to consider
+SPIKE_MIN_PRICE_MOVE=0.03     # minimum price move (3%)
+SPIKE_SCORE_THRESHOLD=3.0     # alert threshold
+SPIKE_BASELINE_POINTS=24      # rolling baseline window
+SPIKE_COOLDOWN_SECONDS=300    # minimum gap between duplicate alerts
+```
+
+---
+
+## Smoke test
+
+```bash
+py -m app --smoke-test
+```
+
+Injects synthetic events and confirms the detector produces a signal. Safe to run without credentials.
+
+---
+
+## API reference
+
+```
+GET  /api/state                          full dashboard state
+GET  /api/health                         feed health + retention status
+GET  /api/kalshi/markets                 tracked tickers
+GET  /api/kalshi/categories?q=Crypto     search markets by category
+POST /api/kalshi/markets                 add ticker  { "ticker": "KXBTC15M" }
+POST /api/kalshi/markets/remove          remove ticker
+POST /api/events                         ingest custom event
+POST /api/alerts/polyalerthub            PolyAlertHub relay endpoint
+POST /api/demo/spike                     trigger a demo signal
+```
+
+---
+
+## Configuration reference
+
+| Variable | Default | Description |
+|---|---|---|
+| `APP_HOST` | `127.0.0.1` | Dashboard bind address |
+| `APP_PORT` | `8765` | Dashboard port |
+| `ACTIVE_MODE` | (derived) | `live` or `simulation` |
+| `ENABLE_SIMULATION` | `true` | Synthetic data feed |
+| `ENABLE_KALSHI` | `false` | Live Kalshi WebSocket feed |
+| `KALSHI_API_KEY_ID` | — | Kalshi API key ID |
+| `KALSHI_PRIVATE_KEY_PATH` | — | Path to Kalshi private key |
+| `KALSHI_MARKETS` | — | Comma-separated tickers/slugs |
+| `POLYALERTHUB_TOKEN` | — | PolyAlertHub auth token |
+| `INGEST_API_TOKEN` | — | Generic ingest endpoint auth |
+| `DISCORD_WEBHOOK_URL` | — | Default Discord webhook |
+| `DISCORD_WEBHOOK_ROUTES` | — | Topic-routed webhooks (key=url;...) |
+| `SPIKE_MIN_VOLUME_DELTA` | `120` | Detector volume threshold |
+| `SPIKE_MIN_PRICE_MOVE` | `0.03` | Detector price threshold |
+| `SPIKE_SCORE_THRESHOLD` | `3.0` | Alert score cutoff |
+| `SPIKE_BASELINE_POINTS` | `24` | Baseline rolling window |
+| `SPIKE_COOLDOWN_SECONDS` | `300` | Duplicate alert suppression |
+| `RETENTION_DAYS` | `7` | Database retention window |
+| `QUIET_MODE` | `false` | Suppress console output |
+
+---
+
+## Project layout
+
+```
+app/
+  __main__.py          entry point
+  config.py            settings + .env loader
+  service.py           orchestration, ingest, dashboard state
+  server.py            HTTP server + API routes
+  store.py             SQLite-backed event/signal store
+  detector.py          spike detection algorithm
+  notifiers.py         Discord webhook notifier
+  retention.py         automated DB cleanup
+  models.py            MarketEvent, SpikeSignal dataclasses
+  feeds/
+    base.py            FeedAdapter base class
+    kalshi_pykalshi.py Kalshi WebSocket adapter (pykalshi)
+    simulated.py       synthetic event generator
+  static/
+    index.html         dashboard shell
+    dashboard.js       live polling, rendering, sparklines
+    dashboard.css      Command Center-inspired palette
+tests/                 pytest suite (63 tests)
+```

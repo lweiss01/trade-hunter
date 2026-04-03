@@ -62,6 +62,31 @@ def _kv_pairs(name: str) -> dict[str, str]:
     return pairs
 
 
+def persist_kalshi_markets(markets: list[str], env_path: Path | None = None) -> None:
+    """Persist KALSHI_MARKETS to .env for restart-safe ticker management."""
+    path = env_path or (ROOT / ".env")
+    line_value = f"KALSHI_MARKETS={','.join(markets)}"
+
+    if not path.exists():
+        path.write_text(f"{line_value}\n", encoding="utf-8")
+        return
+
+    lines = path.read_text(encoding="utf-8").splitlines()
+    replaced = False
+    for idx, raw in enumerate(lines):
+        if raw.strip().startswith("KALSHI_MARKETS="):
+            lines[idx] = line_value
+            replaced = True
+            break
+
+    if not replaced:
+        if lines and lines[-1].strip() != "":
+            lines.append("")
+        lines.append(line_value)
+
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
 @dataclass(frozen=True)
 class Settings:
     host: str
@@ -71,16 +96,17 @@ class Settings:
     discord_webhook_url: str | None
     discord_webhook_routes: dict[str, str]
     ingest_api_token: str | None
-    polyalerthub_token: str | None
     spike_min_volume_delta: float
     spike_min_price_move: float
     spike_score_threshold: float
     spike_baseline_points: int
     spike_cooldown_seconds: int
-    retention_days: int
     kalshi_markets: list[str]
     kalshi_api_key_id: str | None
     kalshi_private_key_path: str | None
+    polyalerthub_token: str | None = None
+    retention_days: int = 7
+    quiet_mode: bool = False
 
 
 def load_settings() -> Settings:
@@ -103,4 +129,5 @@ def load_settings() -> Settings:
         kalshi_markets=_csv("KALSHI_MARKETS"),
         kalshi_api_key_id=os.getenv("KALSHI_API_KEY_ID") or None,
         kalshi_private_key_path=os.getenv("KALSHI_PRIVATE_KEY_PATH") or None,
+        quiet_mode=_bool("QUIET_MODE", False),
     )

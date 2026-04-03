@@ -19,8 +19,12 @@ class MarketStore:
         self._thread_local = local()
     
     def _get_connection(self) -> sqlite3.Connection:
-        """Get or create thread-local database connection."""
-        if not hasattr(self._thread_local, 'conn'):
+        """Get connection, preferring injected test connection when present."""
+        injected_conn = getattr(self, "_conn", None)
+        if injected_conn is not None:
+            return injected_conn
+
+        if not hasattr(self._thread_local, "conn"):
             self._thread_local.conn = db.connect(self._db_path) if self._db_path else db.connect()
         return self._thread_local.conn
     
@@ -156,24 +160,24 @@ class MarketStore:
                     FROM events
                     GROUP BY market_id
                 ) latest ON e.market_id = latest.market_id AND e.timestamp = latest.max_ts
-                ORDER BY e.timestamp DESC
-                LIMIT 50
+                ORDER BY e.timestamp DESC, e.id DESC
+                LIMIT 200
             """)
-            markets = [self._row_to_market_event(row) for row in cursor.fetchall()]
+            markets = self._dedupe_events([self._row_to_market_event(row) for row in cursor.fetchall()])[:50]
             
-            # Get recent events (last 120, return 24 for activity)
+            # Get recent events (return 24 for activity after dedupe)
             cursor.execute("""
                 SELECT * FROM events
-                ORDER BY timestamp DESC
-                LIMIT 120
+                ORDER BY timestamp DESC, id DESC
+                LIMIT 300
             """)
-            all_recent = [self._row_to_market_event(row) for row in cursor.fetchall()]
+            all_recent = self._dedupe_events([self._row_to_market_event(row) for row in cursor.fetchall()])
             activity = all_recent[:24]
             
             # Get recent signals (top 25)
             cursor.execute("""
                 SELECT s.* FROM signals s
-                ORDER BY s.detected_at DESC
+                ORDER BY s.detected_at DESC, s.id DESC
                 LIMIT 25
             """)
             signals = []
@@ -243,6 +247,29 @@ class MarketStore:
                 },
             }
     
+    def _dedupe_events(self, events: list[MarketEvent]) -> list[MarketEvent]:
+        """Remove duplicate events while preserving recency order."""
+        deduped: list[MarketEvent] = []
+        seen: set[tuple[Any, ...]] = set()
+
+        for event in events:
+            key = (
+                event.source,
+                event.platform,
+                event.market_id,
+                event.event_kind,
+                event.timestamp.isoformat(),
+                event.trade_size,
+                event.yes_price,
+                event.volume,
+            )
+            if key in seen:
+                continue
+            seen.add(key)
+            deduped.append(event)
+
+        return deduped
+
     def _row_to_market_event(self, row: sqlite3.Row, offset: int = 0) -> MarketEvent:
         """Convert database row to MarketEvent, optionally with column offset."""
         keys = row.keys()

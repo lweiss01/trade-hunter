@@ -27,6 +27,14 @@ def run_server(settings: Settings) -> None:
                 return self._serve_file("dashboard.js", "application/javascript; charset=utf-8")
             if self.path == "/api/state":
                 return self._json_response(service.dashboard_state())
+            if self.path == "/api/kalshi/markets":
+                return self._json_response({"markets": service.get_kalshi_markets()})
+            if self.path.split("?")[0] == "/api/kalshi/categories":
+                from urllib.parse import urlparse, parse_qs
+                qs = parse_qs(urlparse(self.path).query)
+                category = (qs.get("q") or qs.get("category") or [""])[0].strip()
+                limit = int((qs.get("limit") or ["20"])[0])
+                return self._json_response({"results": service.search_kalshi_by_category(category, limit=limit)})
             if self.path == "/api/health":
                 # Return feed health status and retention cleanup status
                 state = service.dashboard_state()
@@ -38,7 +46,13 @@ def run_server(settings: Settings) -> None:
             self._json_response({"error": "not found"}, status=HTTPStatus.NOT_FOUND)
 
         def do_POST(self) -> None:
-            if self.path not in {"/api/events", "/api/alerts/polyalerthub", "/api/demo/spike"}:
+            if self.path not in {
+                "/api/events",
+                "/api/alerts/polyalerthub",
+                "/api/demo/spike",
+                "/api/kalshi/markets",
+                "/api/kalshi/markets/remove",
+            }:
                 return self._json_response({"error": "not found"}, status=HTTPStatus.NOT_FOUND)
 
             # Token validation based on endpoint
@@ -52,7 +66,7 @@ def run_server(settings: Settings) -> None:
                         status=HTTPStatus.UNAUTHORIZED,
                     )
                 print("PolyAlertHub auth validated")
-            elif self.path != "/api/alerts/polyalerthub" and settings.ingest_api_token:
+            elif self.path == "/api/events" and settings.ingest_api_token:
                 # Generic /api/events endpoint uses INGEST_API_TOKEN
                 auth = self.headers.get("Authorization", "")
                 expected = f"Bearer {settings.ingest_api_token}"
@@ -80,6 +94,22 @@ def run_server(settings: Settings) -> None:
             else:
                 raw = self.rfile.read(int(self.headers.get("Content-Length", "0") or "0"))
                 payload = json.loads(raw.decode("utf-8") or "{}")
+
+            if self.path == "/api/kalshi/markets":
+                ticker = str(payload.get("ticker") or "").strip()
+                try:
+                    markets = service.add_kalshi_market(ticker)
+                except ValueError as exc:
+                    return self._json_response({"error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
+                return self._json_response({"ok": True, "markets": markets})
+
+            if self.path == "/api/kalshi/markets/remove":
+                ticker = str(payload.get("ticker") or "").strip()
+                try:
+                    markets = service.remove_kalshi_market(ticker)
+                except ValueError as exc:
+                    return self._json_response({"error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
+                return self._json_response({"ok": True, "markets": markets})
 
             source = "polyalerthub" if self.path == "/api/alerts/polyalerthub" else "manual"
             

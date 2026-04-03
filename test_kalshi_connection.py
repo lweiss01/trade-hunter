@@ -23,7 +23,7 @@ FAIL = "[FAIL]"
 WARN = "[WARN]"
 
 
-async def test_connection():
+async def run_connection_test():
     """
     Connect to Kalshi WebSocket, subscribe to one test market, and observe message schemas.
     
@@ -147,7 +147,7 @@ def main():
     log.info("Starting Kalshi WebSocket connection test...")
     log.info(f"Timestamp: {datetime.now().isoformat()}")
     
-    success = asyncio.run(test_connection())
+    success = asyncio.run(run_connection_test())
     
     if success:
         log.info("\nTest completed successfully!")

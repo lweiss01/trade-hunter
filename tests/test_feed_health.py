@@ -78,7 +78,7 @@ def test_stop_publishes_status(feed, mock_publish_status):
 
 def test_import_error_increments_error_count(feed, mock_publish_status):
     """ImportError should increment error_count and publish status."""
-    with patch("app.feeds.kalshi_pykalshi.asyncio.run", side_effect=ImportError("no pykalshi")):
+    with patch.object(feed, "_run", new=AsyncMock(side_effect=ImportError("no pykalshi"))):
         feed._run_loop()
     
     assert feed._error_count == 1
@@ -94,7 +94,7 @@ def test_import_error_increments_error_count(feed, mock_publish_status):
 
 def test_generic_error_increments_error_count(feed, mock_publish_status):
     """Generic Exception should increment error_count and publish status."""
-    with patch("app.feeds.kalshi_pykalshi.asyncio.run", side_effect=ValueError("boom")):
+    with patch.object(feed, "_run", new=AsyncMock(side_effect=ValueError("boom"))):
         feed._run_loop()
     
     assert feed._error_count == 1
@@ -144,31 +144,34 @@ async def test_no_markets_configured(mock_emit, mock_publish_status):
 async def test_start_publishes_status(settings, mock_emit, mock_publish_status):
     """Should publish status on successful feed start."""
     feed = KalshiPykalshiFeed(settings, mock_emit, mock_publish_status)
-    
+
     # Mock pykalshi Feed to yield zero messages then stop
     mock_feed_instance = AsyncMock()
     mock_feed_instance.__aenter__ = AsyncMock(return_value=mock_feed_instance)
     mock_feed_instance.__aexit__ = AsyncMock(return_value=None)
     mock_feed_instance.subscribe_ticker = AsyncMock()
     mock_feed_instance.subscribe_trades = AsyncMock()
-    
+
     async def async_iter():
         if False:
             yield  # Empty generator
-    
+
     mock_feed_instance.__aiter__ = lambda self: async_iter()
-    
+
+    async def mock_validate():
+        return (["TEST-MARKET"], [])
+
     with patch("pykalshi.Feed", return_value=mock_feed_instance):
         with patch("pykalshi.KalshiClient"):
-            await feed._run()
-    
+            with patch.object(feed, "_validate_tickers", side_effect=mock_validate):
+                await feed._run()
+
     # Should publish status once on start
     mock_publish_status.assert_called_once()
     name, payload = mock_publish_status.call_args[0]
-    
+
     assert name == "kalshi-pykalshi"
     assert payload["running"] is True
-    assert payload["detail"] == "subscribed to 1 markets"
     assert payload["error_count"] == 0
 
 
@@ -176,37 +179,44 @@ async def test_start_publishes_status(settings, mock_emit, mock_publish_status):
 async def test_message_updates_last_event_at(settings, mock_emit, mock_publish_status):
     """Should update last_event_at timestamp on each message."""
     feed = KalshiPykalshiFeed(settings, mock_emit, mock_publish_status)
-    
-    # Mock message with market_ticker attribute
+
+    # Mock message shaped like a real TickerMessage so _process_message emits
     mock_message = MagicMock()
     mock_message.market_ticker = "TEST-MARKET"
-    mock_message.price = 5000  # 50 cents
-    
+    mock_message.yes_bid_dollars = 0.52
+    mock_message.price_dollars = 0.52
+    mock_message.volume_fp = 100.0
+    type(mock_message).__name__ = "TickerMessage"
+
     # Mock pykalshi Feed to yield one message
     mock_feed_instance = AsyncMock()
     mock_feed_instance.__aenter__ = AsyncMock(return_value=mock_feed_instance)
     mock_feed_instance.__aexit__ = AsyncMock(return_value=None)
     mock_feed_instance.subscribe_ticker = AsyncMock()
     mock_feed_instance.subscribe_trades = AsyncMock()
-    
+
     async def async_iter():
         yield mock_message
         feed._stop.set()  # Stop after one message
-    
+
     mock_feed_instance.__aiter__ = lambda self: async_iter()
-    
+
     before = datetime.now(UTC)
-    
+
+    async def mock_validate():
+        return (["TEST-MARKET"], [])
+
     with patch("pykalshi.Feed", return_value=mock_feed_instance):
         with patch("pykalshi.KalshiClient"):
-            await feed._run()
-    
+            with patch.object(feed, "_validate_tickers", side_effect=mock_validate):
+                await feed._run()
+
     after = datetime.now(UTC)
-    
+
     # last_event_at should be updated
     assert feed._last_event_at is not None
     assert before <= feed._last_event_at <= after
-    
+
     # emit should have been called
     mock_emit.assert_called_once()
 

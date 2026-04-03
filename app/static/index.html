@@ -9,28 +9,48 @@
   <body>
     <div class="noise"></div>
     <main class="page-shell">
-      <section class="hero">
-        <div class="hero-copy">
-          <p class="eyebrow">Prediction Market Signal Desk</p>
-          <h1>Trade Hunter</h1>
-          <p class="lede">
-            A local signal board for unusual activity across the markets you care about.
-            Keep one eye on spikes, then decide where deeper research is worth your time.
-          </p>
+      <section class="panel command-header">
+        <div class="command-top">
+          <div class="brand-block">
+            <p class="eyebrow">Prediction Market Signal Desk</p>
+            <h1>Trade Hunter</h1>
+            <p class="lede">Watch live market movement, surface anomalies, and prioritize where to investigate next.</p>
+          </div>
+
+          <div class="command-actions">
+            <form id="ticker-form" class="ticker-form ticker-form-inline">
+              <label for="ticker-input" class="ticker-label">Ticker</label>
+              <input id="ticker-input" class="ticker-input" type="text" name="ticker" placeholder="Add ticker (e.g., KXBTC15M)" autocomplete="off">
+              <button id="ticker-add" class="ticker-add" type="submit">Add</button>
+            </form>
+            <div id="ticker-message" class="ticker-message" aria-live="polite"></div>
+            <div id="demo-panel" class="hero-panel">
+              <button id="demo-spike" class="action">Trigger Demo Spike</button>
+              <p class="caption">Only shown in simulation mode.</p>
+            </div>
+          </div>
         </div>
-        <div class="hero-panel">
-          <button id="demo-spike" class="action">Trigger Demo Spike</button>
-          <p class="caption">Use the demo button to test the detector and Discord webhook path.</p>
-        </div>
+
+        <div id="feeds" class="status-pills"></div>
       </section>
 
       <section class="metrics" id="metrics"></section>
 
       <section class="grid">
         <article class="panel">
-          <div class="panel-head">
-            <h2>Recent Signals</h2>
-            <span class="badge">custom detector</span>
+          <div class="panel-head panel-head-signals">
+            <div class="signals-title-wrap">
+              <h2>Recent Signals</h2>
+              <span class="badge">custom detector</span>
+            </div>
+            <div class="signals-controls">
+              <label for="signal-sort" class="signals-label">Sort</label>
+              <select id="signal-sort" class="signal-sort">
+                <option value="newest">Newest</option>
+                <option value="score">Highest score</option>
+              </select>
+              <button id="signal-latest-toggle" type="button" class="signal-toggle" aria-pressed="false" title="When on: shows only the most recent signal per market, deduplicating repeated alerts for the same ticker. When off: shows all signals.">Latest per market</button>
+            </div>
           </div>
           <div id="signals" class="stack"></div>
         </article>
@@ -42,14 +62,28 @@
           </div>
           <div id="activity" class="stack"></div>
         </article>
+      </section>
 
-        <article class="panel">
-          <div class="panel-head">
-            <h2>Feed Status</h2>
-            <span class="badge">live adapters</span>
-          </div>
-          <div id="feeds" class="stack"></div>
-        </article>
+      <section class="panel ticker-panel">
+        <div class="panel-head">
+          <h2>Tracked Kalshi Tickers</h2>
+          <span class="badge">live subscriptions</span>
+        </div>
+        <div id="ticker-list" class="ticker-list"></div>
+      </section>
+
+      <section class="panel category-panel">
+        <div class="panel-head">
+          <h2>Category Search</h2>
+          <span class="badge">discover markets</span>
+        </div>
+        <form id="category-form" class="category-form">
+          <label for="category-input" class="ticker-label">Category</label>
+          <input id="category-input" class="ticker-input" type="text" name="category" placeholder="e.g. Crypto, Elections, Sports, World" autocomplete="off">
+          <button id="category-search" class="ticker-add" type="submit">Search</button>
+        </form>
+        <div id="category-message" class="ticker-message" aria-live="polite"></div>
+        <div id="category-results" class="category-results"></div>
       </section>
 
       <section class="panel markets-panel">
