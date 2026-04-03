@@ -20,6 +20,9 @@ class KalshiPykalshiFeed(FeedAdapter):
         self.settings = settings
         self._thread: threading.Thread | None = None
         self._stop = threading.Event()
+        self._last_event_at: datetime | None = None
+        self._error_count = 0
+        self._reconnects = 0
 
     def start(self) -> None:
         self._thread = threading.Thread(target=self._run_loop, name="kalshi-feed", daemon=True)
@@ -27,21 +30,44 @@ class KalshiPykalshiFeed(FeedAdapter):
 
     def stop(self) -> None:
         self._stop.set()
-        self.publish_status(self.name, {"running": False, "detail": "stopped"})
+        self.publish_status(
+            self.name,
+            {
+                "running": False,
+                "detail": "stopped",
+                "last_event_at": self._last_event_at.isoformat() if self._last_event_at else None,
+                "error_count": self._error_count,
+                "reconnects": self._reconnects,
+            },
+        )
 
     def _run_loop(self) -> None:
         try:
             asyncio.run(self._run())
         except ImportError:
+            self._error_count += 1
             self.publish_status(
                 self.name,
                 {
                     "running": False,
                     "detail": "pykalshi is not installed. Run: py -m pip install .[integrations]",
+                    "last_event_at": self._last_event_at.isoformat() if self._last_event_at else None,
+                    "error_count": self._error_count,
+                    "reconnects": self._reconnects,
                 },
             )
         except Exception as exc:
-            self.publish_status(self.name, {"running": False, "detail": f"error: {exc}"})
+            self._error_count += 1
+            self.publish_status(
+                self.name,
+                {
+                    "running": False,
+                    "detail": f"error: {exc}",
+                    "last_event_at": self._last_event_at.isoformat() if self._last_event_at else None,
+                    "error_count": self._error_count,
+                    "reconnects": self._reconnects,
+                },
+            )
 
     async def _run(self) -> None:
         from pykalshi import Feed, KalshiClient
@@ -52,6 +78,9 @@ class KalshiPykalshiFeed(FeedAdapter):
                 {
                     "running": False,
                     "detail": "no KALSHI_MARKETS configured",
+                    "last_event_at": self._last_event_at.isoformat() if self._last_event_at else None,
+                    "error_count": self._error_count,
+                    "reconnects": self._reconnects,
                 },
             )
             return
@@ -62,6 +91,9 @@ class KalshiPykalshiFeed(FeedAdapter):
             {
                 "running": True,
                 "detail": f"subscribed to {len(self.settings.kalshi_markets)} markets",
+                "last_event_at": self._last_event_at.isoformat() if self._last_event_at else None,
+                "error_count": self._error_count,
+                "reconnects": self._reconnects,
             },
         )
         async with Feed(client) as feed:
@@ -75,6 +107,7 @@ class KalshiPykalshiFeed(FeedAdapter):
 
                 try:
                     self._process_message(message)
+                    self._last_event_at = datetime.now(UTC)
                 except Exception as exc:
                     # Log unexpected schema without crashing feed
                     log.error(

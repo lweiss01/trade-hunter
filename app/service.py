@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import threading
+import time
 from datetime import UTC, datetime
 from typing import Any
 
@@ -9,6 +11,7 @@ from .feeds.kalshi_pykalshi import KalshiPykalshiFeed
 from .feeds.simulated import SimulatedFeed
 from .models import MarketEvent
 from .notifiers import DiscordWebhookNotifier
+from .retention import cleanup_old_events
 from .store import MarketStore
 
 
@@ -22,6 +25,9 @@ class TradeHunterService:
             settings.discord_webhook_routes,
         )
         self.feeds = []
+        self._cleanup_thread: threading.Thread | None = None
+        self._cleanup_stop = threading.Event()
+        self._last_cleanup: dict[str, Any] | None = None
 
         if settings.enable_simulation:
             self.feeds.append(SimulatedFeed(self.ingest_event, self.store.update_feed_status))
@@ -41,10 +47,37 @@ class TradeHunterService:
     def start(self) -> None:
         for feed in self.feeds:
             feed.start()
+        
+        # Start retention cleanup thread
+        self._cleanup_stop.clear()
+        self._cleanup_thread = threading.Thread(target=self._cleanup_loop, daemon=True)
+        self._cleanup_thread.start()
 
     def stop(self) -> None:
         for feed in self.feeds:
             feed.stop()
+        
+        # Stop cleanup thread
+        if self._cleanup_thread:
+            self._cleanup_stop.set()
+            self._cleanup_thread.join(timeout=2.0)
+    
+    def _cleanup_loop(self) -> None:
+        """Background thread that runs retention cleanup every 24 hours."""
+        while not self._cleanup_stop.is_set():
+            try:
+                result = cleanup_old_events(None, self.settings.retention_days)
+                self._last_cleanup = result
+                print(f"[retention] Deleted {result['events_deleted']} events, {result['signals_deleted']} signals (retention: {result['retention_days']} days)")
+            except Exception as e:
+                print(f"[retention] Cleanup failed: {e}")
+            
+            # Wait 24 hours (or until stop signal)
+            self._cleanup_stop.wait(timeout=86400)
+    
+    def get_cleanup_status(self) -> dict[str, Any] | None:
+        """Get last cleanup execution result."""
+        return self._last_cleanup
 
     def ingest_event(self, event: MarketEvent) -> bool:
         self.store.upsert_event(event)
@@ -60,9 +93,16 @@ class TradeHunterService:
             return [self.ingest_payload(item, default_source=default_source)[0] for item in payload]
 
         metadata = dict(payload.get("metadata") or {})
+        # Preserve alert_type in metadata if present
+        if "alert_type" in payload:
+            metadata["alert_type"] = payload["alert_type"]
+        
+        # Default platform to 'polymarket' for polyalerthub source, 'unknown' otherwise
+        default_platform = "polymarket" if default_source == "polyalerthub" else "unknown"
+        
         event = MarketEvent(
             source=str(payload.get("source") or default_source),
-            platform=str(payload.get("platform") or "unknown"),
+            platform=str(payload.get("platform") or default_platform),
             market_id=str(payload.get("market_id") or payload.get("ticker") or "unknown-market"),
             title=str(
                 payload.get("title")

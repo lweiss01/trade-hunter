@@ -13,10 +13,13 @@ class MarketWindow:
     last_event: MarketEvent | None = None
     volume_deltas: deque[float] | None = None
     last_signal_at: datetime | None = None
+    event_history: deque[MarketEvent] | None = None  # For M002 enriched context
 
     def __post_init__(self) -> None:
         if self.volume_deltas is None:
             self.volume_deltas = deque()
+        if self.event_history is None:
+            self.event_history = deque(maxlen=100)  # Keep last 100 events
 
 
 class SpikeDetector:
@@ -45,6 +48,8 @@ class SpikeDetector:
             while len(window.volume_deltas) > self.settings.spike_baseline_points:
                 window.volume_deltas.popleft()
 
+        # Track event history for M002 enriched context
+        window.event_history.append(event)
         window.last_event = event
 
         if not should_alert:
@@ -57,6 +62,12 @@ class SpikeDetector:
             f"{tier}: volume +{volume_delta:.0f} vs baseline {baseline:.0f}, "
             f"price move {price_move:.1%}, score {score:.2f}"
         )
+        
+        # M002: Calculate enriched context fields
+        baseline_1h, baseline_24h = self._multi_window_baselines(window)
+        price_move_1m, price_move_5m, price_move_30m = self._multi_window_price_moves(window, event)
+        leading_events = self._get_leading_events(window, event)
+        
         window.last_signal_at = event.timestamp
         return SpikeSignal(
             event=event,
@@ -68,6 +79,12 @@ class SpikeDetector:
             tier=tier,
             topic=topic,
             source_label=event.source,
+            baseline_1h=baseline_1h,
+            baseline_24h=baseline_24h,
+            price_move_1m=price_move_1m,
+            price_move_5m=price_move_5m,
+            price_move_30m=price_move_30m,
+            leading_events=leading_events,
         )
 
     def _volume_delta(self, event: MarketEvent, previous: MarketEvent | None) -> float:
@@ -174,3 +191,93 @@ class SpikeDetector:
             and score >= self.settings.spike_score_threshold
         )
         return hard_move or outlier_move
+    
+    def _multi_window_baselines(self, window: MarketWindow) -> tuple[float | None, float | None]:
+        """Calculate 1-hour and 24-hour volume baselines from event history."""
+        if not window.event_history or len(window.event_history) < 2:
+            return None, None
+        
+        # For MVP, use event count as proxy for time windows
+        # 1h baseline: last ~6 events (assuming 10min cadence)
+        # 24h baseline: last ~24 events (current spike_baseline_points)
+        
+        history = list(window.event_history)
+        
+        # Calculate 1h baseline (last 6 events)
+        baseline_1h = None
+        if len(history) >= 6:
+            recent_deltas = []
+            for i in range(1, min(7, len(history))):
+                prev_event = history[-(i+1)]
+                curr_event = history[-i]
+                delta = self._volume_delta(curr_event, prev_event)
+                if delta > 0:
+                    recent_deltas.append(delta)
+            if recent_deltas:
+                baseline_1h = sum(recent_deltas) / len(recent_deltas)
+        
+        # Calculate 24h baseline (last 24 events or all available)
+        baseline_24h = None
+        if len(history) >= 3:
+            all_deltas = []
+            for i in range(1, min(25, len(history))):
+                prev_event = history[-(i+1)]
+                curr_event = history[-i]
+                delta = self._volume_delta(curr_event, prev_event)
+                if delta > 0:
+                    all_deltas.append(delta)
+            if all_deltas:
+                baseline_24h = sum(all_deltas) / len(all_deltas)
+        
+        return baseline_1h, baseline_24h
+    
+    def _multi_window_price_moves(self, window: MarketWindow, current_event: MarketEvent) -> tuple[float | None, float | None, float | None]:
+        """Calculate price moves over 1-minute, 5-minute, and 30-minute windows."""
+        if not window.event_history or len(window.event_history) < 2:
+            return None, None, None
+        
+        if current_event.yes_price is None:
+            return None, None, None
+        
+        history = list(window.event_history)
+        
+        # For MVP, use event count as proxy for time windows
+        # 1m: last 1-2 events
+        # 5m: last 3-5 events
+        # 30m: last 10-15 events
+        
+        price_move_1m = None
+        if len(history) >= 2:
+            prev_event = history[-2]
+            if prev_event.yes_price is not None:
+                price_move_1m = abs(current_event.yes_price - prev_event.yes_price)
+        
+        price_move_5m = None
+        if len(history) >= 5:
+            prev_event = history[-5]
+            if prev_event.yes_price is not None:
+                price_move_5m = abs(current_event.yes_price - prev_event.yes_price)
+        
+        price_move_30m = None
+        if len(history) >= 15:
+            prev_event = history[-15]
+            if prev_event.yes_price is not None:
+                price_move_30m = abs(current_event.yes_price - prev_event.yes_price)
+        
+        return price_move_1m, price_move_5m, price_move_30m
+    
+    def _get_leading_events(self, window: MarketWindow, current_event: MarketEvent) -> list[MarketEvent]:
+        """Get last 5 events before the current spike event."""
+        if not window.event_history:
+            return []
+        
+        history = list(window.event_history)
+        
+        # Get last 5 events before current (current is already in history at -1)
+        # So get events from -6 to -2 (5 events)
+        if len(history) >= 6:
+            return history[-6:-1]
+        elif len(history) >= 2:
+            return history[:-1]  # All except current
+        else:
+            return []

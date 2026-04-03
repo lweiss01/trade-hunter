@@ -1,0 +1,18 @@
+{
+  "alert_type": "price_alert",
+  "platform": "polymarket",
+  "market_id": "will-fed-cut-rates-in-june",
+  "title": "Will the Fed cut rates in June?",
+  "yes_price": 0.58,
+  "volume": 1450,
+  "volume_kind": "cumulative",
+  "event_kind": "quote",
+  "timestamp": "2026-04-02T14:05:00Z",
+  "live": true,
+  "topic": "macro",
+  "metadata": {
+    "price_change": 0.12,
+    "threshold_crossed": 0.55,
+    "timeframe": "1h"
+  }
+}

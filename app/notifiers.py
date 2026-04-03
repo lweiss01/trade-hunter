@@ -32,7 +32,10 @@ class DiscordWebhookNotifier:
         request = urllib.request.Request(
             webhook_url,
             data=json.dumps(payload).encode("utf-8"),
-            headers={"Content-Type": "application/json"},
+            headers={
+                "Content-Type": "application/json",
+                "User-Agent": "Trade-Hunter-Bot/1.0"
+            },
             method="POST",
         )
         try:

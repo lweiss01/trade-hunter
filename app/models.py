@@ -63,6 +63,13 @@ class SpikeSignal:
     topic: str | None = None
     source_label: str | None = None
     detected_at: datetime = field(default_factory=utc_now)
+    # Enriched context fields for M002
+    baseline_1h: float | None = None
+    baseline_24h: float | None = None
+    price_move_1m: float | None = None
+    price_move_5m: float | None = None
+    price_move_30m: float | None = None
+    leading_events: list[MarketEvent] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -76,4 +83,10 @@ class SpikeSignal:
             "topic": self.topic,
             "source_label": self.source_label,
             "detected_at": self.detected_at.isoformat(),
+            "baseline_1h": round(self.baseline_1h, 3) if self.baseline_1h is not None else None,
+            "baseline_24h": round(self.baseline_24h, 3) if self.baseline_24h is not None else None,
+            "price_move_1m": round(self.price_move_1m, 4) if self.price_move_1m is not None else None,
+            "price_move_5m": round(self.price_move_5m, 4) if self.price_move_5m is not None else None,
+            "price_move_30m": round(self.price_move_30m, 4) if self.price_move_30m is not None else None,
+            "leading_events": [e.to_dict() for e in self.leading_events],
         }

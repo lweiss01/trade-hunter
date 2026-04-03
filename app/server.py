@@ -27,13 +27,33 @@ def run_server(settings: Settings) -> None:
                 return self._serve_file("dashboard.js", "application/javascript; charset=utf-8")
             if self.path == "/api/state":
                 return self._json_response(service.dashboard_state())
+            if self.path == "/api/health":
+                # Return feed health status and retention cleanup status
+                state = service.dashboard_state()
+                cleanup_status = service.get_cleanup_status()
+                return self._json_response({
+                    "feeds": state.get("feeds", {}),
+                    "retention": cleanup_status,
+                })
             self._json_response({"error": "not found"}, status=HTTPStatus.NOT_FOUND)
 
         def do_POST(self) -> None:
             if self.path not in {"/api/events", "/api/alerts/polyalerthub", "/api/demo/spike"}:
                 return self._json_response({"error": "not found"}, status=HTTPStatus.NOT_FOUND)
 
-            if settings.ingest_api_token:
+            # Token validation based on endpoint
+            if self.path == "/api/alerts/polyalerthub" and settings.polyalerthub_token:
+                auth = self.headers.get("Authorization", "")
+                expected = f"Bearer {settings.polyalerthub_token}"
+                if auth != expected:
+                    print(f"PolyAlertHub auth failed: expected Bearer token, got {auth[:20]}...")
+                    return self._json_response(
+                        {"error": "unauthorized"},
+                        status=HTTPStatus.UNAUTHORIZED,
+                    )
+                print("PolyAlertHub auth validated")
+            elif self.path != "/api/alerts/polyalerthub" and settings.ingest_api_token:
+                # Generic /api/events endpoint uses INGEST_API_TOKEN
                 auth = self.headers.get("Authorization", "")
                 expected = f"Bearer {settings.ingest_api_token}"
                 if auth != expected:
@@ -62,7 +82,37 @@ def run_server(settings: Settings) -> None:
                 payload = json.loads(raw.decode("utf-8") or "{}")
 
             source = "polyalerthub" if self.path == "/api/alerts/polyalerthub" else "manual"
-            result = service.ingest_payload(payload, default_source=source)
+            
+            # Update feed health status for polyalerthub endpoint
+            if self.path == "/api/alerts/polyalerthub":
+                from datetime import UTC, datetime
+                try:
+                    result = service.ingest_payload(payload, default_source=source)
+                    service.store.update_feed_status(
+                        "polyalerthub",
+                        {
+                            "running": True,
+                            "last_event_at": datetime.now(UTC).isoformat(),
+                            "detail": "relay endpoint active",
+                            "error_count": 0,
+                        }
+                    )
+                except Exception as exc:
+                    service.store.update_feed_status(
+                        "polyalerthub",
+                        {
+                            "running": False,
+                            "detail": f"error: {exc}",
+                            "error_count": 1,
+                        }
+                    )
+                    return self._json_response(
+                        {"error": "internal server error"},
+                        status=HTTPStatus.INTERNAL_SERVER_ERROR,
+                    )
+            else:
+                result = service.ingest_payload(payload, default_source=source)
+            
             self._json_response({"ok": True, "signals_triggered": sum(bool(item) for item in result)})
 
         def log_message(self, format: str, *args: Any) -> None:

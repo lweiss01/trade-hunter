@@ -1,0 +1,20 @@
+{
+  "alert_type": "whale_trade",
+  "platform": "polymarket",
+  "market_id": "btc-above-100k-by-eoy",
+  "title": "Bitcoin above $100k by end of year?",
+  "yes_price": 0.43,
+  "volume": 25000,
+  "volume_kind": "delta",
+  "event_kind": "trade",
+  "trade_size": 25000,
+  "trade_side": "buy",
+  "trader": "0x1234567890abcdef",
+  "timestamp": "2026-04-02T15:30:22Z",
+  "live": true,
+  "topic": "crypto",
+  "metadata": {
+    "min_trade_size": 10000,
+    "trader_pnl": 45000
+  }
+}

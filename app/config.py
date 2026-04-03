@@ -71,11 +71,13 @@ class Settings:
     discord_webhook_url: str | None
     discord_webhook_routes: dict[str, str]
     ingest_api_token: str | None
+    polyalerthub_token: str | None
     spike_min_volume_delta: float
     spike_min_price_move: float
     spike_score_threshold: float
     spike_baseline_points: int
     spike_cooldown_seconds: int
+    retention_days: int
     kalshi_markets: list[str]
     kalshi_api_key_id: str | None
     kalshi_private_key_path: str | None
@@ -91,11 +93,13 @@ def load_settings() -> Settings:
         discord_webhook_url=os.getenv("DISCORD_WEBHOOK_URL") or None,
         discord_webhook_routes=_kv_pairs("DISCORD_WEBHOOK_ROUTES"),
         ingest_api_token=os.getenv("INGEST_API_TOKEN") or None,
+        polyalerthub_token=os.getenv("POLYALERTHUB_TOKEN") or None,
         spike_min_volume_delta=_float("SPIKE_MIN_VOLUME_DELTA", 120.0),
         spike_min_price_move=_float("SPIKE_MIN_PRICE_MOVE", 0.03),
         spike_score_threshold=_float("SPIKE_SCORE_THRESHOLD", 3.0),
         spike_baseline_points=_int("SPIKE_BASELINE_POINTS", 24),
         spike_cooldown_seconds=_int("SPIKE_COOLDOWN_SECONDS", 300),
+        retention_days=_int("RETENTION_DAYS", 7),
         kalshi_markets=_csv("KALSHI_MARKETS"),
         kalshi_api_key_id=os.getenv("KALSHI_API_KEY_ID") or None,
         kalshi_private_key_path=os.getenv("KALSHI_PRIVATE_KEY_PATH") or None,
