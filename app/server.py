@@ -7,7 +7,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
-from .config import ROOT, Settings, load_settings
+from .config import ROOT, Settings, load_settings, persist_runtime_settings
 from .service import TradeHunterService
 
 
@@ -102,6 +102,7 @@ def run_server(settings: Settings) -> None:
                 "/api/kalshi/markets",
                 "/api/kalshi/markets/remove",
                 "/api/config/apply-tuning",
+                "/api/settings",
                 "/api/admin/shutdown",
             }:
                 return self._json_response({"error": "not found"}, status=HTTPStatus.NOT_FOUND)
@@ -152,6 +153,23 @@ def run_server(settings: Settings) -> None:
             else:
                 raw = self.rfile.read(int(self.headers.get("Content-Length", "0") or "0"))
                 payload = json.loads(raw.decode("utf-8") or "{}")
+
+            if self.path == "/api/settings":
+                if not _is_loopback_client(self.client_address[0]):
+                    return self._json_response({"error": "forbidden"}, status=HTTPStatus.FORBIDDEN)
+
+                editable = payload.get("settings") if isinstance(payload, dict) and isinstance(payload.get("settings"), dict) else payload
+                try:
+                    updated = persist_runtime_settings(editable)
+                    latest_settings = load_settings()
+                except ValueError as exc:
+                    return self._json_response({"error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
+                return self._json_response({
+                    "ok": True,
+                    "updated": sorted(updated.keys()),
+                    "restart_required": True,
+                    "settings": serialize_settings(latest_settings),
+                })
 
             if self.path == "/api/kalshi/markets":
                 ticker = str(payload.get("ticker") or "").strip()

@@ -173,8 +173,8 @@
             </div>
             <div class="settings-hint-card warn">
               <span class="settings-hint-kicker">Restart required</span>
-              <strong>Edits are not live yet</strong>
-              <p>This page is read-only today. When save behavior lands, env-backed changes will still need clear restart messaging for server-side settings.</p>
+              <strong>Edits persist to .env</strong>
+              <p>Saving writes editable fields to .env. Server-side behavior updates after restart, so save first, then restart when ready.</p>
             </div>
           </div>
         </section>
@@ -404,12 +404,15 @@
 
         <section class="panel settings-note-panel">
           <div class="panel-head">
-            <h2>Next in S04</h2>
-            <span class="badge">save behavior</span>
+            <h2>Save settings</h2>
+            <span class="badge">restart required</span>
           </div>
           <div class="settings-placeholder-copy">
-            <p>This pass now loads live read-only settings into the grouped page.</p>
-            <p>The next S04 seam keeps these sections but adds real save behavior and restart-required messaging.</p>
+            <p>Editable fields below persist to <code>.env</code>. Secret-backed and Markets-owned fields remain visibility-only.</p>
+            <div class="settings-save-row">
+              <button id="settings-save-btn" class="action" type="button">Save settings</button>
+              <span id="settings-save-status" class="settings-save-status">No unsaved changes yet.</span>
+            </div>
           </div>
         </section>
       </section>

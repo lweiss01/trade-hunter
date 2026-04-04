@@ -56,6 +56,37 @@ const settingsStatusDiscordEl = document.querySelector("#settings-status-discord
 const settingsStatusIngestEl = document.querySelector("#settings-status-ingest");
 const settingsStatusDetectorEl = document.querySelector("#settings-status-detector");
 const settingsStatusStorageEl = document.querySelector("#settings-status-storage");
+const settingsSaveButtonEl = document.querySelector("#settings-save-btn");
+const settingsSaveStatusEl = document.querySelector("#settings-save-status");
+
+const editableSettingsControls = [
+  settingEnableSimulationEl,
+  settingQuietModeEl,
+  settingEnableKalshiEl,
+  settingDiscordAnalystMinConfidenceEl,
+  settingDiscordAnalystFollowupEl,
+  settingDiscordAlertModeEl,
+  settingSpikeMinVolumeDeltaEl,
+  settingSpikeMinPriceMoveEl,
+  settingSpikeScoreThresholdEl,
+  settingSpikeBaselinePointsEl,
+  settingSpikeCooldownSecondsEl,
+  settingRetentionDaysEl,
+  settingAppHostEl,
+  settingAppPortEl,
+].filter(Boolean);
+
+const readOnlySettingsControls = [
+  settingKalshiApiKeyIdEl,
+  settingKalshiPrivateKeyPathEl,
+  settingKalshiMarketsEl,
+  settingDiscordWebhookUrlEl,
+  settingDiscordRouteCryptoEl,
+  settingDiscordRouteMacroEl,
+  settingDiscordRouteElectionsEl,
+  settingIngestApiTokenEl,
+  settingPolyalerthubTokenEl,
+].filter(Boolean);
 
 let tickerMutationInFlight = false;
 let tuningApplyInFlight = false;
@@ -68,6 +99,7 @@ let selectedMarketId = null;
 let currentPage = "dashboard";
 let lastDashboardState = null;
 let lastSettingsState = null;
+let settingsSaveInFlight = false;
 
 // Per-market price history for sparklines (last 20 yes_price values)
 const priceHistory = new Map();
@@ -145,6 +177,60 @@ async function fetchSettings() {
     throw new Error("Failed to load settings");
   }
   return response.json();
+}
+
+async function saveSettings(payload) {
+  const response = await fetch("/api/settings", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ settings: payload }),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || "Failed to save settings");
+  }
+
+  return data;
+}
+
+function setSettingsControlsEditable(isEditable) {
+  editableSettingsControls.forEach((control) => {
+    control.disabled = !isEditable || settingsSaveInFlight;
+  });
+
+  readOnlySettingsControls.forEach((control) => {
+    control.disabled = true;
+  });
+
+  if (settingsSaveButtonEl) {
+    settingsSaveButtonEl.disabled = !isEditable || settingsSaveInFlight;
+  }
+}
+
+function setSettingsSaveStatus(message, tone = "") {
+  if (!settingsSaveStatusEl) return;
+  settingsSaveStatusEl.className = `settings-save-status ${tone}`.trim();
+  settingsSaveStatusEl.textContent = message;
+}
+
+function collectSettingsPayload() {
+  return {
+    enable_simulation: Boolean(settingEnableSimulationEl?.checked),
+    quiet_mode: Boolean(settingQuietModeEl?.checked),
+    enable_kalshi: Boolean(settingEnableKalshiEl?.checked),
+    discord_analyst_min_confidence: String(settingDiscordAnalystMinConfidenceEl?.value || "medium"),
+    discord_analyst_followup: Boolean(settingDiscordAnalystFollowupEl?.checked),
+    discord_alert_mode: String(settingDiscordAlertModeEl?.value || "all"),
+    spike_min_volume_delta: Number(settingSpikeMinVolumeDeltaEl?.value || 0),
+    spike_min_price_move: Number(settingSpikeMinPriceMoveEl?.value || 0),
+    spike_score_threshold: Number(settingSpikeScoreThresholdEl?.value || 0),
+    spike_baseline_points: Number(settingSpikeBaselinePointsEl?.value || 0),
+    spike_cooldown_seconds: Number(settingSpikeCooldownSecondsEl?.value || 0),
+    retention_days: Number(settingRetentionDaysEl?.value || 0),
+    host: String(settingAppHostEl?.value || "").trim(),
+    port: Number(settingAppPortEl?.value || 0),
+  };
 }
 
 async function postTicker(url, ticker) {
@@ -231,8 +317,10 @@ function renderSettings(settingsPayload) {
   lastSettingsState = settingsPayload || null;
 
   if (settingsLoadStatusEl) {
-    settingsLoadStatusEl.textContent = "live read-only";
+    settingsLoadStatusEl.textContent = "live editable";
   }
+
+  setSettingsControlsEditable(true);
 
   if (settingEnableSimulationEl) settingEnableSimulationEl.checked = Boolean(settings.enable_simulation);
   if (settingQuietModeEl) settingQuietModeEl.checked = Boolean(settings.quiet_mode);
@@ -281,6 +369,10 @@ function renderSettings(settingsPayload) {
     setSettingsStatus(settingsStatusIngestEl, "configured", "configured");
   } else {
     setSettingsStatus(settingsStatusIngestEl, "missing", "missing key");
+  }
+
+  if (!settingsSaveInFlight) {
+    setSettingsSaveStatus("Loaded from .env. Save to persist edits. Restart required to apply.");
   }
 }
 
@@ -1066,6 +1158,8 @@ async function refreshSettings(force = false) {
     if (settingsLoadStatusEl) {
       settingsLoadStatusEl.textContent = "load failed";
     }
+    setSettingsControlsEditable(false);
+    setSettingsSaveStatus("Failed to load settings.", "error");
   }
 }
 
@@ -1304,6 +1398,42 @@ if (categoryShortcutsEl) {
     if (!button || !categoryInput) return;
     categoryInput.value = button.dataset.categoryShortcut || "";
     await runCategorySearch(categoryInput.value);
+  });
+}
+
+editableSettingsControls.forEach((control) => {
+  control.addEventListener("input", () => {
+    if (settingsSaveInFlight) return;
+    setSettingsSaveStatus("Unsaved changes. Save to write .env and restart to apply.", "pending");
+  });
+  control.addEventListener("change", () => {
+    if (settingsSaveInFlight) return;
+    setSettingsSaveStatus("Unsaved changes. Save to write .env and restart to apply.", "pending");
+  });
+});
+
+if (settingsSaveButtonEl) {
+  settingsSaveButtonEl.addEventListener("click", async () => {
+    if (settingsSaveInFlight) return;
+
+    settingsSaveInFlight = true;
+    setSettingsControlsEditable(true);
+    setSettingsSaveStatus("Saving to .env...", "pending");
+
+    try {
+      const payload = collectSettingsPayload();
+      const result = await saveSettings(payload);
+      if (settingsLoadStatusEl) {
+        settingsLoadStatusEl.textContent = "saved • restart required";
+      }
+      renderSettings({ settings: result.settings || (lastSettingsState?.settings || {}) });
+      setSettingsSaveStatus("Saved to .env. Restart the app to apply server-side changes.", "success");
+    } catch (error) {
+      setSettingsSaveStatus(error.message || "Failed to save settings.", "error");
+    } finally {
+      settingsSaveInFlight = false;
+      setSettingsControlsEditable(true);
+    }
   });
 }
 

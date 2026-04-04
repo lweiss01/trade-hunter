@@ -1842,6 +1842,30 @@ h2 {
   line-height: 1.5;
 }
 
+.settings-save-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.settings-save-status {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.settings-save-status.success {
+  color: var(--live);
+}
+
+.settings-save-status.error {
+  color: var(--danger);
+}
+
+.settings-save-status.pending {
+  color: var(--info);
+}
+
 .tuning-panel {
   margin-bottom: 20px;
 }
