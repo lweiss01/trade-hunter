@@ -775,9 +775,10 @@ h2 {
 /* ── Proposal-spec signal card styles ── */
 .signal-card {
   background: var(--surface-2);
-  border-radius: 9px;
+  border-radius: 6px;
   padding: 12px 14px 12px 17px;
   border: 1px solid var(--border);
+  border-left: none;
   display: grid;
   gap: 7px;
   position: relative;
@@ -793,7 +794,7 @@ h2 {
   bottom: 0;
   width: 3px;
   background: var(--warn);
-  border-radius: 9px 0 0 9px;
+  border-radius: 6px 0 0 6px;
 }
 
 .signal-card.tier-watch::before  { background: var(--warn); }
