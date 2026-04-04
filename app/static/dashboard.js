@@ -881,7 +881,6 @@ function renderActivity(activity, telemetry = {}, config = {}) {
 
 function renderFeeds(state) {
   const feeds = state.feeds || {};
-  const config = state.config || {};
   const activity = state.activity || [];
   const telemetry = state.telemetry || {};
 
@@ -892,9 +891,6 @@ function renderFeeds(state) {
       `<span class="nav-pill ${tone}">${withDot ? '<span class="dot"></span>' : ""}${escapeHtml(label)}</span>`,
     );
   };
-
-  const mode = config.active_mode || "none";
-  pushPill(`mode: ${mode}`, mode === "live" ? "ok" : "info", mode === "live");
 
   const freshnessWindow = telemetry.freshness_window_minutes;
   if (freshnessWindow) {

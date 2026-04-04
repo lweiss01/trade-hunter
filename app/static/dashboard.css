@@ -2016,7 +2016,7 @@ h2 {
   color: var(--text);
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1320px) {
   .topbar {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas:
