@@ -881,7 +881,6 @@ function renderActivity(activity, telemetry = {}, config = {}) {
 
 function renderFeeds(state) {
   const feeds = state.feeds || {};
-  const activity = state.activity || [];
   const telemetry = state.telemetry || {};
 
   const pills = [];
@@ -894,36 +893,26 @@ function renderFeeds(state) {
 
   const freshnessWindow = telemetry.freshness_window_minutes;
   if (freshnessWindow) {
-    pushPill(`window: ${freshnessWindow}m`, "info");
+    pushPill(`window ${freshnessWindow}m`, "info");
   }
 
   const latestEventAge = formatAgeFromNow(telemetry.latest_event_at);
   const latestEventClass = latestEventAge === "unknown" ? "warn" : (latestEventAge.includes("h") ? "danger" : "ok");
-  pushPill(`last event: ${latestEventAge}`, latestEventClass, latestEventClass === "ok");
+  pushPill(`event ${latestEventAge}`, latestEventClass, latestEventClass === "ok");
 
   const kalshiAge = formatAgeFromNow(telemetry.kalshi_last_event_at);
   const kalshiAgeClass = kalshiAge === "unknown" ? "warn" : (kalshiAge.includes("h") ? "danger" : "ok");
-  pushPill(`kalshi: ${kalshiAge}`, kalshiAgeClass, kalshiAgeClass === "ok");
+  pushPill(`kalshi ${kalshiAge}`, kalshiAgeClass, kalshiAgeClass === "ok");
 
-  pushPill(`tickers: ${Number(telemetry.subscribed_tickers || 0)}`, "info");
+  pushPill(`tickers ${Number(telemetry.subscribed_tickers || 0)}`, "info");
 
-  if (activity.length) {
-    const latestTs = activity[0]?.timestamp;
+  if (state.activity?.length) {
+    const latestTs = state.activity[0]?.timestamp;
     const ageMinutes = latestTs ? Math.max(0, Math.floor((Date.now() - new Date(latestTs).getTime()) / 60000)) : null;
     const freshnessClass = ageMinutes !== null && ageMinutes <= 5 ? "ok" : ageMinutes !== null && ageMinutes <= 15 ? "warn" : "danger";
-    const freshnessLabel = ageMinutes === null ? "freshness: unknown" : `freshness: ${ageMinutes}m`;
+    const freshnessLabel = ageMinutes === null ? "fresh ?" : `fresh ${ageMinutes}m`;
     pushPill(freshnessLabel, freshnessClass, freshnessClass === "ok");
-  } else {
-    pushPill("freshness: no recent events", "warn");
   }
-
-  const discordFeed = feeds.discord || {};
-  const discordDetail = String(discordFeed.detail || "").toLowerCase();
-  const discordDisabled = !discordFeed.running || discordDetail.includes("disabled");
-  const discordDefault = discordDetail.includes("default");
-  const discordClass = discordDisabled ? "warn" : (discordDefault ? "info" : "ok");
-  const discordLabel = discordDisabled ? "discord: disabled" : (discordDefault ? "discord: default" : "discord: active");
-  pushPill(discordLabel, discordClass, discordClass === "ok");
 
   feedsEl.innerHTML = pills.join("");
 }

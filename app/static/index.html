@@ -35,17 +35,16 @@
         <div class="topbar-actions">
           <form id="ticker-form" class="ticker-form ticker-form-inline topbar-ticker-form">
             <label for="ticker-input" class="ticker-label">Ticker</label>
-            <input id="ticker-input" class="ticker-input" type="text" name="ticker" placeholder="Add ticker (e.g., KXBTC15M)" autocomplete="off">
+            <input id="ticker-input" class="ticker-input" type="text" name="ticker" placeholder="e.g. KXBTC15M" autocomplete="off">
             <button id="ticker-add" class="ticker-add" type="submit">Add</button>
           </form>
+          <button id="settings-toggle" class="settings-icon-btn" type="button" aria-label="Open settings" title="Settings">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              <path d="M13.3 6.6l-.6-1.1-1.1.4a3.8 3.8 0 0 0-.7-.7l.4-1.1-1.1-.6-1 .9a4 4 0 0 0-1 0l-.9-1-1.1.6.4 1.1c-.3.2-.5.4-.7.7L5 5.5l-.6 1.1.9.9a4 4 0 0 0 0 1l-1 .9.6 1.1 1.1-.4c.2.3.4.5.7.7l-.4 1.1 1.1.6.9-.9a4 4 0 0 0 1 0l.9 1 1.1-.6-.4-1.1c.3-.2.5-.4.7-.7l1.1.4.6-1.1-.9-1a4 4 0 0 0 0-1l1-.8Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
         </div>
-
-        <button id="settings-toggle" class="settings-icon-btn topbar-settings" type="button" aria-label="Open settings" title="Settings">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <path d="M8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
-            <path d="M13.3 6.6l-.6-1.1-1.1.4a3.8 3.8 0 0 0-.7-.7l.4-1.1-1.1-.6-1 .9a4 4 0 0 0-1 0l-.9-1-1.1.6.4 1.1c-.3.2-.5.4-.7.7L5 5.5l-.6 1.1.9.9a4 4 0 0 0 0 1l-1 .9.6 1.1 1.1-.4c.2.3.4.5.7.7l-.4 1.1 1.1.6.9-.9a4 4 0 0 0 1 0l.9 1 1.1-.6-.4-1.1c.3-.2.5-.4.7-.7l1.1.4.6-1.1-.9-1a4 4 0 0 0 0-1l1-.8Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </button>
       </nav>
 
       <div id="ticker-message" class="ticker-message topbar-ticker-message" aria-live="polite"></div>
