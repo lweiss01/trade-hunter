@@ -351,6 +351,10 @@ th,
   display: none;
 }
 
+.page-view[hidden] {
+  display: none !important;
+}
+
 .page-view.active {
   display: block;
 }
@@ -1578,7 +1582,7 @@ h2 {
   margin-bottom: 20px;
 }
 
-.settings-page {
+.settings-page.active {
   display: grid;
   gap: 18px;
 }
