@@ -541,28 +541,38 @@ function renderWhatMattersNow(signal) {
   const tier = String(signal.tier || "watch");
   const topic = normalizeTopic(signal?.event?.topic || signal?.topic);
   const whyThisMatters = summarizeReason(signal.reason);
-  const nextChecks = [];
+  const nextSteps = [];
 
-  if (signal?.event?.volume != null) nextChecks.push(`check liquidity (${formatVolume(signal.event.volume)} vol)`);
-  if (signal?.event?.yes_price != null) nextChecks.push(`confirm price context (${formatPrice(signal.event.yes_price)})`);
-  nextChecks.push(`review ${topic} context`);
+  if (signal?.event?.volume != null) nextSteps.push(`Check liquidity (${formatVolume(signal.event.volume)} vol)`);
+  if (signal?.event?.yes_price != null) nextSteps.push(`Confirm price context (${formatPrice(signal.event.yes_price)})`);
+  nextSteps.push(`Review ${topic} context`);
 
   whatMattersNowEl.hidden = false;
   whatMattersNowEl.innerHTML = `
-    <article class="priority-strip">
-      <div class="priority-strip-head">
-        <span class="priority-kicker">What matters now</span>
-        <div class="priority-tags">
-          <span class="mini-badge">${escapeHtml(tier)}</span>
-          <span class="flow-pill info">score ${Number(signal.score || 0).toFixed(2)}</span>
-          <span class="flow-pill ${freshness.className}">${escapeHtml(freshness.label)}</span>
+    <div class="wmn-strip">
+      <div class="wmn-head">
+        <div class="wmn-eyebrow">
+          <span class="wmn-label">Top signal right now</span>
+          <div class="wmn-tags">
+            <span class="sig-tag tier-${escapeHtml(tier)}">${escapeHtml(tier)}</span>
+            <span class="sig-tag score">score ${Number(signal.score || 0).toFixed(2)}</span>
+            <span class="sig-tag ${freshness.className}">${escapeHtml(freshness.label)}</span>
+          </div>
+        </div>
+        <strong class="wmn-title">${escapeHtml(title)}</strong>
+        <div class="wmn-meta">${escapeHtml(signal?.event?.platform || "unknown")} · ${escapeHtml(signal?.event?.market_id || "unknown-market")} · ${escapeHtml(topic)} · ${formatTimestamp(signal.detected_at)}</div>
+      </div>
+      <div class="wmn-body">
+        <div class="wmn-why">
+          <span class="wmn-section-label">Why this matters</span>
+          <p class="wmn-reason">${escapeHtml(whyThisMatters)}</p>
+        </div>
+        <div class="wmn-steps">
+          <span class="wmn-section-label">Your next steps</span>
+          <div class="wmn-step-chips">${nextSteps.map((item) => `<span class="wmn-step-chip">${escapeHtml(item)}</span>`).join("")}</div>
         </div>
       </div>
-      <strong class="priority-title">${escapeHtml(title)}</strong>
-      <div class="priority-meta">${escapeHtml(signal?.event?.platform || "unknown")} · ${escapeHtml(signal?.event?.market_id || "unknown-market")} · ${escapeHtml(topic)} · ${formatTimestamp(signal.detected_at)}</div>
-      <div class="priority-summary"><span class="priority-label">Why this matters</span>${escapeHtml(whyThisMatters)}</div>
-      <div class="priority-next"><span class="priority-label">Next checks</span>${nextChecks.map((item) => `<span class="priority-check">${escapeHtml(item)}</span>`).join("")}</div>
-    </article>
+    </div>
   `;
 }
 
@@ -768,43 +778,50 @@ function renderSignals(signals) {
   signalsEl.innerHTML = ordered.map((signal) => {
     const freshness = signalFreshness(signal.detected_at);
     const analyst = signal.analyst || null;
+    const tier = String(signal.tier || "watch");
+    const scoreRaw = Number(signal.score || 0);
+    // cap score at 10 for bar width; normalise to percentage
+    const scoreBarPct = Math.min(100, Math.round((scoreRaw / 10) * 100));
 
     let analystHtml = "";
     if (analyst?.pending) {
-      analystHtml = `<div class="analyst-row analyst-pending">⏳ analysing…</div>`;
+      analystHtml = `<div class="sig-analyst analyst-pending">⏳ Analyst review in progress…</div>`;
     } else if (analyst) {
       const conf = analyst.confidence || "low";
       const ns = analyst.noise_or_signal || "uncertain";
       const dir = analyst.direction || "unclear";
-      const confClass = conf === "high" ? "analyst-high" : conf === "medium" ? "analyst-med" : "analyst-low";
+      const confClass = conf === "high" ? "high-conf" : conf === "medium" ? "med-conf" : "low-conf";
       const nsIcon = ns === "signal" ? "▲" : ns === "noise" ? "✕" : "~";
-      const nsClass = ns === "signal" ? "analyst-signal" : ns === "noise" ? "analyst-noise" : "analyst-uncertain";
+      const nsClass = ns === "signal" ? "signal" : ns === "noise" ? "noise" : "uncertain";
       analystHtml = `
-        <div class="analyst-row">
-          <span class="analyst-badge ${nsClass}">${nsIcon} ${ns}</span>
-          <span class="analyst-badge ${confClass}">${dir} · ${conf} confidence</span>
+        <div class="sig-analyst">
+          <span class="analyst-tag ${nsClass}">${nsIcon} ${ns}</span>
+          <span class="analyst-tag ${confClass}">${escapeHtml(dir)} · ${escapeHtml(conf)} conf</span>
           <span class="analyst-rationale">${escapeHtml(analyst.rationale)}</span>
         </div>
         ${analyst.threshold_note && analyst.threshold_note !== "none"
-          ? `<div class="analyst-threshold">⚙ ${escapeHtml(analyst.threshold_note)}</div>`
+          ? `<div class="sig-threshold-note">⚙ ${escapeHtml(analyst.threshold_note)}</div>`
           : ""}
       `;
     }
 
+    const isSelected = getSignalKey(signal) === selectedSignalKey;
     return `
-    <article class="signal-card compact ${getSignalKey(signal) === selectedSignalKey ? "selected" : ""}" data-signal-key="${escapeHtml(getSignalKey(signal))}" tabindex="0" role="button" aria-pressed="${getSignalKey(signal) === selectedSignalKey ? "true" : "false"}">
-      <div class="signal-row-main">
-        <strong class="signal-title">${escapeHtml(signal.event.title)}</strong>
-        <div class="signal-tags">
-          <span class="mini-badge">${escapeHtml(signal.tier || "watch")}</span>
-          <span class="flow-pill info">score ${Number(signal.score).toFixed(2)}</span>
-          <span class="flow-pill ${freshness.className}">${escapeHtml(freshness.label)}</span>
+    <article class="signal-card tier-${escapeHtml(tier)} ${isSelected ? "selected" : ""}" data-signal-key="${escapeHtml(getSignalKey(signal))}" tabindex="0" role="button" aria-pressed="${isSelected ? "true" : "false"}">
+      <div class="sig-row1">
+        <strong class="sig-title">${escapeHtml(signal.event.title)}</strong>
+        <div class="sig-tags">
+          <span class="sig-tag tier-${escapeHtml(tier)}">${escapeHtml(tier)}</span>
+          <span class="sig-tag ${freshness.className}">${escapeHtml(freshness.label)}</span>
         </div>
       </div>
-      <div class="signal-row-subtle">
-        ${escapeHtml(signal.event.platform)} · ${escapeHtml(signal.event.market_id)} · ${escapeHtml(signal.source_label || signal.event.source)} · ${formatTimestamp(signal.detected_at)}
+      <div class="sig-meta">${escapeHtml(signal.event.platform)} · ${escapeHtml(signal.event.market_id)} · ${escapeHtml(signal.source_label || signal.event.source)} · ${formatTimestamp(signal.detected_at)}</div>
+      <div class="sig-score-bar-wrap">
+        <div class="sig-score-bar-track"><div class="sig-score-bar-fill" style="width:${scoreBarPct}%"></div></div>
+        <span class="sig-score-val">${scoreRaw.toFixed(2)}</span>
+        <span class="sig-tag score">score ${scoreRaw.toFixed(2)}</span>
       </div>
-      <div class="signal-why">${escapeHtml(summarizeReason(signal.reason))}</div>
+      <div class="sig-reason">${escapeHtml(summarizeReason(signal.reason))}</div>
       ${analystHtml}
     </article>
   `;
