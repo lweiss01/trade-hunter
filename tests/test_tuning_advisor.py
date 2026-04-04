@@ -1,7 +1,12 @@
 """Tests for TuningAdvice structured suggestions (M006/S03 T01+T02)."""
 from __future__ import annotations
 
+from unittest.mock import Mock
+
+import pytest
+
 from app.analyst import TuningAdvice, _build_tuning_prompt
+from app.service import TradeHunterService
 
 
 # ── T01: TuningAdvice structured fields ──────────────────────────────────────
@@ -190,3 +195,116 @@ def test_state_suggested_thresholds_never_overwrites_applied():
     suggested = tuning_dict["suggested_thresholds"]
     applied = config["applied_thresholds"]
     assert suggested.get("score_threshold") != applied["score_threshold"]
+
+
+def test_persist_detector_thresholds_updates_env_file(tmp_path):
+    from app.config import persist_detector_thresholds
+
+    env_path = tmp_path / ".env"
+    env_path.write_text(
+        "SPIKE_MIN_VOLUME_DELTA=120\nSPIKE_MIN_PRICE_MOVE=0.03\nSPIKE_SCORE_THRESHOLD=3.0\n",
+        encoding="utf-8",
+    )
+
+    persist_detector_thresholds(
+        min_volume_delta=200.0,
+        min_price_move=0.05,
+        score_threshold=4.5,
+        env_path=env_path,
+    )
+
+    content = env_path.read_text(encoding="utf-8")
+    assert "SPIKE_MIN_VOLUME_DELTA=200.0" in content
+    assert "SPIKE_MIN_PRICE_MOVE=0.05" in content
+    assert "SPIKE_SCORE_THRESHOLD=4.5" in content
+
+
+def test_apply_tuning_suggestions_updates_live_settings_and_returns_applied(monkeypatch):
+    settings = Mock(
+        host="127.0.0.1",
+        port=8765,
+        enable_simulation=False,
+        enable_kalshi=False,
+        discord_webhook_url=None,
+        discord_webhook_routes={},
+        discord_alert_mode="all",
+        discord_analyst_followup=True,
+        discord_analyst_min_confidence="medium",
+        ingest_api_token=None,
+        polyalerthub_token=None,
+        spike_min_volume_delta=120.0,
+        spike_min_price_move=0.03,
+        spike_score_threshold=3.0,
+        spike_baseline_points=24,
+        spike_cooldown_seconds=300,
+        retention_days=7,
+        kalshi_markets=[],
+        quiet_mode=False,
+    )
+    service = TradeHunterService(settings)
+
+    class StubAdvisor:
+        def get(self):
+            return {
+                "suggested_thresholds": {
+                    "min_volume_delta": 200.0,
+                    "min_price_move": 0.05,
+                    "score_threshold": 4.5,
+                }
+            }
+
+    service._tuning_advisor = StubAdvisor()
+    persisted = {}
+
+    def fake_persist(**kwargs):
+        persisted.update(kwargs)
+
+    monkeypatch.setattr("app.service.persist_detector_thresholds", fake_persist)
+
+    applied = service.apply_tuning_suggestions()
+
+    assert applied == {
+        "min_volume_delta": 200.0,
+        "min_price_move": 0.05,
+        "score_threshold": 4.5,
+    }
+    assert settings.spike_min_volume_delta == 200.0
+    assert settings.spike_min_price_move == 0.05
+    assert settings.spike_score_threshold == 4.5
+    assert persisted["min_volume_delta"] == 200.0
+    assert persisted["min_price_move"] == 0.05
+    assert persisted["score_threshold"] == 4.5
+
+
+def test_apply_tuning_suggestions_rejects_empty_suggestions(monkeypatch):
+    settings = Mock(
+        host="127.0.0.1",
+        port=8765,
+        enable_simulation=False,
+        enable_kalshi=False,
+        discord_webhook_url=None,
+        discord_webhook_routes={},
+        discord_alert_mode="all",
+        discord_analyst_followup=True,
+        discord_analyst_min_confidence="medium",
+        ingest_api_token=None,
+        polyalerthub_token=None,
+        spike_min_volume_delta=120.0,
+        spike_min_price_move=0.03,
+        spike_score_threshold=3.0,
+        spike_baseline_points=24,
+        spike_cooldown_seconds=300,
+        retention_days=7,
+        kalshi_markets=[],
+        quiet_mode=False,
+    )
+    service = TradeHunterService(settings)
+
+    class StubAdvisor:
+        def get(self):
+            return {"suggested_thresholds": {}}
+
+    service._tuning_advisor = StubAdvisor()
+
+    with pytest.raises(ValueError, match="no structured threshold suggestions"):
+        service.apply_tuning_suggestions()

@@ -19,23 +19,32 @@ def run_server(settings: Settings) -> None:
 
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self) -> None:
-            if self.path == "/":
+            from urllib.parse import urlparse, parse_qs
+
+            raw_path = urlparse(self.path).path or self.path
+            path = raw_path.rstrip("/") or "/"
+            if path == "/":
                 return self._serve_file("index.html", "text/html; charset=utf-8")
-            if self.path == "/static/dashboard.css":
+            if path.endswith("favicon.ico"):
+                return self._serve_file("favicon.ico", "image/x-icon")
+            if path.endswith("apple-touch-icon.png"):
+                return self._serve_file("apple-touch-icon.png", "image/png")
+            if path.endswith("/static/dashboard.css"):
                 return self._serve_file("dashboard.css", "text/css; charset=utf-8")
-            if self.path == "/static/dashboard.js":
+            if path.endswith("/static/dashboard.js"):
                 return self._serve_file("dashboard.js", "application/javascript; charset=utf-8")
-            if self.path == "/api/state":
+            if path.endswith("/static/favicon-32x32.png"):
+                return self._serve_file("favicon-32x32.png", "image/png")
+            if path == "/api/state":
                 return self._json_response(service.dashboard_state())
-            if self.path == "/api/kalshi/markets":
+            if path == "/api/kalshi/markets":
                 return self._json_response({"markets": service.get_kalshi_markets()})
-            if self.path.split("?")[0] == "/api/kalshi/categories":
-                from urllib.parse import urlparse, parse_qs
+            if path == "/api/kalshi/categories":
                 qs = parse_qs(urlparse(self.path).query)
                 category = (qs.get("q") or qs.get("category") or [""])[0].strip()
                 limit = int((qs.get("limit") or ["20"])[0])
                 return self._json_response({"results": service.search_kalshi_by_category(category, limit=limit)})
-            if self.path == "/api/health":
+            if path == "/api/health":
                 # Return feed health status and retention cleanup status
                 state = service.dashboard_state()
                 cleanup_status = service.get_cleanup_status()
@@ -52,6 +61,7 @@ def run_server(settings: Settings) -> None:
                 "/api/demo/spike",
                 "/api/kalshi/markets",
                 "/api/kalshi/markets/remove",
+                "/api/config/apply-tuning",
             }:
                 return self._json_response({"error": "not found"}, status=HTTPStatus.NOT_FOUND)
 
@@ -110,6 +120,17 @@ def run_server(settings: Settings) -> None:
                 except ValueError as exc:
                     return self._json_response({"error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
                 return self._json_response({"ok": True, "markets": markets})
+
+            if self.path == "/api/config/apply-tuning":
+                try:
+                    applied = service.apply_tuning_suggestions()
+                except ValueError as exc:
+                    return self._json_response({"error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
+                return self._json_response({
+                    "ok": True,
+                    "applied": applied,
+                    "applied_thresholds": service.dashboard_state().get("config", {}).get("applied_thresholds", {}),
+                })
 
             source = "polyalerthub" if self.path == "/api/alerts/polyalerthub" else "manual"
             

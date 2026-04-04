@@ -19,6 +19,7 @@ const categoryMessageEl = document.querySelector("#category-message");
 const tuningAdvisorEl = document.querySelector("#tuning-advisor");
 
 let tickerMutationInFlight = false;
+let tuningApplyInFlight = false;
 let trackedTickers = [];
 let signalSortMode = "newest";
 let signalLatestOnly = false;
@@ -230,6 +231,44 @@ function normalizeSignals(signals) {
   return result;
 }
 
+function formatThresholdValue(key, value) {
+  if (value == null) return "n/a";
+  if (key === "min_price_move") return `${(Number(value) * 100).toFixed(1)}%`;
+  if (key === "score_threshold") return Number(value).toFixed(2);
+  return Number(value).toFixed(0);
+}
+
+async function applyRecommendedTuning() {
+  if (tuningApplyInFlight) return;
+  tuningApplyInFlight = true;
+  renderTuningAdvisor(lastDashboardState || {});
+  try {
+    const response = await fetch("/api/config/apply-tuning", { method: "POST" });
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload.error || "Failed to apply tuning suggestion");
+    }
+    await refresh();
+    const appliedKeys = Object.keys(payload.applied || {});
+    if (tuningAdvisorEl && appliedKeys.length) {
+      const banner = document.createElement("div");
+      banner.className = "tuning-global";
+      banner.textContent = `Applied: ${appliedKeys.join(", ")}`;
+      tuningAdvisorEl.prepend(banner);
+    }
+  } catch (error) {
+    if (tuningAdvisorEl) {
+      const banner = document.createElement("div");
+      banner.className = "empty";
+      banner.textContent = error.message || "Failed to apply tuning suggestion.";
+      tuningAdvisorEl.prepend(banner);
+    }
+  } finally {
+    tuningApplyInFlight = false;
+    renderTuningAdvisor(lastDashboardState || {});
+  }
+}
+
 function renderTuningAdvisor(state) {
   if (!tuningAdvisorEl) return;
   const advisor = state.tuning_advisor || null;
@@ -242,11 +281,22 @@ function renderTuningAdvisor(state) {
     return;
   }
   const recs = advisor.recommendations || [];
+  const suggested = advisor.suggested_thresholds || {};
+  const applied = state.config?.applied_thresholds || {};
+  const suggestedEntries = Object.entries(suggested);
   tuningAdvisorEl.innerHTML = `
     <div class="tuning-summary">${escapeHtml(advisor.summary || "")}</div>
     <div class="tuning-global"><strong>Best next tweak:</strong> ${escapeHtml(advisor.global_recommendation || "")}</div>
     ${recs.length ? `<ul class="tuning-list">${recs.map(r => `<li>${escapeHtml(r)}</li>`).join("")}</ul>` : ""}
+    ${suggestedEntries.length ? `
+      <div class="tuning-global"><strong>Suggested thresholds:</strong> ${suggestedEntries.map(([key, value]) => `${escapeHtml(key)} ${escapeHtml(formatThresholdValue(key, value))} (live ${escapeHtml(formatThresholdValue(key, applied[key]))})`).join(" · ")}</div>
+      <div class="tuning-actions"><button id="apply-tuning" class="action" type="button" ${tuningApplyInFlight ? "disabled" : ""}>${tuningApplyInFlight ? "Applying…" : "Apply recommended tweak"}</button></div>
+    ` : ""}
   `;
+  const applyButton = tuningAdvisorEl.querySelector("#apply-tuning");
+  if (applyButton) {
+    applyButton.addEventListener("click", applyRecommendedTuning, { once: true });
+  }
 }
 
 function renderSignals(signals) {

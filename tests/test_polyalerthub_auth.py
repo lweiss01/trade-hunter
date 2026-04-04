@@ -145,3 +145,13 @@ def test_polyalerthub_token_optional():
     finally:
         if old_val is not None:
             os.environ["POLYALERTHUB_TOKEN"] = old_val
+
+
+def test_apply_tuning_endpoint_exists_in_server():
+    """The server exposes POST /api/config/apply-tuning."""
+    from app import server
+    import inspect
+
+    source = inspect.getsource(server.run_server)
+    assert "/api/config/apply-tuning" in source
+    assert "apply_tuning_suggestions" in source

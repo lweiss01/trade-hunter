@@ -137,6 +137,9 @@ class SpikeDetector:
                 and volume_multiple >= 2.4
             )
         ):
+            directional_bias = self._directional_trade_bias(self.windows[event.market_id])
+            if price_move < 0.01 and directional_bias is not None and directional_bias <= 0.60:
+                return "watch"
             return "notable"
         return "watch"
 
@@ -193,7 +196,28 @@ class SpikeDetector:
             volume_delta >= baseline * 2.2
             and score >= self.settings.spike_score_threshold
         )
-        return hard_move or outlier_move
+        if not (hard_move or outlier_move):
+            return False
+
+        if not self._ultra_thin_market_ok(window, event, volume_delta, baseline):
+            return False
+
+        if not self._trade_flow_is_coherent(window, event):
+            return False
+
+        required_move = self._required_price_move(event)
+        if price_move >= required_move:
+            return True
+
+        directional_bias = self._directional_trade_bias(window)
+        if directional_bias is None:
+            return (
+                required_move <= 0.01
+                and self._normalized_directional_side(event.trade_side) is not None
+                and event.event_kind == "trade"
+            )
+
+        return directional_bias > 0.60
     
     def _multi_window_baselines(self, window: MarketWindow) -> tuple[float | None, float | None]:
         """Calculate 1-hour and 24-hour volume baselines from real event timestamps."""
@@ -257,3 +281,108 @@ class SpikeDetector:
         if len(history) >= 2:
             return history[:-1]  # All except current
         return []
+
+    def _directional_trade_bias(self, window: MarketWindow, limit: int = 12) -> float | None:
+        """Return dominant recent trade-side share for yes/buy vs no/sell trades.
+
+        Uses recent same-market trade history only. Returns None when there is not
+        enough directional trade data to make a coherence decision.
+        """
+        directional = self._recent_directional_trades(window, limit=limit)
+        total = len(directional)
+        if total < 3:
+            return None
+
+        yes_count = sum(1 for side in directional if side == "yes")
+        no_count = total - yes_count
+        return max(yes_count, no_count) / total
+
+    def _recent_directional_trades(self, window: MarketWindow, limit: int = 12) -> list[str]:
+        if not window.event_history:
+            return []
+
+        directional: list[str] = []
+        for event in reversed(window.event_history):
+            if event.event_kind != "trade":
+                continue
+            side = self._normalized_directional_side(event.trade_side)
+            if side is not None:
+                directional.append(side)
+            if len(directional) >= limit:
+                break
+        return directional
+
+    def _recent_trade_count(self, window: MarketWindow, limit: int = 12) -> int:
+        if not window.event_history:
+            return 0
+        count = 0
+        for event in reversed(window.event_history):
+            if event.event_kind == "trade":
+                count += 1
+            if count >= limit:
+                break
+        return count
+
+    def _dominant_directional_side(self, window: MarketWindow, limit: int = 12) -> str | None:
+        directional = self._recent_directional_trades(window, limit=limit)
+        total = len(directional)
+        if total < 3:
+            return None
+
+        yes_count = sum(1 for side in directional if side == "yes")
+        no_count = total - yes_count
+        dominant = "yes" if yes_count >= no_count else "no"
+        share = max(yes_count, no_count) / total
+        return dominant if share > 0.60 else None
+
+    def _required_price_move(self, event: MarketEvent) -> float:
+        required = 0.01
+        if event.yes_price is not None and event.yes_price <= 0.01:
+            required = max(required, 0.02)
+        if event.liquidity is not None and event.liquidity <= 1000:
+            required = max(required, 0.02)
+        return required
+
+    def _ultra_thin_market_ok(
+        self,
+        window: MarketWindow,
+        event: MarketEvent,
+        volume_delta: float,
+        baseline: float,
+    ) -> bool:
+        volume_multiple = volume_delta / max(baseline, 1.0)
+        ultra_low_price = event.yes_price is not None and event.yes_price <= 0.01
+        ultra_thin = volume_delta < 500 or ultra_low_price
+        if not ultra_thin:
+            return True
+
+        current_trade = 1 if event.event_kind == "trade" else 0
+        executed_trades = self._recent_trade_count(window) + current_trade
+        return volume_multiple >= 100 or executed_trades > 0
+
+    def _trade_flow_is_coherent(self, window: MarketWindow, event: MarketEvent) -> bool:
+        previous = window.last_event
+        if previous is None or previous.yes_price is None or event.yes_price is None:
+            return True
+
+        delta = float(event.yes_price) - float(previous.yes_price)
+        current_side = self._normalized_directional_side(event.trade_side)
+        if current_side == "yes" and delta < 0:
+            return False
+        if current_side == "no" and delta > 0:
+            return False
+
+        dominant_side = self._dominant_directional_side(window)
+        if dominant_side == "yes" and delta < 0:
+            return False
+        if dominant_side == "no" and delta > 0:
+            return False
+        return True
+
+    def _normalized_directional_side(self, trade_side: str | None) -> str | None:
+        side = str(trade_side or "").strip().lower()
+        if side in {"yes", "buy"}:
+            return "yes"
+        if side in {"no", "sell"}:
+            return "no"
+        return None

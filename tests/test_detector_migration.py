@@ -216,6 +216,8 @@ def test_detector_cooldown_prevents_duplicate_signals():
         platform="polymarket",
         market_id="cooldown-test",
         title="Test",
+        event_kind="trade",
+        trade_side="yes",
         yes_price=0.50,
         volume=2000,
         volume_kind="delta",
@@ -230,6 +232,8 @@ def test_detector_cooldown_prevents_duplicate_signals():
         platform="polymarket",
         market_id="cooldown-test",
         title="Test",
+        event_kind="trade",
+        trade_side="yes",
         yes_price=0.58,
         volume=2500,
         volume_kind="delta",
@@ -244,6 +248,8 @@ def test_detector_cooldown_prevents_duplicate_signals():
         platform="polymarket",
         market_id="cooldown-test",
         title="Test",
+        event_kind="trade",
+        trade_side="yes",
         yes_price=0.65,
         volume=3000,
         volume_kind="delta",
@@ -376,6 +382,398 @@ def test_notable_promotes_once_half_percent_price_move_is_met():
     assert tier == "notable"
 
 
+def test_weak_price_outlier_move_without_directional_bias_does_not_alert():
+    """Balanced directional flow should block weak-price outlier alerts."""
+    settings = make_settings(
+        spike_min_volume_delta=500,
+        spike_min_price_move=0.05,
+        spike_score_threshold=3.0,
+    )
+    detector = SpikeDetector(settings)
+    window = detector.windows["alert-flow-test"]
+    window.volume_deltas = deque([100.0, 100.0, 100.0, 100.0])
+    base_time = datetime.now(UTC)
+
+    for idx, side in enumerate(["yes", "no", "yes", "no", "yes"]):
+        window.event_history.append(
+            MarketEvent(
+                source="test",
+                platform="polymarket",
+                market_id="alert-flow-test",
+                title="Test",
+                event_kind="trade",
+                trade_side=side,
+                yes_price=0.50,
+                volume=100 + idx,
+                volume_kind="delta",
+                timestamp=base_time + timedelta(seconds=idx),
+            )
+        )
+
+    should_alert = detector._should_alert(
+        window=window,
+        event=MarketEvent(
+            source="test",
+            platform="polymarket",
+            market_id="alert-flow-test",
+            title="Test",
+            yes_price=0.507,
+            volume=1200,
+            volume_kind="delta",
+            timestamp=base_time + timedelta(seconds=10),
+        ),
+        volume_delta=1200.0,
+        price_move=0.007,
+        baseline=100.0,
+    )
+
+    assert should_alert is False
+
+
+def test_quote_only_weak_outlier_move_does_not_alert_without_confirmation():
+    """Quote-only weak-price outliers should not alert on volume alone."""
+    settings = make_settings(
+        spike_min_volume_delta=500,
+        spike_min_price_move=0.05,
+        spike_score_threshold=3.0,
+    )
+    detector = SpikeDetector(settings)
+    window = detector.windows["quote-flow-test"]
+    window.volume_deltas = deque([100.0, 100.0, 100.0, 100.0])
+
+    should_alert = detector._should_alert(
+        window=window,
+        event=MarketEvent(
+            source="test",
+            platform="polymarket",
+            market_id="quote-flow-test",
+            title="Test",
+            event_kind="quote",
+            yes_price=0.507,
+            volume=1200,
+            volume_kind="delta",
+            timestamp=datetime.now(UTC),
+        ),
+        volume_delta=1200.0,
+        price_move=0.007,
+        baseline=100.0,
+    )
+
+    assert should_alert is False
+
+
+def test_weak_price_outlier_move_with_directional_bias_still_alerts():
+    """Strong recent directional trade flow should still allow weak-price outlier alerts."""
+    settings = make_settings(
+        spike_min_volume_delta=500,
+        spike_min_price_move=0.05,
+        spike_score_threshold=3.0,
+    )
+    detector = SpikeDetector(settings)
+    window = detector.windows["alert-flow-test"]
+    window.volume_deltas = deque([100.0, 100.0, 100.0, 100.0])
+    base_time = datetime.now(UTC)
+
+    for idx, side in enumerate(["yes", "yes", "buy", "yes", "no"]):
+        window.event_history.append(
+            MarketEvent(
+                source="test",
+                platform="polymarket",
+                market_id="alert-flow-test",
+                title="Test",
+                event_kind="trade",
+                trade_side=side,
+                yes_price=0.50,
+                volume=100 + idx,
+                volume_kind="delta",
+                timestamp=base_time + timedelta(seconds=idx),
+            )
+        )
+
+    should_alert = detector._should_alert(
+        window=window,
+        event=MarketEvent(
+            source="test",
+            platform="polymarket",
+            market_id="alert-flow-test",
+            title="Test",
+            yes_price=0.507,
+            volume=1200,
+            volume_kind="delta",
+            timestamp=base_time + timedelta(seconds=10),
+        ),
+        volume_delta=1200.0,
+        price_move=0.007,
+        baseline=100.0,
+    )
+
+    assert should_alert is True
+
+
+def test_ultra_low_price_market_requires_stricter_price_move():
+    """Ultra-low-price markets need at least a 2% move before alerting."""
+    settings = make_settings(
+        spike_min_volume_delta=500,
+        spike_min_price_move=0.05,
+        spike_score_threshold=3.0,
+    )
+    detector = SpikeDetector(settings)
+    window = detector.windows["ultra-low-price-test"]
+    window.volume_deltas = deque([100.0, 100.0, 100.0, 100.0])
+
+    should_alert = detector._should_alert(
+        window=window,
+        event=MarketEvent(
+            source="test",
+            platform="polymarket",
+            market_id="ultra-low-price-test",
+            title="Test",
+            event_kind="trade",
+            trade_side="yes",
+            yes_price=0.01,
+            volume=1200,
+            volume_kind="delta",
+            timestamp=datetime.now(UTC),
+        ),
+        volume_delta=1200.0,
+        price_move=0.015,
+        baseline=100.0,
+    )
+
+    assert should_alert is False
+
+
+def test_low_liquidity_market_requires_stricter_price_move():
+    """Illiquid markets also need the stricter 2% move floor."""
+    settings = make_settings(
+        spike_min_volume_delta=500,
+        spike_min_price_move=0.05,
+        spike_score_threshold=3.0,
+    )
+    detector = SpikeDetector(settings)
+    window = detector.windows["low-liquidity-test"]
+    window.volume_deltas = deque([100.0, 100.0, 100.0, 100.0])
+
+    should_alert = detector._should_alert(
+        window=window,
+        event=MarketEvent(
+            source="test",
+            platform="polymarket",
+            market_id="low-liquidity-test",
+            title="Test",
+            event_kind="trade",
+            trade_side="yes",
+            yes_price=0.40,
+            liquidity=800.0,
+            volume=1200,
+            volume_kind="delta",
+            timestamp=datetime.now(UTC),
+        ),
+        volume_delta=1200.0,
+        price_move=0.015,
+        baseline=100.0,
+    )
+
+    assert should_alert is False
+
+
+def test_ultra_thin_quote_needs_100x_volume_or_trade_execution():
+    """Ultra-thin quote-only moves below 100x baseline should be suppressed."""
+    settings = make_settings(
+        spike_min_volume_delta=500,
+        spike_min_price_move=0.05,
+        spike_score_threshold=3.0,
+    )
+    detector = SpikeDetector(settings)
+    window = detector.windows["ultra-thin-quote-test"]
+    window.volume_deltas = deque([5.0, 5.0, 5.0, 5.0])
+
+    should_alert = detector._should_alert(
+        window=window,
+        event=MarketEvent(
+            source="test",
+            platform="polymarket",
+            market_id="ultra-thin-quote-test",
+            title="Test",
+            event_kind="quote",
+            yes_price=0.009,
+            volume=400,
+            volume_kind="delta",
+            timestamp=datetime.now(UTC),
+        ),
+        volume_delta=400.0,
+        price_move=0.02,
+        baseline=5.0,
+    )
+
+    assert should_alert is False
+
+
+def test_ultra_thin_trade_passes_with_executed_trade():
+    """Ultra-thin markets can still alert when the spike is an executed trade."""
+    settings = make_settings(
+        spike_min_volume_delta=500,
+        spike_min_price_move=0.05,
+        spike_score_threshold=3.0,
+    )
+    detector = SpikeDetector(settings)
+    window = detector.windows["ultra-thin-trade-test"]
+    window.volume_deltas = deque([5.0, 5.0, 5.0, 5.0])
+
+    should_alert = detector._should_alert(
+        window=window,
+        event=MarketEvent(
+            source="test",
+            platform="polymarket",
+            market_id="ultra-thin-trade-test",
+            title="Test",
+            event_kind="trade",
+            trade_side="yes",
+            yes_price=0.03,
+            volume=400,
+            volume_kind="delta",
+            timestamp=datetime.now(UTC),
+        ),
+        volume_delta=400.0,
+        price_move=0.02,
+        baseline=5.0,
+    )
+
+    assert should_alert is True
+
+
+def test_trade_side_price_direction_mismatch_is_rejected():
+    """Trade-side and price direction disagreement should suppress the alert."""
+    settings = make_settings(
+        spike_min_volume_delta=500,
+        spike_min_price_move=0.05,
+        spike_score_threshold=3.0,
+    )
+    detector = SpikeDetector(settings)
+    base_time = datetime.now(UTC)
+    detector.windows["coherence-test"].last_event = MarketEvent(
+        source="test",
+        platform="polymarket",
+        market_id="coherence-test",
+        title="Test",
+        yes_price=0.60,
+        volume=1000,
+        volume_kind="cumulative",
+        timestamp=base_time,
+    )
+    detector.windows["coherence-test"].volume_deltas = deque([100.0, 100.0, 100.0, 100.0])
+
+    should_alert = detector._should_alert(
+        window=detector.windows["coherence-test"],
+        event=MarketEvent(
+            source="test",
+            platform="polymarket",
+            market_id="coherence-test",
+            title="Test",
+            event_kind="trade",
+            trade_side="yes",
+            yes_price=0.56,
+            volume=2200,
+            volume_kind="delta",
+            timestamp=base_time + timedelta(seconds=10),
+        ),
+        volume_delta=1200.0,
+        price_move=0.04,
+        baseline=100.0,
+    )
+
+    assert should_alert is False
+
+
+def test_dominant_recent_flow_mismatch_is_rejected():
+    """Recent dominant flow disagreeing with price direction should suppress weak alerts."""
+    settings = make_settings(
+        spike_min_volume_delta=500,
+        spike_min_price_move=0.05,
+        spike_score_threshold=3.0,
+    )
+    detector = SpikeDetector(settings)
+    window = detector.windows["dominant-flow-test"]
+    window.volume_deltas = deque([100.0, 100.0, 100.0, 100.0])
+    base_time = datetime.now(UTC)
+    window.last_event = MarketEvent(
+        source="test",
+        platform="polymarket",
+        market_id="dominant-flow-test",
+        title="Test",
+        yes_price=0.60,
+        volume=1000,
+        volume_kind="cumulative",
+        timestamp=base_time,
+    )
+    for idx, side in enumerate(["yes", "yes", "buy", "yes", "no"]):
+        window.event_history.append(
+            MarketEvent(
+                source="test",
+                platform="polymarket",
+                market_id="dominant-flow-test",
+                title="Test",
+                event_kind="trade",
+                trade_side=side,
+                yes_price=0.60,
+                volume=100 + idx,
+                volume_kind="delta",
+                timestamp=base_time - timedelta(seconds=5 - idx),
+            )
+        )
+
+    should_alert = detector._should_alert(
+        window=window,
+        event=MarketEvent(
+            source="test",
+            platform="polymarket",
+            market_id="dominant-flow-test",
+            title="Test",
+            event_kind="quote",
+            yes_price=0.59,
+            volume=1200,
+            volume_kind="delta",
+            timestamp=base_time + timedelta(seconds=10),
+        ),
+        volume_delta=1200.0,
+        price_move=0.01,
+        baseline=100.0,
+    )
+
+    assert should_alert is False
+
+
+def test_meaningful_price_move_still_alerts_without_trade_confirmation():
+    """A 1%+ move remains sufficient even when directional trade data is absent."""
+    settings = make_settings(
+        spike_min_volume_delta=500,
+        spike_min_price_move=0.05,
+        spike_score_threshold=3.0,
+    )
+    detector = SpikeDetector(settings)
+    window = detector.windows["alert-flow-test"]
+    window.volume_deltas = deque([100.0, 100.0, 100.0, 100.0])
+
+    should_alert = detector._should_alert(
+        window=window,
+        event=MarketEvent(
+            source="test",
+            platform="polymarket",
+            market_id="alert-flow-test",
+            title="Test",
+            yes_price=0.512,
+            volume=1200,
+            volume_kind="delta",
+            timestamp=datetime.now(UTC),
+        ),
+        volume_delta=1200.0,
+        price_move=0.012,
+        baseline=100.0,
+    )
+
+    assert should_alert is True
+
+
 def test_high_conviction_flow_still_bypasses_notable_floor():
     """Existing high-conviction rules should remain unchanged by the notable-only gate."""
     settings = make_settings(
@@ -403,3 +801,5 @@ def test_high_conviction_flow_still_bypasses_notable_floor():
     )
 
     assert tier == "high conviction flow"
+
+

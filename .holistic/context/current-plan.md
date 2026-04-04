@@ -2,15 +2,16 @@
 
 ## Goal
 
-Review recent repo activity and decide what to work on.
+Continue work around .bg-shell/manifest.json, .gitattributes, .pytest_cache/v/cache/nodeids
 
 ## Latest Status
 
-Holistic is set up and tracking this repo.
+Session started.
 
 ## Planned Next Steps
 
-- No plan captured yet.
+- Review the most recently changed files
+- Continue the current implementation thread
 
 ## Project Impact
 

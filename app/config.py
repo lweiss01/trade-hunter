@@ -67,29 +67,54 @@ def _kv_pairs(name: str) -> dict[str, str]:
     return pairs
 
 
-def persist_kalshi_markets(markets: list[str], env_path: Path | None = None) -> None:
-    """Persist KALSHI_MARKETS to .env for restart-safe ticker management."""
+def _persist_env_updates(updates: dict[str, str], env_path: Path | None = None) -> None:
     path = env_path or (ROOT / ".env")
-    line_value = f"KALSHI_MARKETS={','.join(markets)}"
 
     if not path.exists():
-        path.write_text(f"{line_value}\n", encoding="utf-8")
+        content = "\n".join(f"{key}={value}" for key, value in updates.items()) + "\n"
+        path.write_text(content, encoding="utf-8")
         return
 
     lines = path.read_text(encoding="utf-8").splitlines()
-    replaced = False
-    for idx, raw in enumerate(lines):
-        if raw.strip().startswith("KALSHI_MARKETS="):
-            lines[idx] = line_value
-            replaced = True
-            break
+    remaining = dict(updates)
 
-    if not replaced:
+    for idx, raw in enumerate(lines):
+        stripped = raw.strip()
+        if not stripped or "=" not in stripped:
+            continue
+        key = stripped.split("=", 1)[0].strip()
+        if key in remaining:
+            lines[idx] = f"{key}={remaining.pop(key)}"
+
+    if remaining:
         if lines and lines[-1].strip() != "":
             lines.append("")
-        lines.append(line_value)
+        lines.extend(f"{key}={value}" for key, value in remaining.items())
 
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def persist_kalshi_markets(markets: list[str], env_path: Path | None = None) -> None:
+    """Persist KALSHI_MARKETS to .env for restart-safe ticker management."""
+    _persist_env_updates({"KALSHI_MARKETS": ",".join(markets)}, env_path=env_path)
+
+
+def persist_detector_thresholds(
+    *,
+    min_volume_delta: float | None = None,
+    min_price_move: float | None = None,
+    score_threshold: float | None = None,
+    env_path: Path | None = None,
+) -> None:
+    updates: dict[str, str] = {}
+    if min_volume_delta is not None:
+        updates["SPIKE_MIN_VOLUME_DELTA"] = str(min_volume_delta)
+    if min_price_move is not None:
+        updates["SPIKE_MIN_PRICE_MOVE"] = str(min_price_move)
+    if score_threshold is not None:
+        updates["SPIKE_SCORE_THRESHOLD"] = str(score_threshold)
+    if updates:
+        _persist_env_updates(updates, env_path=env_path)
 
 
 @dataclass(frozen=True)

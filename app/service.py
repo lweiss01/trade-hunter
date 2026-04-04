@@ -9,7 +9,7 @@ from typing import Any
 
 log = logging.getLogger(__name__)
 
-from .config import Settings, persist_kalshi_markets
+from .config import Settings, persist_detector_thresholds, persist_kalshi_markets
 from .detector import SpikeDetector
 from .feeds.kalshi_pykalshi import KalshiPykalshiFeed
 from .feeds.simulated import SimulatedFeed
@@ -298,6 +298,44 @@ class TradeHunterService:
                 time.sleep(0.1)
                 feed.start()
                 break
+
+    def apply_tuning_suggestions(self) -> dict[str, float]:
+        if not self._tuning_advisor:
+            raise ValueError("tuning advisor unavailable")
+
+        tuning = self._tuning_advisor.get()
+        if not tuning:
+            raise ValueError("no tuning suggestions available")
+
+        suggested = dict(tuning.get("suggested_thresholds") or {})
+        if not suggested:
+            raise ValueError("no structured threshold suggestions to apply")
+
+        allowed = {"min_volume_delta", "min_price_move", "score_threshold"}
+        unknown = sorted(set(suggested) - allowed)
+        if unknown:
+            raise ValueError(f"unsupported suggested thresholds: {', '.join(unknown)}")
+
+        applied: dict[str, float] = {}
+        if "min_volume_delta" in suggested:
+            value = float(suggested["min_volume_delta"])
+            object.__setattr__(self.settings, "spike_min_volume_delta", value)
+            applied["min_volume_delta"] = value
+        if "min_price_move" in suggested:
+            value = float(suggested["min_price_move"])
+            object.__setattr__(self.settings, "spike_min_price_move", value)
+            applied["min_price_move"] = value
+        if "score_threshold" in suggested:
+            value = float(suggested["score_threshold"])
+            object.__setattr__(self.settings, "spike_score_threshold", value)
+            applied["score_threshold"] = value
+
+        persist_detector_thresholds(
+            min_volume_delta=applied.get("min_volume_delta"),
+            min_price_move=applied.get("min_price_move"),
+            score_threshold=applied.get("score_threshold"),
+        )
+        return applied
 
     def dashboard_state(self) -> dict[str, Any]:
         state = self.store.dashboard_state()

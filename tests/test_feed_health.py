@@ -93,19 +93,22 @@ def test_import_error_increments_error_count(feed, mock_publish_status):
 
 
 def test_generic_error_increments_error_count(feed, mock_publish_status):
-    """Generic Exception should increment error_count and publish status."""
+    """Generic Exception should increment error_count and publish reconnect status once."""
     with patch.object(feed, "_run", new=AsyncMock(side_effect=ValueError("boom"))):
-        feed._run_loop()
-    
+        with patch.object(feed, "_sleep_with_stop", new=AsyncMock(return_value=True)):
+            feed._run_loop()
+
     assert feed._error_count == 1
-    
+    assert feed._reconnects == 1
+
     mock_publish_status.assert_called_once()
     name, payload = mock_publish_status.call_args[0]
-    
+
     assert name == "kalshi-pykalshi"
     assert payload["running"] is False
-    assert "error: boom" in payload["detail"]
+    assert "error: boom (reconnecting in 5s)" == payload["detail"]
     assert payload["error_count"] == 1
+    assert payload["reconnects"] == 1
 
 
 @pytest.mark.asyncio
