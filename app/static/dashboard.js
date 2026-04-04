@@ -1,5 +1,8 @@
 const metricsEl = document.querySelector("#metrics");
 const signalsEl = document.querySelector("#signals");
+const topicFilterRowEl = document.querySelector("#topic-filter-row");
+const whatMattersNowEl = document.querySelector("#what-matters-now");
+const selectedSignalWorkbenchEl = document.querySelector("#selected-signal-workbench");
 const signalSortEl = document.querySelector("#signal-sort");
 const signalLatestToggleEl = document.querySelector("#signal-latest-toggle");
 const activityEl = document.querySelector("#activity");
@@ -7,27 +10,98 @@ const feedsEl = document.querySelector("#feeds");
 const marketsEl = document.querySelector("#markets");
 const demoButton = document.querySelector("#demo-spike");
 const demoPanel = document.querySelector("#demo-panel");
+const modeBadgeEl = document.querySelector("#mode-badge");
+const settingsToggleEl = document.querySelector("#settings-toggle");
+const navTabEls = Array.from(document.querySelectorAll(".nav-tab"));
+const pageViewEls = Array.from(document.querySelectorAll("[data-page-view]"));
 const tickerForm = document.querySelector("#ticker-form");
 const tickerInput = document.querySelector("#ticker-input");
 const tickerListEl = document.querySelector("#ticker-list");
 const tickerMessageEl = document.querySelector("#ticker-message");
 const tickerAddButton = document.querySelector("#ticker-add");
 const categoryForm = document.querySelector("#category-form");
+const categoryShortcutsEl = document.querySelector("#category-shortcuts");
 const categoryInput = document.querySelector("#category-input");
 const categoryResultsEl = document.querySelector("#category-results");
 const categoryMessageEl = document.querySelector("#category-message");
 const tuningAdvisorEl = document.querySelector("#tuning-advisor");
+const settingsLoadStatusEl = document.querySelector("#settings-load-status");
+const settingEnableSimulationEl = document.querySelector("#setting-enable-simulation");
+const settingQuietModeEl = document.querySelector("#setting-quiet-mode");
+const settingEnableKalshiEl = document.querySelector("#setting-enable-kalshi");
+const settingKalshiApiKeyIdEl = document.querySelector("#setting-kalshi-api-key-id");
+const settingKalshiPrivateKeyPathEl = document.querySelector("#setting-kalshi-private-key-path");
+const settingKalshiMarketsEl = document.querySelector("#setting-kalshi-markets");
+const settingDiscordAnalystMinConfidenceEl = document.querySelector("#setting-discord-analyst-min-confidence");
+const settingDiscordAnalystFollowupEl = document.querySelector("#setting-discord-analyst-followup");
+const settingDiscordWebhookUrlEl = document.querySelector("#setting-discord-webhook-url");
+const settingDiscordAlertModeEl = document.querySelector("#setting-discord-alert-mode");
+const settingDiscordRouteCryptoEl = document.querySelector("#setting-discord-route-crypto");
+const settingDiscordRouteMacroEl = document.querySelector("#setting-discord-route-macro");
+const settingDiscordRouteElectionsEl = document.querySelector("#setting-discord-route-elections");
+const settingIngestApiTokenEl = document.querySelector("#setting-ingest-api-token");
+const settingPolyalerthubTokenEl = document.querySelector("#setting-polyalerthub-token");
+const settingSpikeMinVolumeDeltaEl = document.querySelector("#setting-spike-min-volume-delta");
+const settingSpikeMinPriceMoveEl = document.querySelector("#setting-spike-min-price-move");
+const settingSpikeScoreThresholdEl = document.querySelector("#setting-spike-score-threshold");
+const settingSpikeBaselinePointsEl = document.querySelector("#setting-spike-baseline-points");
+const settingSpikeCooldownSecondsEl = document.querySelector("#setting-spike-cooldown-seconds");
+const settingRetentionDaysEl = document.querySelector("#setting-retention-days");
+const settingAppHostEl = document.querySelector("#setting-app-host");
+const settingAppPortEl = document.querySelector("#setting-app-port");
+const settingsStatusCoreEl = document.querySelector("#settings-status-core");
+const settingsStatusKalshiEl = document.querySelector("#settings-status-kalshi");
+const settingsStatusAnalystEl = document.querySelector("#settings-status-analyst");
+const settingsStatusDiscordEl = document.querySelector("#settings-status-discord");
+const settingsStatusIngestEl = document.querySelector("#settings-status-ingest");
+const settingsStatusDetectorEl = document.querySelector("#settings-status-detector");
+const settingsStatusStorageEl = document.querySelector("#settings-status-storage");
 
 let tickerMutationInFlight = false;
 let tuningApplyInFlight = false;
 let trackedTickers = [];
 let signalSortMode = "newest";
 let signalLatestOnly = false;
+let activeSignalTopic = "all";
+let selectedSignalKey = null;
+let selectedMarketId = null;
+let currentPage = "dashboard";
 let lastDashboardState = null;
+let lastSettingsState = null;
 
 // Per-market price history for sparklines (last 20 yes_price values)
 const priceHistory = new Map();
 const SPARK_MAX = 20;
+const SIGNAL_TOPICS = [
+  ["all", "All"],
+  ["macro", "Macro"],
+  ["crypto", "Crypto"],
+  ["elections", "Elections"],
+  ["geopolitics", "Geopolitics"],
+  ["sports", "Sports"],
+  ["general", "General"],
+];
+
+function setActivePage(page) {
+  currentPage = page;
+
+  pageViewEls.forEach((view) => {
+    const isActive = view.dataset.pageView === page;
+    view.hidden = !isActive;
+    view.classList.toggle("active", isActive);
+  });
+
+  navTabEls.forEach((tab) => {
+    const isActive = tab.dataset.page === page;
+    tab.classList.toggle("active", isActive);
+    tab.setAttribute("aria-selected", isActive ? "true" : "false");
+  });
+
+  if (settingsToggleEl) {
+    settingsToggleEl.classList.toggle("active", page === "settings");
+    settingsToggleEl.setAttribute("aria-pressed", page === "settings" ? "true" : "false");
+  }
+}
 
 function recordPriceHistory(events) {
   for (const e of (events || [])) {
@@ -65,6 +139,14 @@ async function fetchState() {
   return response.json();
 }
 
+async function fetchSettings() {
+  const response = await fetch("/api/settings");
+  if (!response.ok) {
+    throw new Error("Failed to load settings");
+  }
+  return response.json();
+}
+
 async function postTicker(url, ticker) {
   const response = await fetch(url, {
     method: "POST",
@@ -95,9 +177,17 @@ function setTickerMessage(message, isError = false) {
 }
 
 function renderModeUI(config) {
-  const mode = config?.active_mode || "none";
+  const mode = String(config?.active_mode || "none").toLowerCase();
+  const isLive = mode === "live";
+  const label = isLive ? "LIVE" : mode === "simulation" ? "SIM" : mode.toUpperCase();
+
+  if (modeBadgeEl) {
+    modeBadgeEl.className = `mode-badge ${isLive ? "live" : "sim"}`;
+    modeBadgeEl.innerHTML = `${isLive ? '<span class="live-dot"></span>' : ""}${escapeHtml(label)}`;
+  }
+
   if (demoPanel) {
-    demoPanel.style.display = mode === "simulation" ? "block" : "none";
+    demoPanel.hidden = mode !== "simulation";
   }
 }
 
@@ -118,10 +208,79 @@ function setTickerMutationBusy(isBusy) {
 
   if (tickerListEl) {
     tickerListEl
-      .querySelectorAll(".ticker-remove")
+      .querySelectorAll(".ticker-remove, .prune-dead-btn")
       .forEach((button) => {
         button.disabled = isBusy;
       });
+  }
+}
+
+function setSettingsStatus(el, tone, label) {
+  if (!el) return;
+  el.className = `settings-status ${tone}`;
+  el.textContent = label;
+}
+
+function formatPresenceLabel(isPresent, configuredLabel = "configured") {
+  return isPresent ? configuredLabel : "not set";
+}
+
+function renderSettings(settingsPayload) {
+  const settings = settingsPayload?.settings || {};
+  const presence = settings.presence || {};
+  lastSettingsState = settingsPayload || null;
+
+  if (settingsLoadStatusEl) {
+    settingsLoadStatusEl.textContent = "live read-only";
+  }
+
+  if (settingEnableSimulationEl) settingEnableSimulationEl.checked = Boolean(settings.enable_simulation);
+  if (settingQuietModeEl) settingQuietModeEl.checked = Boolean(settings.quiet_mode);
+  if (settingEnableKalshiEl) settingEnableKalshiEl.checked = Boolean(settings.enable_kalshi);
+  if (settingKalshiApiKeyIdEl) settingKalshiApiKeyIdEl.value = formatPresenceLabel(presence.kalshi_api_key_id);
+  if (settingKalshiPrivateKeyPathEl) settingKalshiPrivateKeyPathEl.value = formatPresenceLabel(presence.kalshi_private_key_path);
+  if (settingKalshiMarketsEl) settingKalshiMarketsEl.value = (settings.kalshi_markets || []).join(", ") || "none tracked";
+  if (settingDiscordAnalystMinConfidenceEl) settingDiscordAnalystMinConfidenceEl.value = settings.discord_analyst_min_confidence || "medium";
+  if (settingDiscordAnalystFollowupEl) settingDiscordAnalystFollowupEl.checked = Boolean(settings.discord_analyst_followup);
+  if (settingDiscordWebhookUrlEl) settingDiscordWebhookUrlEl.value = formatPresenceLabel(presence.discord_webhook_url);
+  if (settingDiscordAlertModeEl) settingDiscordAlertModeEl.value = settings.discord_alert_mode || "all";
+  if (settingDiscordRouteCryptoEl) settingDiscordRouteCryptoEl.value = presence.discord_webhook_routes?.includes("crypto") ? "configured" : "not set";
+  if (settingDiscordRouteMacroEl) settingDiscordRouteMacroEl.value = presence.discord_webhook_routes?.includes("macro") ? "configured" : "not set";
+  if (settingDiscordRouteElectionsEl) settingDiscordRouteElectionsEl.value = presence.discord_webhook_routes?.includes("elections") ? "configured" : "not set";
+  if (settingIngestApiTokenEl) settingIngestApiTokenEl.value = formatPresenceLabel(presence.ingest_api_token);
+  if (settingPolyalerthubTokenEl) settingPolyalerthubTokenEl.value = formatPresenceLabel(presence.polyalerthub_token);
+  if (settingSpikeMinVolumeDeltaEl) settingSpikeMinVolumeDeltaEl.value = settings.spike_min_volume_delta ?? "";
+  if (settingSpikeMinPriceMoveEl) settingSpikeMinPriceMoveEl.value = settings.spike_min_price_move ?? "";
+  if (settingSpikeScoreThresholdEl) settingSpikeScoreThresholdEl.value = settings.spike_score_threshold ?? "";
+  if (settingSpikeBaselinePointsEl) settingSpikeBaselinePointsEl.value = settings.spike_baseline_points ?? "";
+  if (settingSpikeCooldownSecondsEl) settingSpikeCooldownSecondsEl.value = settings.spike_cooldown_seconds ?? "";
+  if (settingRetentionDaysEl) settingRetentionDaysEl.value = settings.retention_days ?? "";
+  if (settingAppHostEl) settingAppHostEl.value = settings.host || "";
+  if (settingAppPortEl) settingAppPortEl.value = settings.port ?? "";
+
+  setSettingsStatus(settingsStatusCoreEl, "configured", "configured");
+  setSettingsStatus(settingsStatusAnalystEl, "configured", "configured");
+  setSettingsStatus(settingsStatusDetectorEl, "configured", "configured");
+  setSettingsStatus(settingsStatusStorageEl, "configured", "configured");
+
+  if (!settings.enable_kalshi) {
+    setSettingsStatus(settingsStatusKalshiEl, "disabled", "disabled");
+  } else if (presence.kalshi_api_key_id && presence.kalshi_private_key_path) {
+    setSettingsStatus(settingsStatusKalshiEl, "configured", "configured");
+  } else {
+    setSettingsStatus(settingsStatusKalshiEl, "missing", "missing key");
+  }
+
+  if (presence.discord_webhook_url || (presence.discord_webhook_routes || []).length) {
+    setSettingsStatus(settingsStatusDiscordEl, "configured", "configured");
+  } else {
+    setSettingsStatus(settingsStatusDiscordEl, "disabled", "disabled");
+  }
+
+  if (presence.ingest_api_token || presence.polyalerthub_token) {
+    setSettingsStatus(settingsStatusIngestEl, "configured", "configured");
+  } else {
+    setSettingsStatus(settingsStatusIngestEl, "missing", "missing key");
   }
 }
 
@@ -209,8 +368,45 @@ function summarizeReason(reason) {
   return text.length > 140 ? `${text.slice(0, 137)}…` : text;
 }
 
+function getSignalKey(signal) {
+  return `${signal?.event?.market_id || "unknown-market"}|${signal?.detected_at || "unknown-time"}`;
+}
+
+function findBestSignalForMarket(signals, marketId) {
+  return (signals || []).find((signal) => signal?.event?.market_id === marketId) || null;
+}
+
+function normalizeTopic(value) {
+  const topic = String(value || "general").trim().toLowerCase();
+  return SIGNAL_TOPICS.some(([key]) => key === topic) ? topic : "general";
+}
+
+function getSignalTopicCounts(signals) {
+  const counts = Object.fromEntries(SIGNAL_TOPICS.map(([key]) => [key, 0]));
+  for (const signal of signals || []) {
+    const topic = normalizeTopic(signal?.event?.topic || signal?.topic);
+    counts[topic] += 1;
+    counts.all += 1;
+  }
+  return counts;
+}
+
+function renderTopicFilterRow(signals) {
+  if (!topicFilterRowEl) return;
+  const counts = getSignalTopicCounts(signals || []);
+
+  topicFilterRowEl.innerHTML = SIGNAL_TOPICS.map(([key, label]) => {
+    const isActive = activeSignalTopic === key;
+    return `<button class="topic-chip ${isActive ? "active" : ""}" type="button" data-topic="${key}" aria-pressed="${isActive ? "true" : "false"}">${label} <span class="topic-count">${counts[key] || 0}</span></button>`;
+  }).join("");
+}
+
 function normalizeSignals(signals) {
   let result = [...signals];
+
+  if (activeSignalTopic !== "all") {
+    result = result.filter((signal) => normalizeTopic(signal?.event?.topic || signal?.topic) === activeSignalTopic);
+  }
 
   if (signalLatestOnly) {
     const seen = new Set();
@@ -236,6 +432,166 @@ function formatThresholdValue(key, value) {
   if (key === "min_price_move") return `${(Number(value) * 100).toFixed(1)}%`;
   if (key === "score_threshold") return Number(value).toFixed(2);
   return Number(value).toFixed(0);
+}
+
+function renderWhatMattersNow(signal) {
+  if (!whatMattersNowEl) return;
+
+  if (!signal) {
+    whatMattersNowEl.innerHTML = "";
+    whatMattersNowEl.hidden = true;
+    return;
+  }
+
+  const freshness = signalFreshness(signal.detected_at);
+  const title = signal?.event?.title || signal?.event?.market_id || "Signal";
+  const tier = String(signal.tier || "watch");
+  const topic = normalizeTopic(signal?.event?.topic || signal?.topic);
+  const whyThisMatters = summarizeReason(signal.reason);
+  const nextChecks = [];
+
+  if (signal?.event?.volume != null) nextChecks.push(`check liquidity (${formatVolume(signal.event.volume)} vol)`);
+  if (signal?.event?.yes_price != null) nextChecks.push(`confirm price context (${formatPrice(signal.event.yes_price)})`);
+  nextChecks.push(`review ${topic} context`);
+
+  whatMattersNowEl.hidden = false;
+  whatMattersNowEl.innerHTML = `
+    <article class="priority-strip">
+      <div class="priority-strip-head">
+        <span class="priority-kicker">What matters now</span>
+        <div class="priority-tags">
+          <span class="mini-badge">${escapeHtml(tier)}</span>
+          <span class="flow-pill info">score ${Number(signal.score || 0).toFixed(2)}</span>
+          <span class="flow-pill ${freshness.className}">${escapeHtml(freshness.label)}</span>
+        </div>
+      </div>
+      <strong class="priority-title">${escapeHtml(title)}</strong>
+      <div class="priority-meta">${escapeHtml(signal?.event?.platform || "unknown")} · ${escapeHtml(signal?.event?.market_id || "unknown-market")} · ${escapeHtml(topic)} · ${formatTimestamp(signal.detected_at)}</div>
+      <div class="priority-summary"><span class="priority-label">Why this matters</span>${escapeHtml(whyThisMatters)}</div>
+      <div class="priority-next"><span class="priority-label">Next checks</span>${nextChecks.map((item) => `<span class="priority-check">${escapeHtml(item)}</span>`).join("")}</div>
+    </article>
+  `;
+}
+
+function renderSelectedSignalWorkbench(signals, activity) {
+  if (!selectedSignalWorkbenchEl) return;
+
+  const ordered = signals || [];
+  const allActivity = activity || [];
+
+  if (!ordered.length && !selectedMarketId) {
+    selectedSignalWorkbenchEl.innerHTML = `<div class="empty">Select a signal or flow row to inspect its full context.</div>`;
+    return;
+  }
+
+  const selected = ordered.find((signal) => getSignalKey(signal) === selectedSignalKey) || null;
+
+  if (selected) {
+    selectedSignalKey = getSignalKey(selected);
+    selectedMarketId = selected?.event?.market_id || selectedMarketId;
+    selectedMarketId = selected?.event?.market_id || selectedMarketId;
+
+    const relatedActivity = allActivity.filter((item) => item.market_id === selected?.event?.market_id).slice(0, 6);
+    const analyst = selected.analyst || null;
+    const freshness = signalFreshness(selected.detected_at);
+    const liquidityBits = [
+      selected?.event?.yes_price != null ? `yes ${formatPrice(selected.event.yes_price)}` : null,
+      selected?.event?.volume != null ? `vol ${formatVolume(selected.event.volume)}` : null,
+      selected?.event?.trade_size != null ? `trade ${formatVolume(selected.event.trade_size)}` : null,
+    ].filter(Boolean);
+    const checklist = [
+      `confirm catalyst for ${normalizeTopic(selected?.event?.topic || selected?.topic)}`,
+      `review latest flow for ${selected?.event?.market_id || "market"}`,
+      `check liquidity before action`,
+    ];
+
+    selectedSignalWorkbenchEl.innerHTML = `
+      <div class="panel-head workbench-head">
+        <div>
+          <h2>Selected Signal Workbench</h2>
+          <div class="workbench-subtitle">List = triage. Detail = investigation.</div>
+        </div>
+        <div class="priority-tags">
+          <span class="mini-badge">${escapeHtml(selected.tier || "watch")}</span>
+          <span class="flow-pill info">score ${Number(selected.score || 0).toFixed(2)}</span>
+          <span class="flow-pill ${freshness.className}">${escapeHtml(freshness.label)}</span>
+        </div>
+      </div>
+      <div class="workbench-grid">
+        <section class="workbench-panel">
+          <span class="priority-kicker">Event summary</span>
+          <strong class="workbench-title">${escapeHtml(selected?.event?.title || selected?.event?.market_id || "Signal")}</strong>
+          <div class="workbench-meta">${escapeHtml(selected?.event?.platform || "unknown")} · ${escapeHtml(selected?.event?.market_id || "unknown-market")} · ${escapeHtml(selected?.source_label || selected?.event?.source || "unknown")} · ${formatTimestamp(selected.detected_at)}</div>
+          <p class="workbench-copy">${escapeHtml(selected.reason || "No detector rationale available.")}</p>
+          ${analyst ? `<div class="workbench-analyst"><span class="priority-label">Analyst view</span><p class="workbench-copy">${escapeHtml(analyst.rationale || "No analyst rationale available.")}</p></div>` : ""}
+        </section>
+        <section class="workbench-panel">
+          <span class="priority-kicker">Liquidity context</span>
+          <div class="workbench-pill-row">${liquidityBits.map((item) => `<span class="priority-check">${escapeHtml(item)}</span>`).join("") || '<span class="empty">No liquidity fields on this signal yet.</span>'}</div>
+          <span class="priority-kicker">Research checklist</span>
+          <ul class="workbench-list">${checklist.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+        </section>
+        <section class="workbench-panel workbench-panel-wide">
+          <span class="priority-kicker">Recent market-only flow</span>
+          ${relatedActivity.length ? `<div class="workbench-flow">${relatedActivity.map((item) => `<div class="workbench-flow-row"><span class="flow-kind ${item.event_kind === "trade" ? "trade" : "quote"}">${item.event_kind === "trade" ? "T" : "Q"}</span><span class="flow-mid">${escapeHtml(item.market_id || "unknown")}</span><span class="flow-val">${item.yes_price != null ? formatPrice(item.yes_price) : "n/a"}</span><span class="flow-muted">vol ${item.volume != null ? formatVolume(item.volume) : "n/a"}</span><span class="flow-age ${flowFreshness(item.timestamp).className}">${escapeHtml(flowFreshness(item.timestamp).label)}</span></div>`).join("")}</div>` : `<div class="empty">No recent activity matched this signal’s market.</div>`}
+        </section>
+      </div>
+    `;
+    return;
+  }
+
+  const fallbackActivity = allActivity.filter((item) => item.market_id === selectedMarketId).slice(0, 6);
+  const fallbackEvent = fallbackActivity[0] || null;
+
+  selectedSignalKey = null;
+
+  if (!fallbackEvent) {
+    selectedSignalWorkbenchEl.innerHTML = `<div class="empty">Select a signal or flow row to inspect its full context.</div>`;
+    return;
+  }
+
+  const fallbackFreshness = flowFreshness(fallbackEvent.timestamp);
+  const fallbackChecks = [
+    `review latest flow for ${fallbackEvent.market_id || "market"}`,
+    `check whether price movement is backed by trades`,
+    `inspect liquidity before action`,
+  ];
+  const fallbackLiquidity = [
+    fallbackEvent.yes_price != null ? `yes ${formatPrice(fallbackEvent.yes_price)}` : null,
+    fallbackEvent.volume != null ? `vol ${formatVolume(fallbackEvent.volume)}` : null,
+    fallbackEvent.trade_side ? `${fallbackEvent.trade_side}` : null,
+  ].filter(Boolean);
+
+  selectedSignalWorkbenchEl.innerHTML = `
+    <div class="panel-head workbench-head">
+      <div>
+        <h2>Selected Signal Workbench</h2>
+        <div class="workbench-subtitle">List = triage. Detail = investigation.</div>
+      </div>
+      <div class="priority-tags">
+        <span class="mini-badge">flow-only</span>
+        <span class="flow-pill ${fallbackFreshness.className}">${escapeHtml(fallbackFreshness.label)}</span>
+      </div>
+    </div>
+    <div class="workbench-grid">
+      <section class="workbench-panel">
+        <span class="priority-kicker">Event summary</span>
+        <strong class="workbench-title">${escapeHtml(fallbackEvent.title || fallbackEvent.market_id || "Market flow")}</strong>
+        <div class="workbench-meta">${escapeHtml(fallbackEvent.platform || "unknown")} · ${escapeHtml(fallbackEvent.market_id || "unknown-market")} · ${escapeHtml(fallbackEvent.source || "unknown")} · ${formatTimestamp(fallbackEvent.timestamp)}</div>
+        <p class="workbench-copy">No current signal matches this market. Showing the latest flow context directly so the workbench still supports investigation.</p>
+      </section>
+      <section class="workbench-panel">
+        <span class="priority-kicker">Liquidity context</span>
+        <div class="workbench-pill-row">${fallbackLiquidity.map((item) => `<span class="priority-check">${escapeHtml(item)}</span>`).join("") || '<span class="empty">No liquidity fields on this market flow yet.</span>'}</div>
+        <span class="priority-kicker">Research checklist</span>
+        <ul class="workbench-list">${fallbackChecks.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+      </section>
+      <section class="workbench-panel workbench-panel-wide">
+        <span class="priority-kicker">Recent market-only flow</span>
+        <div class="workbench-flow">${fallbackActivity.map((item) => `<div class="workbench-flow-row"><span class="flow-kind ${item.event_kind === "trade" ? "trade" : "quote"}">${item.event_kind === "trade" ? "T" : "Q"}</span><span class="flow-mid">${escapeHtml(item.market_id || "unknown")}</span><span class="flow-val">${item.yes_price != null ? formatPrice(item.yes_price) : "n/a"}</span><span class="flow-muted">vol ${item.volume != null ? formatVolume(item.volume) : "n/a"}</span><span class="flow-age ${flowFreshness(item.timestamp).className}">${escapeHtml(flowFreshness(item.timestamp).label)}</span></div>`).join("")}</div>
+      </section>
+    </div>
+  `;
 }
 
 async function applyRecommendedTuning() {
@@ -300,7 +656,10 @@ function renderTuningAdvisor(state) {
 }
 
 function renderSignals(signals) {
+  renderTopicFilterRow(signals || []);
   const ordered = normalizeSignals(signals || []);
+  renderWhatMattersNow(ordered[0] || null);
+  renderSelectedSignalWorkbench(ordered, lastDashboardState?.activity || []);
 
   if (!ordered.length) {
     const latestSignalAge = formatAgeFromNow(lastDashboardState?.telemetry?.latest_signal_at);
@@ -340,7 +699,7 @@ function renderSignals(signals) {
     }
 
     return `
-    <article class="signal-card compact">
+    <article class="signal-card compact ${getSignalKey(signal) === selectedSignalKey ? "selected" : ""}" data-signal-key="${escapeHtml(getSignalKey(signal))}" tabindex="0" role="button" aria-pressed="${getSignalKey(signal) === selectedSignalKey ? "true" : "false"}">
       <div class="signal-row-main">
         <strong class="signal-title">${escapeHtml(signal.event.title)}</strong>
         <div class="signal-tags">
@@ -405,82 +764,78 @@ function renderActivity(activity, telemetry = {}, config = {}) {
 
   activityEl.innerHTML = collapsed.map(({ event: item, count }) => {
     const freshness = flowFreshness(item.timestamp);
-    const price = item.yes_price != null ? `<span class="flow-val">${formatPrice(item.yes_price)}</span>` : "";
+    const price = item.yes_price != null ? `<span class="flow-val primary">${formatPrice(item.yes_price)}</span>` : "";
     const vol = item.volume != null ? `<span class="flow-muted">vol ${formatVolume(item.volume)}</span>` : "";
-    const side = item.trade_side ? `<span class="flow-muted">${escapeHtml(item.trade_side)}</span>` : "";
+    const side = item.trade_side ? `<span class="flow-muted secondary">${escapeHtml(item.trade_side)}</span>` : "";
     const kind = item.event_kind === "trade" ? `<span class="flow-kind trade">T</span>` : `<span class="flow-kind quote">Q</span>`;
     const dup = count > 1 ? `<span class="flow-dup">×${count}</span>` : "";
     const spark = sparklineSvg(item.market_id);
     const age = `<span class="flow-age ${freshness.className}">${escapeHtml(freshness.label)}</span>`;
+    const matchedSignal = findBestSignalForMarket(lastDashboardState?.signals || [], item.market_id);
+    const signalKey = matchedSignal ? getSignalKey(matchedSignal) : "";
+    const isSelected = signalKey ? signalKey === selectedSignalKey : item.market_id === selectedMarketId;
 
-    return `<div class="flow-row">${kind}${dup}<span class="flow-mid">${escapeHtml(item.market_id)}</span>${price}${vol}${side}${spark}${age}</div>`;
+    return `
+      <div class="flow-row ${isSelected ? "selected" : ""}" data-market-id="${escapeHtml(item.market_id || "")}" data-signal-key="${escapeHtml(signalKey)}" tabindex="0" role="button" aria-pressed="${isSelected ? "true" : "false"}">
+        <div class="flow-row-mainline">
+          <div class="flow-leading">${kind}<span class="flow-mid">${escapeHtml(item.market_id)}</span>${dup}</div>
+          <div class="flow-primary-metric">${price}</div>
+        </div>
+        <div class="flow-row-secondary">${vol}${side}${spark}${age}</div>
+      </div>
+    `;
   }).join("");
 }
 
 function renderFeeds(state) {
   const feeds = state.feeds || {};
   const config = state.config || {};
-  const summary = state.summary || {};
   const activity = state.activity || [];
   const telemetry = state.telemetry || {};
 
   const pills = [];
 
+  const pushPill = (label, tone = "info", withDot = false) => {
+    pills.push(
+      `<span class="nav-pill ${tone}">${withDot ? '<span class="dot"></span>' : ""}${escapeHtml(label)}</span>`,
+    );
+  };
+
   const mode = config.active_mode || "none";
-  const modePillClass = mode === "live" ? "live" : "info";
-  pills.push(`<span class="status-pill ${modePillClass}">mode: ${escapeHtml(mode)}</span>`);
+  pushPill(`mode: ${mode}`, mode === "live" ? "ok" : "info", mode === "live");
 
   const freshnessWindow = telemetry.freshness_window_minutes;
   if (freshnessWindow) {
-    pills.push(`<span class="status-pill info">window: ${freshnessWindow}m</span>`);
+    pushPill(`window: ${freshnessWindow}m`, "info");
   }
 
   const latestEventAge = formatAgeFromNow(telemetry.latest_event_at);
   const latestEventClass = latestEventAge === "unknown" ? "warn" : (latestEventAge.includes("h") ? "danger" : "ok");
-  pills.push(`<span class="status-pill ${latestEventClass}">last event: ${escapeHtml(latestEventAge)}</span>`);
+  pushPill(`last event: ${latestEventAge}`, latestEventClass, latestEventClass === "ok");
 
   const kalshiAge = formatAgeFromNow(telemetry.kalshi_last_event_at);
   const kalshiAgeClass = kalshiAge === "unknown" ? "warn" : (kalshiAge.includes("h") ? "danger" : "ok");
-  pills.push(`<span class="status-pill ${kalshiAgeClass}">kalshi seen: ${escapeHtml(kalshiAge)}</span>`);
+  pushPill(`kalshi: ${kalshiAge}`, kalshiAgeClass, kalshiAgeClass === "ok");
 
-  pills.push(`<span class="status-pill info">tickers: ${Number(telemetry.subscribed_tickers || 0)}</span>`);
+  pushPill(`tickers: ${Number(telemetry.subscribed_tickers || 0)}`, "info");
 
   if (activity.length) {
     const latestTs = activity[0]?.timestamp;
     const ageMinutes = latestTs ? Math.max(0, Math.floor((Date.now() - new Date(latestTs).getTime()) / 60000)) : null;
     const freshnessClass = ageMinutes !== null && ageMinutes <= 5 ? "ok" : ageMinutes !== null && ageMinutes <= 15 ? "warn" : "danger";
     const freshnessLabel = ageMinutes === null ? "freshness: unknown" : `freshness: ${ageMinutes}m`;
-    pills.push(`<span class="status-pill ${freshnessClass}">${escapeHtml(freshnessLabel)}</span>`);
+    pushPill(freshnessLabel, freshnessClass, freshnessClass === "ok");
   } else {
-    pills.push('<span class="status-pill warn">freshness: no recent events</span>');
+    pushPill("freshness: no recent events", "warn");
   }
 
-  const sourceEntries = Object.entries(summary.sources || {});
-  for (const [source, count] of sourceEntries) {
-    pills.push(`<span class="status-pill info">${escapeHtml(source)} ${Number(count)}</span>`);
-  }
-
-  for (const [name, feed] of Object.entries(feeds)) {
-    // Simulation is always suppressed in live mode — skip pill entirely.
-    if (name === "simulation" && mode === "live") continue;
-
-    if (name === "discord") {
-      const detail = String(feed.detail || "");
-      const isDisabled = !feed.running || detail.toLowerCase().includes("disabled");
-      const isDefault = detail.toLowerCase().includes("default");
-      const discordClass = isDisabled ? "warn" : (isDefault ? "info" : "ok");
-      const discordLabel = isDisabled ? "discord: disabled" : (isDefault ? "discord: default webhook" : "discord: active");
-      pills.push(`<span class="status-pill ${discordClass}">${escapeHtml(discordLabel)}</span>`);
-      continue;
-    }
-
-    const statusClass = feed.running ? "ok" : (String(feed.detail || "").toLowerCase().includes("error") ? "danger" : "warn");
-    const dotClass = feed.running ? "dot ok" : "dot";
-    const statusText = feed.running ? "running" : "idle";
-    pills.push(
-      `<span class="status-pill ${statusClass}"><span class="${dotClass}"></span>${escapeHtml(name)}: ${escapeHtml(statusText)}</span>`,
-    );
-  }
+  const discordFeed = feeds.discord || {};
+  const discordDetail = String(discordFeed.detail || "").toLowerCase();
+  const discordDisabled = !discordFeed.running || discordDetail.includes("disabled");
+  const discordDefault = discordDetail.includes("default");
+  const discordClass = discordDisabled ? "warn" : (discordDefault ? "info" : "ok");
+  const discordLabel = discordDisabled ? "discord: disabled" : (discordDefault ? "discord: default" : "discord: active");
+  pushPill(discordLabel, discordClass, discordClass === "ok");
 
   feedsEl.innerHTML = pills.join("");
 }
@@ -530,24 +885,89 @@ function renderMarkets(markets, telemetry = {}, config = {}) {
   marketsEl.innerHTML = head + rows;
 }
 
+function getTrackedTickerRows(tickers, markets, deadTickers = []) {
+  const deadSet = new Set((deadTickers || []).map((ticker) => normalizeTicker(ticker)));
+
+  return (tickers || []).map((ticker) => {
+    const normalizedTicker = normalizeTicker(ticker);
+    const isDeadTicker = deadSet.has(normalizedTicker);
+    const exactMatch = (markets || []).find((market) => market?.market_id === ticker) || null;
+    const seriesMatches = exactMatch
+      ? [exactMatch]
+      : (markets || []).filter((market) => String(market?.market_id || "").startsWith(`${ticker}-`));
+    const bestMatch = exactMatch || seriesMatches[0] || null;
+    const freshness = bestMatch ? flowFreshness(bestMatch.timestamp) : { label: "unresolved", className: "stale" };
+    const statusLabel = isDeadTicker
+      ? "expired/invalid"
+      : bestMatch
+        ? (seriesMatches.length > 1 && !exactMatch ? `${freshness.label} • ${seriesMatches.length} markets` : freshness.label)
+        : "unresolved";
+    const resolvedTitle = isDeadTicker
+      ? "Ticker no longer resolves on the Kalshi API"
+      : bestMatch
+        ? (exactMatch ? bestMatch.title : `${bestMatch.title} (${seriesMatches.length} open markets)`)
+        : "No live market snapshot yet";
+
+    return {
+      ticker,
+      title: resolvedTitle,
+      yesPrice: bestMatch?.yes_price,
+      statusLabel,
+      statusClass: isDeadTicker ? "dead" : freshness.className,
+    };
+  });
+}
+
 function renderTickerList(markets) {
   if (!tickerListEl) return;
 
   trackedTickers = Array.isArray(markets) ? [...markets] : [];
+  const marketSnapshots = lastDashboardState?.markets || [];
+  const deadTickers = lastDashboardState?.config?.dead_kalshi_markets || [];
 
   if (!trackedTickers.length) {
     tickerListEl.innerHTML = `<div class="empty">No Kalshi tickers tracked yet.</div>`;
     return;
   }
 
-  tickerListEl.innerHTML = trackedTickers
-    .map((ticker) => `
-      <div class="ticker-chip">
-        <span class="ticker-code">${escapeHtml(ticker)}</span>
-        <button class="ticker-remove" type="button" data-ticker="${escapeHtml(ticker)}">Remove</button>
+  const rows = getTrackedTickerRows(trackedTickers, marketSnapshots, deadTickers);
+
+  const deadInTracked = deadTickers.filter((d) =>
+    trackedTickers.some((t) => normalizeTicker(t) === normalizeTicker(d))
+  );
+
+  const pruneBar = deadInTracked.length
+    ? `<div class="prune-bar">
+        <span class="prune-bar-label">
+          <span class="prune-bar-count">${deadInTracked.length}</span> expired/invalid ticker${deadInTracked.length === 1 ? "" : "s"} detected by the feed.
+        </span>
+        <button class="prune-dead-btn" type="button" data-dead="${escapeHtml(deadInTracked.join(","))}">
+          Remove expired (${deadInTracked.length})
+        </button>
+      </div>`
+    : "";
+
+  tickerListEl.innerHTML = `
+    ${pruneBar}
+    <div class="tracked-table">
+      <div class="tracked-head">
+        <div>Ticker</div>
+        <div>Title</div>
+        <div>Yes</div>
+        <div>Status</div>
+        <div>Action</div>
       </div>
-    `)
-    .join("");
+      ${rows.map((row) => `
+        <div class="tracked-row">
+          <div class="tracked-cell tracked-code">${escapeHtml(row.ticker)}</div>
+          <div class="tracked-cell tracked-title">${escapeHtml(row.title)}</div>
+          <div class="tracked-cell tracked-price">${row.yesPrice != null ? formatPrice(row.yesPrice) : "n/a"}</div>
+          <div class="tracked-cell"><span class="tracked-status ${row.statusClass}">${escapeHtml(row.statusLabel)}</span></div>
+          <div class="tracked-cell tracked-action"><button class="ticker-remove" type="button" data-ticker="${escapeHtml(row.ticker)}">Remove</button></div>
+        </div>
+      `).join("")}
+    </div>
+  `;
 }
 
 function escapeHtml(value) {
@@ -557,6 +977,96 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+}
+
+async function runCategorySearch(query) {
+  const q = String(query || "").trim();
+  if (!q || !categoryMessageEl || !categoryResultsEl) return;
+
+  categoryMessageEl.textContent = "Searching…";
+  categoryResultsEl.innerHTML = "";
+
+  try {
+    const resp = await fetch(`/api/kalshi/categories?q=${encodeURIComponent(q)}&limit=20`);
+    const data = await resp.json();
+    const results = data.results || [];
+    const trackedSet = new Set(trackedTickers);
+
+    if (!results.length) {
+      categoryMessageEl.textContent = `No open markets found for "${q}".`;
+      return;
+    }
+
+    categoryMessageEl.textContent = `${results.length} event(s) found. Click a series slug to track it.`;
+    categoryResultsEl.innerHTML = results.map((r) => {
+      const ticker = r.series_ticker || "";
+      const alreadyTracked = ticker && trackedSet.has(ticker);
+      return `
+        <div class="category-result-row ${alreadyTracked ? "tracked" : ""}">
+          <div class="category-result-meta">
+            <span class="category-result-title">${escapeHtml(r.title)}</span>
+            <span class="category-result-cat">${escapeHtml(r.category)}</span>
+          </div>
+          <div class="category-result-tickers">
+            ${ticker ? `<button class="category-add-btn ${alreadyTracked ? "tracked" : ""}" data-ticker="${escapeHtml(ticker)}" data-state="${alreadyTracked ? "tracked" : "add"}" ${alreadyTracked ? "disabled" : ""} title="${alreadyTracked ? `${escapeHtml(ticker)} is already tracked` : `Add ${escapeHtml(ticker)} to watched tickers`}">${alreadyTracked ? `${escapeHtml(ticker)} ✓` : `${escapeHtml(ticker)} +`}</button>` : "<span class=\"category-result-empty\">No series ticker</span>"}
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    categoryResultsEl.querySelectorAll(".category-add-btn").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const ticker = btn.dataset.ticker;
+        if (!ticker || btn.dataset.state === "tracked") return;
+        btn.disabled = true;
+        btn.dataset.state = "adding";
+        btn.textContent = "Adding…";
+        try {
+          const resp = await fetch("/api/kalshi/markets", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ticker }),
+          });
+          const result = await resp.json();
+          if (result.ok) {
+            btn.dataset.state = "tracked";
+            btn.classList.add("tracked");
+            btn.textContent = `${ticker} ✓`;
+            categoryMessageEl.textContent = `Added ${ticker} to tracked tickers.`;
+            await refresh();
+            await runCategorySearch(q);
+          } else {
+            btn.dataset.state = "add";
+            btn.textContent = `${ticker} +`;
+            btn.disabled = false;
+            categoryMessageEl.textContent = result.error || "Failed to add ticker.";
+          }
+        } catch {
+          btn.dataset.state = "add";
+          btn.textContent = `${ticker} +`;
+          btn.disabled = false;
+          categoryMessageEl.textContent = "Network error.";
+        }
+      });
+    });
+  } catch {
+    categoryMessageEl.textContent = "Search failed — check network.";
+  }
+}
+
+async function refreshSettings(force = false) {
+  if (!force && currentPage !== "settings" && lastSettingsState) {
+    return;
+  }
+
+  try {
+    const settingsPayload = await fetchSettings();
+    renderSettings(settingsPayload);
+  } catch (error) {
+    if (settingsLoadStatusEl) {
+      settingsLoadStatusEl.textContent = "load failed";
+    }
+  }
 }
 
 async function refresh() {
@@ -572,9 +1082,96 @@ async function refresh() {
     renderFeeds(state);
     renderMarkets(state.markets || [], state.telemetry || {}, state.config || {});
     renderTickerList(state.config?.kalshi_markets || []);
+    await refreshSettings();
   } catch (error) {
     signalsEl.innerHTML = `<div class="empty">${escapeHtml(error.message)}</div>`;
   }
+}
+
+if (navTabEls.length) {
+  navTabEls.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      const page = tab.dataset.page || "dashboard";
+      setActivePage(page);
+    });
+  });
+}
+
+if (topicFilterRowEl) {
+  topicFilterRowEl.addEventListener("click", (event) => {
+    const button = event.target.closest(".topic-chip");
+    if (!button) return;
+    activeSignalTopic = button.dataset.topic || "all";
+    renderSignals(lastDashboardState?.signals || []);
+  });
+}
+
+if (signalsEl) {
+  const activateSignalFromElement = (target) => {
+    const card = target.closest(".signal-card[data-signal-key]");
+    if (!card) return;
+    selectedSignalKey = card.dataset.signalKey || null;
+    selectedMarketId = null;
+    renderSignals(lastDashboardState?.signals || []);
+    renderActivity(lastDashboardState?.activity || [], lastDashboardState?.telemetry || {}, lastDashboardState?.config || {});
+  };
+
+  signalsEl.addEventListener("click", (event) => {
+    activateSignalFromElement(event.target);
+  });
+
+  signalsEl.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    const card = event.target.closest(".signal-card[data-signal-key]");
+    if (!card) return;
+    event.preventDefault();
+    activateSignalFromElement(card);
+  });
+}
+
+if (activityEl) {
+  const activateFlowRow = (target) => {
+    const row = target.closest(".flow-row[data-market-id]");
+    if (!row) return;
+    const signalKey = row.dataset.signalKey;
+    if (signalKey) {
+      selectedSignalKey = signalKey;
+      selectedMarketId = null;
+    } else {
+      const matchedSignal = findBestSignalForMarket(lastDashboardState?.signals || [], row.dataset.marketId || "");
+      if (matchedSignal) {
+        selectedSignalKey = getSignalKey(matchedSignal);
+        selectedMarketId = null;
+      } else {
+        selectedSignalKey = null;
+        selectedMarketId = row.dataset.marketId || null;
+      }
+    }
+    renderSignals(lastDashboardState?.signals || []);
+    renderActivity(lastDashboardState?.activity || [], lastDashboardState?.telemetry || {}, lastDashboardState?.config || {});
+  };
+
+  activityEl.addEventListener("click", (event) => {
+    activateFlowRow(event.target);
+  });
+
+  activityEl.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    const row = event.target.closest(".flow-row[data-market-id]");
+    if (!row) return;
+    event.preventDefault();
+    activateFlowRow(row);
+  });
+}
+
+if (settingsToggleEl) {
+  settingsToggleEl.addEventListener("click", async () => {
+    const nextPage = currentPage === "settings" ? "dashboard" : "settings";
+    setActivePage(nextPage);
+    if (nextPage === "settings") {
+      await refreshSettings(true);
+    }
+  });
 }
 
 if (demoButton) {
@@ -622,8 +1219,42 @@ if (tickerForm) {
 
 if (tickerListEl) {
   tickerListEl.addEventListener("click", async (event) => {
+    if (tickerMutationInFlight) return;
+
+    const pruneButton = event.target.closest(".prune-dead-btn");
+    if (pruneButton) {
+      const deadTickers = (lastDashboardState?.config?.dead_kalshi_markets || [])
+        .map((ticker) => normalizeTicker(ticker))
+        .filter(Boolean);
+      const trackedSet = new Set((trackedTickers || []).map((ticker) => normalizeTicker(ticker)).filter(Boolean));
+      const targets = deadTickers.filter((ticker) => trackedSet.has(ticker));
+
+      if (!targets.length) {
+        setTickerMessage("No feed-confirmed expired tickers to remove.");
+        return;
+      }
+
+      setTickerMutationBusy(true);
+      setTickerMessage(`Removing ${targets.length} expired ticker${targets.length === 1 ? "" : "s"}...`);
+
+      try {
+        let markets = trackedTickers;
+        for (const ticker of targets) {
+          markets = await postTicker("/api/kalshi/markets/remove", ticker);
+        }
+        renderTickerList(markets);
+        setTickerMessage(`Removed ${targets.length} expired ticker${targets.length === 1 ? "" : "s"}.`);
+        await refresh();
+      } catch (error) {
+        setTickerMessage(error.message || "Failed to remove expired tickers.", true);
+      } finally {
+        setTickerMutationBusy(false);
+      }
+      return;
+    }
+
     const button = event.target.closest(".ticker-remove");
-    if (!button || tickerMutationInFlight) return;
+    if (!button) return;
 
     const ticker = normalizeTicker(button.dataset.ticker);
     if (!ticker) return;
@@ -663,68 +1294,19 @@ if (signalLatestToggleEl) {
 if (categoryForm) {
   categoryForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const q = (categoryInput?.value || "").trim();
-    if (!q) return;
-
-    categoryMessageEl.textContent = "Searching…";
-    categoryResultsEl.innerHTML = "";
-
-    try {
-      const resp = await fetch(`/api/kalshi/categories?q=${encodeURIComponent(q)}&limit=20`);
-      const data = await resp.json();
-      const results = data.results || [];
-
-      if (!results.length) {
-        categoryMessageEl.textContent = `No open markets found for "${q}".`;
-        return;
-      }
-
-      categoryMessageEl.textContent = `${results.length} event(s) found. Click a series slug to track it.`;
-      categoryResultsEl.innerHTML = results.map((r) => `
-        <div class="category-result-row">
-          <div class="category-result-meta">
-            <span class="category-result-title">${escapeHtml(r.title)}</span>
-            <span class="category-result-cat">${escapeHtml(r.category)}</span>
-          </div>
-          <div class="category-result-tickers">
-            ${r.series_ticker ? `<button class="category-add-btn" data-ticker="${escapeHtml(r.series_ticker)}" title="Add ${escapeHtml(r.series_ticker)} to watched tickers">${escapeHtml(r.series_ticker)} +</button>` : ""}
-          </div>
-        </div>
-      `).join("");
-
-      // Wire up add buttons
-      categoryResultsEl.querySelectorAll(".category-add-btn").forEach((btn) => {
-        btn.addEventListener("click", async () => {
-          const ticker = btn.dataset.ticker;
-          btn.disabled = true;
-          btn.textContent = "Adding…";
-          try {
-            const resp = await fetch("/api/kalshi/markets", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ ticker }),
-            });
-            const result = await resp.json();
-            if (result.ok) {
-              btn.textContent = `${ticker} ✓`;
-              categoryMessageEl.textContent = `Added ${ticker} to tracked tickers.`;
-            } else {
-              btn.textContent = `${ticker} +`;
-              btn.disabled = false;
-              categoryMessageEl.textContent = result.error || "Failed to add ticker.";
-            }
-          } catch {
-            btn.textContent = `${ticker} +`;
-            btn.disabled = false;
-            categoryMessageEl.textContent = "Network error.";
-          }
-        });
-      });
-    } catch {
-      categoryMessageEl.textContent = "Search failed — check network.";
-    }
+    await runCategorySearch(categoryInput?.value || "");
   });
 }
 
+if (categoryShortcutsEl) {
+  categoryShortcutsEl.addEventListener("click", async (event) => {
+    const button = event.target.closest("button[data-category-shortcut]");
+    if (!button || !categoryInput) return;
+    categoryInput.value = button.dataset.categoryShortcut || "";
+    await runCategorySearch(categoryInput.value);
+  });
+}
+
+setActivePage(currentPage);
 refresh();
 setInterval(refresh, 3000);
