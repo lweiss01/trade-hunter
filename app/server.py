@@ -1,16 +1,49 @@
 from __future__ import annotations
 
 import json
+import threading
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
-from .config import ROOT, Settings
+from .config import ROOT, Settings, load_settings
 from .service import TradeHunterService
 
 
 STATIC_ROOT = ROOT / "app" / "static"
+
+
+def _is_loopback_client(host: str) -> bool:
+    return host in {"127.0.0.1", "::1", "localhost"}
+
+
+def serialize_settings(settings: Settings) -> dict[str, Any]:
+    return {
+        "host": settings.host,
+        "port": settings.port,
+        "enable_simulation": settings.enable_simulation,
+        "enable_kalshi": settings.enable_kalshi,
+        "quiet_mode": settings.quiet_mode,
+        "retention_days": settings.retention_days,
+        "discord_alert_mode": settings.discord_alert_mode,
+        "discord_analyst_followup": settings.discord_analyst_followup,
+        "discord_analyst_min_confidence": settings.discord_analyst_min_confidence,
+        "spike_min_volume_delta": settings.spike_min_volume_delta,
+        "spike_min_price_move": settings.spike_min_price_move,
+        "spike_score_threshold": settings.spike_score_threshold,
+        "spike_baseline_points": settings.spike_baseline_points,
+        "spike_cooldown_seconds": settings.spike_cooldown_seconds,
+        "kalshi_markets": settings.kalshi_markets,
+        "presence": {
+            "discord_webhook_url": bool(settings.discord_webhook_url),
+            "discord_webhook_routes": sorted(settings.discord_webhook_routes.keys()),
+            "ingest_api_token": bool(settings.ingest_api_token),
+            "polyalerthub_token": bool(settings.polyalerthub_token),
+            "kalshi_api_key_id": bool(settings.kalshi_api_key_id),
+            "kalshi_private_key_path": bool(settings.kalshi_private_key_path),
+        },
+    }
 
 
 def run_server(settings: Settings) -> None:
@@ -35,8 +68,13 @@ def run_server(settings: Settings) -> None:
                 return self._serve_file("dashboard.js", "application/javascript; charset=utf-8")
             if path.endswith("/static/favicon-32x32.png"):
                 return self._serve_file("favicon-32x32.png", "image/png")
+            if path.endswith("/static/trade-hunter-logo4.png"):
+                return self._serve_file("trade-hunter-logo4.png", "image/png")
             if path == "/api/state":
                 return self._json_response(service.dashboard_state())
+            if path == "/api/settings":
+                latest_settings = load_settings()
+                return self._json_response({"settings": serialize_settings(latest_settings)})
             if path == "/api/kalshi/markets":
                 return self._json_response({"markets": service.get_kalshi_markets()})
             if path == "/api/kalshi/categories":
@@ -62,8 +100,16 @@ def run_server(settings: Settings) -> None:
                 "/api/kalshi/markets",
                 "/api/kalshi/markets/remove",
                 "/api/config/apply-tuning",
+                "/api/admin/shutdown",
             }:
                 return self._json_response({"error": "not found"}, status=HTTPStatus.NOT_FOUND)
+
+            if self.path == "/api/admin/shutdown":
+                if not _is_loopback_client(self.client_address[0]):
+                    return self._json_response({"error": "forbidden"}, status=HTTPStatus.FORBIDDEN)
+                self._json_response({"ok": True, "status": "shutting-down"})
+                threading.Thread(target=self.server.shutdown, daemon=True).start()
+                return
 
             # Token validation based on endpoint
             if self.path == "/api/alerts/polyalerthub" and settings.polyalerthub_token:

@@ -11,99 +11,420 @@
   </head>
   <body>
     <div class="noise"></div>
-    <main class="page-shell">
-      <section class="panel command-header">
-        <div class="command-top">
-          <div class="brand-block">
-            <p class="eyebrow">Prediction Market Signal Desk</p>
-            <h1>Trade Hunter</h1>
-            <p class="lede">Watch live market movement, surface anomalies, and prioritize where to investigate next.</p>
-          </div>
-
-          <div class="command-actions">
-            <form id="ticker-form" class="ticker-form ticker-form-inline">
-              <label for="ticker-input" class="ticker-label">Ticker</label>
-              <input id="ticker-input" class="ticker-input" type="text" name="ticker" placeholder="Add ticker (e.g., KXBTC15M)" autocomplete="off">
-              <button id="ticker-add" class="ticker-add" type="submit">Add</button>
-            </form>
-            <div id="ticker-message" class="ticker-message" aria-live="polite"></div>
-            <div id="demo-panel" class="hero-panel">
-              <button id="demo-spike" class="action">Trigger Demo Spike</button>
-              <p class="caption">Only shown in simulation mode.</p>
-            </div>
+    <main class="app-shell">
+      <nav class="topbar" aria-label="Primary">
+        <div class="topbar-brand">
+          <img class="brand-icon" src="/static/trade-hunter-logo4.png" alt="Trade Hunter icon">
+          <div class="brand-copy">
+            <span class="brand-name">Trade Hunter</span>
+            <span class="brand-tagline">Prediction Market Signal Desk</span>
           </div>
         </div>
 
-        <div id="feeds" class="status-pills"></div>
-      </section>
-
-      <section class="metrics" id="metrics"></section>
-
-      <section class="panel tuning-panel">
-        <div class="panel-head">
-          <h2>Tuning Advisor</h2>
-          <span class="badge">false-positive control</span>
+        <div class="topbar-status">
+          <span id="mode-badge" class="mode-badge info">Booting</span>
         </div>
-        <div id="tuning-advisor" class="tuning-advisor-body"></div>
-      </section>
 
-      <section class="grid">
-        <article class="panel">
-          <div class="panel-head panel-head-signals">
-            <div class="signals-title-wrap">
-              <h2>Recent Signals</h2>
-              <span class="badge">custom detector</span>
-            </div>
-            <div class="signals-controls">
-              <label for="signal-sort" class="signals-label">Sort</label>
-              <select id="signal-sort" class="signal-sort">
-                <option value="newest">Newest</option>
-                <option value="score">Highest score</option>
-              </select>
-              <button id="signal-latest-toggle" type="button" class="signal-toggle" aria-pressed="false" title="When on: shows only the most recent signal per market, deduplicating repeated alerts for the same ticker. When off: shows all signals.">Latest per market</button>
-            </div>
-          </div>
-          <div id="signals" class="stack"></div>
-        </article>
+        <div class="topbar-nav" role="tablist" aria-label="Workspace pages">
+          <button class="nav-tab active" type="button" data-page="dashboard" aria-selected="true">Dashboard</button>
+          <button class="nav-tab" type="button" data-page="markets" aria-selected="false">Markets</button>
+        </div>
 
-        <article class="panel">
+        <div id="feeds" class="topbar-pills" aria-live="polite"></div>
+
+        <div class="topbar-actions">
+          <form id="ticker-form" class="ticker-form ticker-form-inline topbar-ticker-form">
+            <label for="ticker-input" class="ticker-label">Ticker</label>
+            <input id="ticker-input" class="ticker-input" type="text" name="ticker" placeholder="Add ticker (e.g., KXBTC15M)" autocomplete="off">
+            <button id="ticker-add" class="ticker-add" type="submit">Add</button>
+          </form>
+          <button id="settings-toggle" class="settings-icon-btn" type="button" aria-label="Open settings" title="Settings">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              <path d="M13.3 6.6l-.6-1.1-1.1.4a3.8 3.8 0 0 0-.7-.7l.4-1.1-1.1-.6-1 .9a4 4 0 0 0-1 0l-.9-1-1.1.6.4 1.1c-.3.2-.5.4-.7.7L5 5.5l-.6 1.1.9.9a4 4 0 0 0 0 1l-1 .9.6 1.1 1.1-.4c.2.3.4.5.7.7l-.4 1.1 1.1.6.9-.9a4 4 0 0 0 1 0l.9 1 1.1-.6-.4-1.1c.3-.2.5-.4.7-.7l1.1.4.6-1.1-.9-1a4 4 0 0 0 0-1l1-.8Z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+      </nav>
+
+      <div id="ticker-message" class="ticker-message topbar-ticker-message" aria-live="polite"></div>
+
+      <section id="page-dashboard" class="page-view active" data-page-view="dashboard">
+        <section class="metrics" id="metrics"></section>
+
+        <section class="panel tuning-panel">
           <div class="panel-head">
-            <h2>Live Trade Flow</h2>
-            <span class="badge">recent events</span>
+            <h2>Tuning Advisor</h2>
+            <span class="badge">false-positive control</span>
           </div>
-          <div id="activity" class="stack"></div>
-        </article>
+          <div id="tuning-advisor" class="tuning-advisor-body"></div>
+        </section>
+
+        <section class="grid">
+          <article class="panel">
+            <div class="panel-head panel-head-signals">
+              <div class="signals-title-wrap">
+                <h2>Recent Signals</h2>
+                <span class="badge">custom detector</span>
+              </div>
+              <div class="signals-controls">
+                <label for="signal-sort" class="signals-label">Sort</label>
+                <select id="signal-sort" class="signal-sort">
+                  <option value="newest">Newest</option>
+                  <option value="score">Highest score</option>
+                </select>
+                <button id="signal-latest-toggle" type="button" class="signal-toggle" aria-pressed="false" title="When on: shows only the most recent signal per market, deduplicating repeated alerts for the same ticker. When off: shows all signals.">Latest per market</button>
+              </div>
+            </div>
+            <div id="topic-filter-row" class="topic-filter-row" role="toolbar" aria-label="Signal topic filters"></div>
+            <div id="what-matters-now" class="what-matters-now"></div>
+            <div id="signals" class="stack"></div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-head">
+              <h2>Live Trade Flow</h2>
+              <span class="badge">recent events</span>
+            </div>
+            <div id="activity" class="stack"></div>
+          </article>
+        </section>
+
+        <section id="selected-signal-workbench" class="panel selected-signal-workbench"></section>
       </section>
 
-      <section class="panel ticker-panel">
-        <div class="panel-head">
-          <h2>Tracked Kalshi Tickers</h2>
-          <span class="badge">live subscriptions</span>
+      <section id="page-markets" class="page-view" data-page-view="markets" hidden>
+        <div class="markets-workspace-grid">
+          <section class="panel ticker-panel">
+            <div class="panel-head">
+              <h2>Tracked Kalshi Tickers</h2>
+              <span class="badge">live subscriptions</span>
+            </div>
+            <div id="ticker-list" class="ticker-list"></div>
+          </section>
+
+          <section class="panel category-panel">
+            <div class="panel-head">
+              <h2>Category Search</h2>
+              <span class="badge">discover markets</span>
+            </div>
+            <div id="category-shortcuts" class="category-shortcuts" role="toolbar" aria-label="Category shortcuts">
+              <button class="topic-chip" type="button" data-category-shortcut="Crypto">Crypto</button>
+              <button class="topic-chip" type="button" data-category-shortcut="Macro">Macro</button>
+              <button class="topic-chip" type="button" data-category-shortcut="Elections">Elections</button>
+              <button class="topic-chip" type="button" data-category-shortcut="Sports">Sports</button>
+              <button class="topic-chip" type="button" data-category-shortcut="Geopolitics">Geopolitics</button>
+            </div>
+            <form id="category-form" class="category-form">
+              <label for="category-input" class="ticker-label">Category</label>
+              <input id="category-input" class="ticker-input" type="text" name="category" placeholder="e.g. Crypto, Elections, Sports, World" autocomplete="off">
+              <button id="category-search" class="ticker-add" type="submit">Search</button>
+            </form>
+            <div id="category-message" class="ticker-message" aria-live="polite"></div>
+            <div id="category-results" class="category-results"></div>
+          </section>
         </div>
-        <div id="ticker-list" class="ticker-list"></div>
+
+        <section class="panel markets-panel">
+          <div class="panel-head">
+            <h2>Market Tape</h2>
+            <span class="badge">latest activity</span>
+          </div>
+          <div id="markets" class="market-table"></div>
+        </section>
       </section>
 
-      <section class="panel category-panel">
-        <div class="panel-head">
-          <h2>Category Search</h2>
-          <span class="badge">discover markets</span>
+      <section id="page-settings" class="page-view settings-page" data-page-view="settings" hidden>
+        <section class="panel settings-intro-panel">
+          <div class="panel-head">
+            <div>
+              <h2>Settings</h2>
+              <div class="settings-page-subtitle">Grouped by workflow so setup reads like the app, not the env file.</div>
+            </div>
+            <span id="settings-load-status" class="badge">read-only</span>
+          </div>
+          <div class="settings-intro-grid">
+            <div class="settings-intro-card">
+              <span class="priority-kicker">Recommended</span>
+              <strong>Simulation only</strong>
+              <p>Keep local testing lightweight with simulation on, Kalshi off, and Discord optional.</p>
+            </div>
+            <div class="settings-intro-card">
+              <span class="priority-kicker">Live basic</span>
+              <strong>Kalshi + dashboard</strong>
+              <p>Enable live Kalshi monitoring with tracked tickers, but leave analyst and Discord follow-ups minimal.</p>
+            </div>
+            <div class="settings-intro-card">
+              <span class="priority-kicker">Full stack</span>
+              <strong>Analyst + alerts</strong>
+              <p>Turn on the full monitoring loop: live data, analyst classification, Discord routing, and durable retention.</p>
+            </div>
+          </div>
+          <div class="settings-hint-strip" aria-label="Settings guidance">
+            <div class="settings-hint-card">
+              <span class="settings-hint-kicker">Source of truth</span>
+              <strong>.env-backed config</strong>
+              <p>These fields reflect the current loaded runtime config. Secret-backed entries only show configured/not set, not raw values.</p>
+            </div>
+            <div class="settings-hint-card">
+              <span class="settings-hint-kicker">Managed elsewhere</span>
+              <strong>Markets owns ticker tracking</strong>
+              <p>Tracked Kalshi tickers are shown here for visibility, but they are still added and removed from the Markets workspace.</p>
+            </div>
+            <div class="settings-hint-card warn">
+              <span class="settings-hint-kicker">Restart required</span>
+              <strong>Edits are not live yet</strong>
+              <p>This page is read-only today. When save behavior lands, env-backed changes will still need clear restart messaging for server-side settings.</p>
+            </div>
+          </div>
+        </section>
+
+        <div class="settings-grid">
+          <section class="panel settings-panel">
+            <div class="panel-head">
+              <h2>Core mode</h2>
+              <span id="settings-status-core" class="settings-status configured">configured</span>
+            </div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Simulation feed</div>
+                <div class="settings-desc">Toggle the local simulated market feed used for smoke tests and demos.</div>
+                <code class="settings-code">ENABLE_SIMULATION</code>
+              </div>
+              <label class="settings-toggle-shell"><input id="setting-enable-simulation" type="checkbox" disabled><span class="settings-toggle-track"></span></label>
+            </div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Quiet mode</div>
+                <div class="settings-desc">Reduce console chatter for longer-running local sessions.</div>
+                <code class="settings-code">QUIET_MODE</code>
+              </div>
+              <label class="settings-toggle-shell"><input id="setting-quiet-mode" type="checkbox" disabled><span class="settings-toggle-track"></span></label>
+            </div>
+          </section>
+
+          <section class="panel settings-panel">
+            <div class="panel-head">
+              <h2>Kalshi connection</h2>
+              <span id="settings-status-kalshi" class="settings-status missing">missing key</span>
+            </div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Live Kalshi feed</div>
+                <div class="settings-desc">Enable the live Kalshi adapter in addition to simulation mode.</div>
+                <code class="settings-code">ENABLE_KALSHI</code>
+              </div>
+              <label class="settings-toggle-shell"><input id="setting-enable-kalshi" type="checkbox" disabled><span class="settings-toggle-track"></span></label>
+            </div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Kalshi API key ID</div>
+                <div class="settings-desc">Public key identifier for authenticated Kalshi requests.</div>
+                <code class="settings-code">KALSHI_API_KEY_ID</code>
+              </div>
+              <input id="setting-kalshi-api-key-id" class="settings-input wide" type="text" placeholder="not set" disabled>
+            </div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Private key path</div>
+                <div class="settings-desc">Path to the signing key used for authenticated Kalshi requests.</div>
+                <code class="settings-code">KALSHI_PRIVATE_KEY_PATH</code>
+              </div>
+              <input id="setting-kalshi-private-key-path" class="settings-input wide" type="text" placeholder="not set" disabled>
+            </div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Tracked series tickers</div>
+                <div class="settings-desc">Series-level subscriptions currently managed from the Markets workspace.</div>
+                <code class="settings-code">KALSHI_MARKETS</code>
+              </div>
+              <input id="setting-kalshi-markets" class="settings-input wide" type="text" placeholder="none tracked" disabled>
+            </div>
+          </section>
+
+          <section class="panel settings-panel">
+            <div class="panel-head">
+              <h2>AI analyst</h2>
+              <span id="settings-status-analyst" class="settings-status configured">configured</span>
+            </div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Analyst follow-up minimum confidence</div>
+                <div class="settings-desc">Only send analyst follow-up alerts at or above this confidence threshold.</div>
+                <code class="settings-code">DISCORD_ANALYST_MIN_CONFIDENCE</code>
+              </div>
+              <select id="setting-discord-analyst-min-confidence" class="settings-select" disabled>
+                <option value="low">low</option>
+                <option value="medium">medium</option>
+                <option value="high">high</option>
+              </select>
+            </div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Analyst follow-up delivery</div>
+                <div class="settings-desc">Send a second message after analyst classification when enabled.</div>
+                <code class="settings-code">DISCORD_ANALYST_FOLLOWUP</code>
+              </div>
+              <label class="settings-toggle-shell"><input id="setting-discord-analyst-followup" type="checkbox" disabled><span class="settings-toggle-track"></span></label>
+            </div>
+          </section>
+
+          <section class="panel settings-panel">
+            <div class="panel-head">
+              <h2>Discord / notifications</h2>
+              <span id="settings-status-discord" class="settings-status configured">configured</span>
+            </div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Default webhook URL</div>
+                <div class="settings-desc">Fallback destination for alerts with no topic-specific route override.</div>
+                <code class="settings-code">DISCORD_WEBHOOK_URL</code>
+              </div>
+              <input id="setting-discord-webhook-url" class="settings-input wide" type="text" placeholder="not set" disabled>
+            </div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Alert mode</div>
+                <div class="settings-desc">Controls which detector and analyst events are sent to Discord.</div>
+                <code class="settings-code">DISCORD_ALERT_MODE</code>
+              </div>
+              <select id="setting-discord-alert-mode" class="settings-select" disabled>
+                <option value="all">all</option>
+                <option value="detector-only">detector-only</option>
+                <option value="analyst-signals-only">analyst-signals-only</option>
+              </select>
+            </div>
+            <div class="settings-section-title">Topic routing</div>
+            <div class="settings-route-row"><span class="route-topic">crypto</span><input id="setting-discord-route-crypto" class="settings-input wide" type="text" placeholder="not set" disabled></div>
+            <div class="settings-route-row"><span class="route-topic">macro</span><input id="setting-discord-route-macro" class="settings-input wide" type="text" placeholder="not set" disabled></div>
+            <div class="settings-route-row"><span class="route-topic">elections</span><input id="setting-discord-route-elections" class="settings-input wide" type="text" placeholder="not set" disabled></div>
+          </section>
+
+          <section class="panel settings-panel">
+            <div class="panel-head">
+              <h2>Ingest / auth</h2>
+              <span id="settings-status-ingest" class="settings-status missing">missing key</span>
+            </div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Generic ingest token</div>
+                <div class="settings-desc">Bearer token required by the generic /api/events ingest endpoint.</div>
+                <code class="settings-code">INGEST_API_TOKEN</code>
+              </div>
+              <input id="setting-ingest-api-token" class="settings-input wide" type="text" placeholder="not set" disabled>
+            </div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">PolyAlertHub token</div>
+                <div class="settings-desc">Bearer token for the /api/alerts/polyalerthub relay endpoint.</div>
+                <code class="settings-code">POLYALERTHUB_TOKEN</code>
+              </div>
+              <input id="setting-polyalerthub-token" class="settings-input wide" type="text" placeholder="not set" disabled>
+            </div>
+          </section>
+
+          <section class="panel settings-panel">
+            <div class="panel-head">
+              <h2>Detector tuning</h2>
+              <span id="settings-status-detector" class="settings-status configured">configured</span>
+            </div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Min volume delta</div>
+                <div class="settings-desc">Minimum raw volume change before a spike is considered meaningful.</div>
+                <code class="settings-code">SPIKE_MIN_VOLUME_DELTA</code>
+              </div>
+              <input id="setting-spike-min-volume-delta" class="settings-input" type="number" disabled>
+            </div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Min price move</div>
+                <div class="settings-desc">Required price move floor before a volume spike can escalate.</div>
+                <code class="settings-code">SPIKE_MIN_PRICE_MOVE</code>
+              </div>
+              <input id="setting-spike-min-price-move" class="settings-input" type="number" step="0.01" disabled>
+            </div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Score threshold</div>
+                <div class="settings-desc">Detector score required before a spike becomes actionable.</div>
+                <code class="settings-code">SPIKE_SCORE_THRESHOLD</code>
+              </div>
+              <input id="setting-spike-score-threshold" class="settings-input" type="number" step="0.01" disabled>
+            </div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Baseline points</div>
+                <div class="settings-desc">How many recent points define the detector baseline window.</div>
+                <code class="settings-code">SPIKE_BASELINE_POINTS</code>
+              </div>
+              <input id="setting-spike-baseline-points" class="settings-input" type="number" disabled>
+            </div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Cooldown seconds</div>
+                <div class="settings-desc">Minimum cooldown before the same detector can emit again for the same market.</div>
+                <code class="settings-code">SPIKE_COOLDOWN_SECONDS</code>
+              </div>
+              <input id="setting-spike-cooldown-seconds" class="settings-input" type="number" disabled>
+            </div>
+          </section>
+
+          <section class="panel settings-panel">
+            <div class="panel-head">
+              <h2>Storage / retention</h2>
+              <span id="settings-status-storage" class="settings-status configured">configured</span>
+            </div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Retention days</div>
+                <div class="settings-desc">How long market events and signals remain in storage before pruning.</div>
+                <code class="settings-code">RETENTION_DAYS</code>
+              </div>
+              <input id="setting-retention-days" class="settings-input" type="number" disabled>
+            </div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Host</div>
+                <div class="settings-desc">Local bind address for the dashboard server.</div>
+                <code class="settings-code">APP_HOST</code>
+              </div>
+              <input id="setting-app-host" class="settings-input wide" type="text" disabled>
+            </div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Port</div>
+                <div class="settings-desc">HTTP port the local dashboard listens on.</div>
+                <code class="settings-code">APP_PORT</code>
+              </div>
+              <input id="setting-app-port" class="settings-input" type="number" disabled>
+            </div>
+          </section>
         </div>
-        <form id="category-form" class="category-form">
-          <label for="category-input" class="ticker-label">Category</label>
-          <input id="category-input" class="ticker-input" type="text" name="category" placeholder="e.g. Crypto, Elections, Sports, World" autocomplete="off">
-          <button id="category-search" class="ticker-add" type="submit">Search</button>
-        </form>
-        <div id="category-message" class="ticker-message" aria-live="polite"></div>
-        <div id="category-results" class="category-results"></div>
+
+        <section class="panel settings-note-panel">
+          <div class="panel-head">
+            <h2>Next in S04</h2>
+            <span class="badge">save behavior</span>
+          </div>
+          <div class="settings-placeholder-copy">
+            <p>This pass now loads live read-only settings into the grouped page.</p>
+            <p>The next S04 seam keeps these sections but adds real save behavior and restart-required messaging.</p>
+          </div>
+        </section>
       </section>
 
-      <section class="panel markets-panel">
-        <div class="panel-head">
-          <h2>Market Tape</h2>
-          <span class="badge">latest activity</span>
-        </div>
-        <div id="markets" class="market-table"></div>
+      <section id="demo-panel" class="panel hero-panel topbar-demo-panel" hidden>
+        <button id="demo-spike" class="action" type="button">Trigger Demo Spike</button>
+        <p class="caption">Only shown in simulation mode.</p>
       </section>
+
+      <footer class="site-footer" aria-label="Site footer">
+        <span class="site-footer-version">v0.1.0</span>
+        <a class="footer-link primary" href="https://tradehunter.site" target="_blank" rel="noreferrer">User Guide ↗</a>
+        <a class="footer-link" href="https://tradehunter.site#roadmap" target="_blank" rel="noreferrer">Roadmap ↗</a>
+        <a class="footer-link" href="https://tradehunter.site#changelog" target="_blank" rel="noreferrer">Changelog ↗</a>
+      </footer>
     </main>
 
     <script src="/static/dashboard.js"></script>
