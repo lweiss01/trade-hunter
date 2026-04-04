@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Trade Hunter favicon">
+  <defs>
+    <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#b9f3ff" />
+      <stop offset="100%" stop-color="#6ba6d6" />
+    </linearGradient>
+    <linearGradient id="shieldStroke" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#d5f6ff" />
+      <stop offset="100%" stop-color="#7db0dc" />
+    </linearGradient>
+  </defs>
+
+  <circle cx="32" cy="32" r="30" fill="none" stroke="url(#ring)" stroke-width="2.2" />
+  <circle cx="32" cy="32" r="25.5" fill="rgba(8,25,40,0.92)" stroke="rgba(143,211,255,0.42)" stroke-width="1" />
+
+  <path d="M32 10 L50 17 L48 38 L32 53 L16 38 L14 17 Z"
+        fill="rgba(11,35,56,0.95)"
+        stroke="url(#shieldStroke)"
+        stroke-width="2"
+        stroke-linejoin="round" />
+
+  <path d="M20 31 H25 L28 29 L31 33 L34 20 L37 36 L40 31 H44"
+        fill="none"
+        stroke="#ff7d45"
+        stroke-width="2.1"
+        stroke-linecap="round"
+        stroke-linejoin="round" />
+
+  <path d="M20 31 H25 M40 31 H44"
+        fill="none"
+        stroke="#62dbe8"
+        stroke-width="1.6"
+        stroke-linecap="round" />
+</svg>

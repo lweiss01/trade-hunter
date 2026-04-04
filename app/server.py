@@ -66,6 +66,8 @@ def run_server(settings: Settings) -> None:
                 return self._serve_file("dashboard.css", "text/css; charset=utf-8")
             if path.endswith("/static/dashboard.js"):
                 return self._serve_file("dashboard.js", "application/javascript; charset=utf-8")
+            if path.endswith("/static/favicon.svg"):
+                return self._serve_file("favicon.svg", "image/svg+xml; charset=utf-8")
             if path.endswith("/static/favicon-32x32.png"):
                 return self._serve_file("favicon-32x32.png", "image/png")
             if path.endswith("/static/trade-hunter-logo4.png"):
