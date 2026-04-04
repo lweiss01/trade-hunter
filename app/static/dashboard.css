@@ -108,7 +108,8 @@ body::after {
   top: 14px;
   z-index: 20;
   display: grid;
-  grid-template-columns: auto auto auto minmax(0, 1fr) auto;
+  grid-template-columns: auto auto auto minmax(0, 1fr) minmax(250px, 360px) auto;
+  grid-template-areas: "brand nav status pills actions settings";
   align-items: center;
   gap: 14px;
   margin-bottom: 16px;
@@ -121,6 +122,7 @@ body::after {
 }
 
 .topbar-brand {
+  grid-area: brand;
   display: inline-flex;
   align-items: center;
   gap: 12px;
@@ -160,6 +162,10 @@ body::after {
   display: inline-flex;
   align-items: center;
   gap: 10px;
+}
+
+.topbar-status {
+  grid-area: status;
 }
 
 .mode-badge,
@@ -218,17 +224,18 @@ th,
 }
 
 .topbar-nav {
+  grid-area: nav;
   gap: 8px;
 }
 
 .nav-tab {
   appearance: none;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--text-faint);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-muted);
   min-height: 36px;
-  padding: 0 12px;
-  border-radius: 999px;
+  padding: 0 14px;
+  border-radius: 10px;
   cursor: pointer;
   font-size: 0.72rem;
   font-weight: 700;
@@ -253,11 +260,13 @@ th,
 }
 
 .topbar-pills {
+  grid-area: pills;
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
-  overflow-x: auto;
-  scrollbar-width: none;
   min-width: 0;
+  padding-right: 4px;
 }
 
 .topbar-pills::-webkit-scrollbar {
@@ -312,15 +321,23 @@ th,
 }
 
 .topbar-actions {
+  grid-area: actions;
   justify-self: end;
+  width: min(360px, 100%);
 }
 
 .topbar-ticker-form {
   display: inline-grid;
-  grid-template-columns: minmax(210px, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
   align-items: center;
   margin: 0;
+  width: 100%;
+}
+
+.topbar-settings {
+  grid-area: settings;
+  justify-self: end;
 }
 
 .settings-icon-btn {
@@ -2018,19 +2035,19 @@ h2 {
 
 @media (max-width: 1320px) {
   .topbar {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto auto auto;
     grid-template-areas:
-      "brand status"
-      "nav nav"
-      "pills pills"
-      "actions actions";
+      "brand nav status settings"
+      "pills pills pills pills"
+      "actions actions actions actions";
   }
 
   .topbar-brand { grid-area: brand; }
+  .topbar-nav { grid-area: nav; justify-self: start; }
   .topbar-status { grid-area: status; justify-self: end; }
-  .topbar-nav { grid-area: nav; }
+  .topbar-settings { grid-area: settings; justify-self: end; }
   .topbar-pills { grid-area: pills; }
-  .topbar-actions { grid-area: actions; justify-self: stretch; }
+  .topbar-actions { grid-area: actions; justify-self: stretch; width: 100%; }
 
   .topbar-ticker-form {
     width: 100%;
@@ -2094,6 +2111,16 @@ h2 {
   .topbar {
     top: 8px;
     padding: 12px;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "brand status settings"
+      "nav nav nav"
+      "pills pills pills"
+      "actions actions actions";
+  }
+
+  .topbar-settings {
+    justify-self: end;
   }
 
   .topbar-actions {
