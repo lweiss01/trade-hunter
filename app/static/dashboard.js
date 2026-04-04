@@ -437,9 +437,10 @@ function renderMetrics(state) {
   ];
 
   metricsEl.innerHTML = `<div class="metric-strip">${
-    stats.map(s => {
+    stats.map((s, i) => {
       const sub = s.sub ? `<span class="metric-chip-sub">${s.sub}</span>` : "";
-      return `<span class="metric-chip"><span class="metric-chip-val">${s.value}</span><span class="metric-chip-label">${s.label}</span>${sub}</span>`;
+      const cls = i === 0 ? "metric-chip highlight" : "metric-chip";
+      return `<span class="${cls}"><span class="metric-chip-val">${s.value}</span><span class="metric-chip-label">${s.label}</span>${sub}</span>`;
     }).join("")
   }</div>`;
 }
