@@ -1,3 +1,4 @@
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
   *{box-sizing:border-box;margin:0;padding:0}
@@ -91,9 +92,85 @@
   .terminal .cmd{color:var(--text)}
   .terminal .out{color:var(--muted);margin-top:6px}
 
-  @media(max-width:600px){
-    .layers,.vs-grid,.features,.tiers{grid-template-columns:1fr}
-    h1{font-size:28px}
+  /* ── viewport meta helper ── */
+  html{-webkit-text-size-adjust:100%}
+
+  @media(max-width:640px){
+    /* layout */
+    body{padding:0 0 32px}
+
+    /* hero */
+    .hero{padding:28px 20px 28px}
+    .hero::before{width:200px;height:200px;top:-20px;right:-30px}
+
+    /* typography */
+    h1{font-size:26px;letter-spacing:-.01em}
+    h2{font-size:18px}
+    .tagline{font-size:13px;margin-bottom:20px}
+
+    /* price row */
+    .price{font-size:34px}
+    .price-row{gap:12px}
+
+    /* cta */
+    .cta{display:block;text-align:center;padding:14px 20px;font-size:13px;margin-top:14px}
+
+    /* sections */
+    .section{padding:28px 20px}
+
+    /* grids → single column */
+    .layers,.features{grid-template-columns:1fr;gap:10px}
+    .vs-grid{grid-template-columns:1fr}
+    .tiers{grid-template-columns:1fr;gap:8px}
+
+    /* vs-grid stacked: dim "them" column less harshly */
+    .vs-col.them{opacity:.5}
+
+    /* layer cards */
+    .layer{padding:16px}
+
+    /* loop steps: wrap nicely */
+    .loop{padding:16px 16px;padding-top:24px}
+    .loop-steps{flex-direction:column;align-items:flex-start;gap:6px}
+    .loop-arrow{transform:rotate(90deg);margin-left:4px}
+
+    /* terminal: allow horizontal scroll on long lines */
+    .terminal{padding:14px 16px;overflow-x:auto;-webkit-overflow-scrolling:touch;font-size:12px;white-space:nowrap}
+
+    /* score formula: allow scroll */
+    .section p [style*="font-family:var(--mono)"]{
+      display:inline-block;
+      overflow-x:auto;
+      max-width:100%;
+    }
+
+    /* footer */
+    div[style*="padding:32px"]{padding:24px 20px!important}
+
+    /* diff block */
+    .diff-block{padding:16px}
+
+    /* vs-col padding */
+    .vs-col{padding:16px}
+
+    /* feat cards */
+    .feat{padding:12px 14px}
+
+    /* tier cards */
+    .tier{padding:14px}
+
+    /* faq */
+    .faq{padding:14px 0}
+
+    /* badge */
+    .badge{font-size:10px;padding:3px 8px}
+  }
+
+  @media(max-width:400px){
+    h1{font-size:22px}
+    .price{font-size:28px}
+    .section{padding:22px 16px}
+    .hero{padding:22px 16px 22px}
   }
 </style>
 
