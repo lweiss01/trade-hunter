@@ -837,9 +837,31 @@ function renderFeeds(state) {
   const latestEventClass = latestEventAge === "unknown" ? "warn" : (latestEventAge.includes("h") ? "danger" : "ok");
   pushPill(`event ${latestEventAge}`, latestEventClass, latestEventClass === "ok");
 
+  const kalshiFeed = feeds["kalshi-pykalshi"] || {};
+  const kalshiRunning = Boolean(kalshiFeed.running);
   const kalshiAge = formatAgeFromNow(telemetry.kalshi_last_event_at);
-  const kalshiAgeClass = kalshiAge === "unknown" ? "warn" : (kalshiAge.includes("h") ? "danger" : "ok");
-  pushPill(`kalshi ${kalshiAge}`, kalshiAgeClass, kalshiAgeClass === "ok");
+  let kalshiLabel = `kalshi ${kalshiAge}`;
+  let kalshiTone = "ok";
+  let kalshiDot = true;
+
+  if (!kalshiRunning) {
+    kalshiLabel = "kalshi offline";
+    kalshiTone = "danger";
+  } else if (kalshiAge === "unknown") {
+    kalshiLabel = "kalshi stale";
+    kalshiTone = "warn";
+  } else if (kalshiAge.includes("h")) {
+    kalshiLabel = "kalshi stale";
+    kalshiTone = "danger";
+  } else {
+    const kalshiAgeMinutes = Number.parseInt(kalshiAge, 10);
+    if (Number.isFinite(kalshiAgeMinutes) && freshnessWindow && kalshiAgeMinutes > freshnessWindow) {
+      kalshiLabel = "kalshi stale";
+      kalshiTone = "danger";
+    }
+  }
+
+  pushPill(kalshiLabel, kalshiTone, kalshiDot);
 
   pushPill(`tickers ${Number(telemetry.subscribed_tickers || 0)}`, "info");
 
