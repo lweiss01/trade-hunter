@@ -432,7 +432,7 @@ function renderMetrics(state) {
     { label: "signals",          value: signals.length,              sub: windowLabel },
     { label: "flow events",      value: (state.activity || []).length, sub: windowLabel },
     { label: "trades",           value: summary.trade_events || 0,   sub: windowLabel },
-    { label: "feeds",            value: Object.keys(feeds).length,   sub: null },
+    { label: "active feeds",     value: Object.keys(feeds).length,   sub: null },
     { label: "discord routes",   value: routeCount,                  sub: routeCount ? null : "default or disabled" },
   ];
 
