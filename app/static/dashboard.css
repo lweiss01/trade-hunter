@@ -694,7 +694,7 @@ h2 {
 .topic-filter-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   flex-wrap: wrap;
   margin: 0 0 10px;
   padding: 0;
@@ -703,15 +703,15 @@ h2 {
 .topic-chip {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  min-height: 28px;
-  padding: 0 10px;
+  gap: 3px;
+  min-height: 26px;
+  padding: 3px 9px;
   border-radius: 999px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-mid);
   background: transparent;
-  color: var(--text-faint);
+  color: var(--text-muted);
   font-family: var(--font-data);
-  font-size: 0.64rem;
+  font-size: 0.62rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   cursor: pointer;
@@ -730,12 +730,14 @@ h2 {
 .topic-chip.active {
   color: var(--live);
   background: var(--live-dim);
-  border-color: rgba(53, 224, 194, 0.3);
+  border-color: rgba(53, 224, 194, 0.35);
 }
 
 .topic-count {
   color: var(--text-muted);
   font-size: 0.58rem;
+  opacity: 0.7;
+  margin-left: 2px;
 }
 
 .what-matters-now {
