@@ -1,13 +1,13 @@
 const metricsEl = document.querySelector("#metrics");
 const signalsEl = document.querySelector("#signals");
 const topicFilterRowEl = document.querySelector("#topic-filter-row");
-const whatMattersNowEl = document.querySelector("#what-matters-now");
 const selectedSignalWorkbenchEl = document.querySelector("#selected-signal-workbench");
 const signalSortEl = document.querySelector("#signal-sort");
 const signalLatestToggleEl = document.querySelector("#signal-latest-toggle");
 const activityEl = document.querySelector("#activity");
 const feedsEl = document.querySelector("#feeds");
 const marketsEl = document.querySelector("#markets");
+const dashboardMarketsEl = document.querySelector("#dashboard-markets");
 const demoButton = document.querySelector("#demo-spike");
 const demoPanel = document.querySelector("#demo-panel");
 const modeBadgeEl = document.querySelector("#mode-badge");
@@ -583,13 +583,15 @@ function renderSelectedSignalWorkbench(signals, activity) {
   const allActivity = activity || [];
 
   if (!ordered.length && !selectedMarketId) {
-    selectedSignalWorkbenchEl.innerHTML = `<div class="empty">Select a signal or flow row to inspect its full context.</div>`;
+    selectedSignalWorkbenchEl.hidden = true;
+    selectedSignalWorkbenchEl.innerHTML = "";
     return;
   }
 
   const selected = ordered.find((signal) => getSignalKey(signal) === selectedSignalKey) || null;
 
   if (selected) {
+    selectedSignalWorkbenchEl.hidden = false;
     selectedSignalKey = getSignalKey(selected);
     selectedMarketId = selected?.event?.market_id || selectedMarketId;
     selectedMarketId = selected?.event?.market_id || selectedMarketId;
@@ -614,10 +616,13 @@ function renderSelectedSignalWorkbench(signals, activity) {
           <h2>Selected Signal Workbench</h2>
           <div class="workbench-subtitle">List = triage. Detail = investigation.</div>
         </div>
-        <div class="priority-tags">
-          <span class="mini-badge">${escapeHtml(selected.tier || "watch")}</span>
-          <span class="flow-pill info">score ${Number(selected.score || 0).toFixed(2)}</span>
-          <span class="flow-pill ${freshness.className}">${escapeHtml(freshness.label)}</span>
+        <div class="workbench-actions">
+          <div class="priority-tags">
+            <span class="mini-badge">${escapeHtml(selected.tier || "watch")}</span>
+            <span class="flow-pill info">score ${Number(selected.score || 0).toFixed(2)}</span>
+            <span class="flow-pill ${freshness.className}">${escapeHtml(freshness.label)}</span>
+          </div>
+          <button type="button" class="workbench-close-btn" data-workbench-close="true" aria-label="Close selected signal workbench">Close</button>
         </div>
       </div>
       <div class="workbench-grid">
@@ -649,9 +654,12 @@ function renderSelectedSignalWorkbench(signals, activity) {
   selectedSignalKey = null;
 
   if (!fallbackEvent) {
-    selectedSignalWorkbenchEl.innerHTML = `<div class="empty">Select a signal or flow row to inspect its full context.</div>`;
+    selectedSignalWorkbenchEl.hidden = true;
+    selectedSignalWorkbenchEl.innerHTML = "";
     return;
   }
+
+  selectedSignalWorkbenchEl.hidden = false;
 
   const fallbackFreshness = flowFreshness(fallbackEvent.timestamp);
   const fallbackChecks = [
@@ -671,9 +679,12 @@ function renderSelectedSignalWorkbench(signals, activity) {
         <h2>Selected Signal Workbench</h2>
         <div class="workbench-subtitle">List = triage. Detail = investigation.</div>
       </div>
-      <div class="priority-tags">
-        <span class="mini-badge">flow-only</span>
-        <span class="flow-pill ${fallbackFreshness.className}">${escapeHtml(fallbackFreshness.label)}</span>
+      <div class="workbench-actions">
+        <div class="priority-tags">
+          <span class="mini-badge">flow-only</span>
+          <span class="flow-pill ${fallbackFreshness.className}">${escapeHtml(fallbackFreshness.label)}</span>
+        </div>
+        <button type="button" class="workbench-close-btn" data-workbench-close="true" aria-label="Close selected signal workbench">Close</button>
       </div>
     </div>
     <div class="workbench-grid">
@@ -743,12 +754,20 @@ function renderTuningAdvisor(state) {
   const suggested = advisor.suggested_thresholds || {};
   const applied = state.config?.applied_thresholds || {};
   const suggestedEntries = Object.entries(suggested);
+  const thresholdSummary = suggestedEntries.length
+    ? suggestedEntries.map(([key, value]) => `${escapeHtml(key)} ${escapeHtml(formatThresholdValue(key, value))} <span class="tuning-live">live ${escapeHtml(formatThresholdValue(key, applied[key]))}</span>`).join(" · ")
+    : "";
   tuningAdvisorEl.innerHTML = `
     <div class="tuning-summary">${escapeHtml(advisor.summary || "")}</div>
-    <div class="tuning-global"><strong>Best next tweak:</strong> ${escapeHtml(advisor.global_recommendation || "")}</div>
-    ${recs.length ? `<ul class="tuning-list">${recs.map(r => `<li>${escapeHtml(r)}</li>`).join("")}</ul>` : ""}
+    <div class="tuning-global tuning-global-primary"><strong>Best next tweak:</strong> ${escapeHtml(advisor.global_recommendation || "")}</div>
+    ${thresholdSummary ? `<div class="tuning-threshold-summary"><strong>Suggested thresholds:</strong> ${thresholdSummary}</div>` : ""}
+    ${recs.length ? `
+      <details class="tuning-details">
+        <summary>Details</summary>
+        <ul class="tuning-list">${recs.map(r => `<li>${escapeHtml(r)}</li>`).join("")}</ul>
+      </details>
+    ` : ""}
     ${suggestedEntries.length ? `
-      <div class="tuning-global"><strong>Suggested thresholds:</strong> ${suggestedEntries.map(([key, value]) => `${escapeHtml(key)} ${escapeHtml(formatThresholdValue(key, value))} (live ${escapeHtml(formatThresholdValue(key, applied[key]))})`).join(" · ")}</div>
       <div class="tuning-actions"><button id="apply-tuning" class="action" type="button" ${tuningApplyInFlight ? "disabled" : ""}>${tuningApplyInFlight ? "Applying…" : "Apply recommended tweak"}</button></div>
     ` : ""}
   `;
@@ -761,7 +780,6 @@ function renderTuningAdvisor(state) {
 function renderSignals(signals) {
   renderTopicFilterRow(signals || []);
   const ordered = normalizeSignals(signals || []);
-  renderWhatMattersNow(ordered[0] || null);
   renderSelectedSignalWorkbench(ordered, lastDashboardState?.activity || []);
 
   if (!ordered.length) {
@@ -795,13 +813,17 @@ function renderSignals(signals) {
       const nsClass = ns === "signal" ? "signal" : ns === "noise" ? "noise" : "uncertain";
       analystHtml = `
         <div class="sig-analyst">
-          <span class="analyst-tag ${nsClass}">${nsIcon} ${ns}</span>
-          <span class="analyst-tag ${confClass}">${escapeHtml(dir)} · ${escapeHtml(conf)} conf</span>
-          <span class="analyst-rationale">${escapeHtml(analyst.rationale)}</span>
+          <div class="analyst-tags-row">
+            <span class="analyst-tag ${nsClass}">${nsIcon} ${ns}</span>
+            <span class="analyst-tag ${confClass}">${escapeHtml(dir)} · ${escapeHtml(conf)} conf</span>
+          </div>
+          <div class="analyst-copy">
+            <span class="analyst-rationale">${escapeHtml(analyst.rationale)}</span>
+            ${analyst.threshold_note && analyst.threshold_note !== "none"
+              ? `<div class="sig-threshold-note">⚙ ${escapeHtml(analyst.threshold_note)}</div>`
+              : ""}
+          </div>
         </div>
-        ${analyst.threshold_note && analyst.threshold_note !== "none"
-          ? `<div class="sig-threshold-note">⚙ ${escapeHtml(analyst.threshold_note)}</div>`
-          : ""}
       `;
     }
 
@@ -855,6 +877,55 @@ function collapseEvents(events) {
   return order.map((key) => groups.get(key));
 }
 
+function collapseFlowEvents(events) {
+  const order = [];
+  const groups = new Map();
+
+  for (const event of events || []) {
+    const signature = [
+      event.platform,
+      event.source,
+      event.market_id,
+      event.event_kind,
+      event.trade_side || "",
+      event.yes_price ?? "",
+      event.live ? "live" : "demo",
+    ].join("|");
+
+    if (!groups.has(signature)) {
+      groups.set(signature, {
+        event,
+        count: 1,
+        totalVolume: Number(event.volume || 0),
+      });
+      order.push(signature);
+    } else {
+      const group = groups.get(signature);
+      group.count += 1;
+      group.totalVolume += Number(event.volume || 0);
+    }
+  }
+
+  return order.map((signature) => groups.get(signature));
+}
+
+function collapseMarketsByLatest(markets) {
+  const order = [];
+  const groups = new Map();
+
+  for (const market of markets || []) {
+    const key = [market.platform, market.market_id].join("|");
+    if (!groups.has(key)) {
+      groups.set(key, { event: market, count: 1 });
+      order.push(key);
+    } else {
+      groups.get(key).count += 1;
+    }
+  }
+
+  return order.map((key) => groups.get(key));
+}
+
 function renderActivity(activity, telemetry = {}, config = {}) {
   if (!activity.length) {
     const mode = config.active_mode || "unknown";
@@ -870,16 +941,18 @@ function renderActivity(activity, telemetry = {}, config = {}) {
     return;
   }
 
-  const collapsed = collapseEvents(activity);
+  const collapsed = collapseFlowEvents(activity);
 
-  activityEl.innerHTML = collapsed.map(({ event: item, count }) => {
+  activityEl.innerHTML = `<div class="flow-list">${collapsed.map(({ event: item, count, totalVolume }) => {
     const freshness = flowFreshness(item.timestamp);
-    const price = item.yes_price != null ? `<span class="flow-val primary">${formatPrice(item.yes_price)}</span>` : "";
-    const vol = item.volume != null ? `<span class="flow-muted">vol ${formatVolume(item.volume)}</span>` : "";
-    const side = item.trade_side ? `<span class="flow-muted secondary">${escapeHtml(item.trade_side)}</span>` : "";
-    const kind = item.event_kind === "trade" ? `<span class="flow-kind trade">T</span>` : `<span class="flow-kind quote">Q</span>`;
-    const dup = count > 1 ? `<span class="flow-dup">×${count}</span>` : "";
-    const spark = sparklineSvg(item.market_id);
+    const price = item.yes_price != null ? `<span class="flow-price">${formatPrice(item.yes_price)}</span>` : `<span class="flow-price">n/a</span>`;
+    const volValue = totalVolume > 0 ? totalVolume : Number(item.volume || 0);
+    const vol = `<span class="flow-vol">vol ${formatVolume(volValue)}</span>`;
+    const sideLabel = item.event_kind === "trade" ? (item.trade_side || "—") : "—";
+    const side = `<span class="flow-side">${escapeHtml(sideLabel)}</span>`;
+    const kindClass = item.event_kind === "trade" ? "T" : "Q";
+    const kind = `<span class="flow-kind ${kindClass}">${kindClass}</span>`;
+    const dup = count > 1 ? `<span class="flow-dup">×${count}</span>` : `<span class="flow-dup"></span>`;
     const age = `<span class="flow-age ${freshness.className}">${escapeHtml(freshness.label)}</span>`;
     const matchedSignal = findBestSignalForMarket(lastDashboardState?.signals || [], item.market_id);
     const signalKey = matchedSignal ? getSignalKey(matchedSignal) : "";
@@ -887,14 +960,16 @@ function renderActivity(activity, telemetry = {}, config = {}) {
 
     return `
       <div class="flow-row ${isSelected ? "selected" : ""}" data-market-id="${escapeHtml(item.market_id || "")}" data-signal-key="${escapeHtml(signalKey)}" tabindex="0" role="button" aria-pressed="${isSelected ? "true" : "false"}">
-        <div class="flow-row-mainline">
-          <div class="flow-leading">${kind}<span class="flow-mid">${escapeHtml(item.market_id)}</span>${dup}</div>
-          <div class="flow-primary-metric">${price}</div>
-        </div>
-        <div class="flow-row-secondary">${vol}${side}${spark}${age}</div>
+        ${kind}
+        ${dup}
+        <span class="flow-mid">${escapeHtml(item.market_id)}</span>
+        ${price}
+        ${vol}
+        ${side}
+        ${age}
       </div>
     `;
-  }).join("");
+  }).join("")}</div>`;
 }
 
 function renderFeeds(state) {
@@ -936,48 +1011,82 @@ function renderFeeds(state) {
 }
 
 function renderMarkets(markets, telemetry = {}, config = {}) {
-  const head = `
-    <div class="market-head">
-      <div>Market</div>
-      <div>Platform</div>
-      <div>Source</div>
-      <div>Event</div>
-      <div>Yes</div>
-      <div>Volume</div>
-      <div>Seen</div>
-    </div>
-  `;
+  const targets = [marketsEl, dashboardMarketsEl].filter(Boolean);
+  if (!targets.length) return;
+
+  let html = "";
 
   if (!markets.length) {
     const mode = config.active_mode || "unknown";
     const windowMinutes = telemetry.freshness_window_minutes;
     const latestAge = formatAgeFromNow(telemetry.latest_event_at);
-    if (mode === "live" && windowMinutes) {
-      marketsEl.innerHTML = `${head}<div class="empty">No market snapshots inside the ${windowMinutes}m live window. Last stored market event: ${escapeHtml(latestAge)}.</div>`;
-    } else {
-      marketsEl.innerHTML = `${head}<div class="empty">No market events yet.</div>`;
-    }
-    return;
+    const emptyCopy = mode === "live" && windowMinutes
+      ? `No market snapshots inside the ${windowMinutes}m live window. Last stored market event: ${escapeHtml(latestAge)}.`
+      : "No market events yet.";
+
+    html = `
+      <div class="market-table-scroll">
+        <table class="market-table-compact">
+          <thead>
+            <tr>
+              <th>Market</th>
+              <th>Platform</th>
+              <th>Event</th>
+              <th>Yes</th>
+              <th>Volume</th>
+              <th>Seen</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="6" class="empty">${emptyCopy}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    `;
+  } else {
+    const collapsed = collapseMarketsByLatest(markets);
+
+    const rows = collapsed.map(({ event: market, count }) => {
+      const titleIsDuplicate = market.title === market.market_id || !market.title;
+      const titleHtml = titleIsDuplicate
+        ? `<div class="mkt-title">${escapeHtml(market.market_id)}</div>
+           <div class="mkt-id">${escapeHtml(market.topic || "general")}</div>`
+        : `<div class="mkt-title">${escapeHtml(market.title)}</div>
+           <div class="mkt-id">${escapeHtml(market.market_id)} · ${escapeHtml(market.topic || "general")}</div>`;
+      return `
+      <tr>
+        <td>${titleHtml}</td>
+        <td class="mkt-cell">${escapeHtml(market.platform)}</td>
+        <td class="mkt-cell">${escapeHtml(market.event_kind || "quote")} ${count > 1 ? `· x${count}` : ""} · ${escapeHtml(market.live ? "live" : "demo")}</td>
+        <td class="mkt-cell mkt-price">${formatPrice(market.yes_price)}</td>
+        <td class="mkt-cell">${formatVolume(market.volume)}</td>
+        <td class="mkt-cell">${formatTimestamp(market.timestamp)}</td>
+      </tr>
+    `;
+    }).join("");
+
+    html = `
+      <div class="market-table-scroll">
+        <table class="market-table-compact">
+          <thead>
+            <tr>
+              <th>Market</th>
+              <th>Platform</th>
+              <th>Event</th>
+              <th>Yes</th>
+              <th>Volume</th>
+              <th>Seen</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    `;
   }
 
-  const collapsed = collapseEvents(markets);
-
-  const rows = collapsed.map(({ event: market, count }) => `
-    <div class="market-row">
-      <div class="market-name">
-        <strong class="market-title">${escapeHtml(market.title)}</strong>
-        <span class="market-id">${escapeHtml(market.market_id)} • ${escapeHtml(market.topic || "general")}</span>
-      </div>
-      <div class="market-cell">${escapeHtml(market.platform)}</div>
-      <div class="market-cell">${escapeHtml(market.source)}</div>
-      <div class="market-cell">${escapeHtml(market.event_kind || "quote")} ${count > 1 ? `• x${count}` : ""} • ${escapeHtml(market.live ? "live" : "demo")}</div>
-      <div class="market-cell">${formatPrice(market.yes_price)}</div>
-      <div class="market-cell">${formatVolume(market.volume)}</div>
-      <div class="market-cell">${formatTimestamp(market.timestamp)}</div>
-    </div>
-  `).join("");
-
-  marketsEl.innerHTML = head + rows;
+  targets.forEach((target) => {
+    target.innerHTML = html;
+  });
 }
 
 function getTrackedTickerRows(tickers, markets, deadTickers = []) {
@@ -1258,6 +1367,17 @@ if (activityEl) {
     if (!row) return;
     event.preventDefault();
     activateFlowRow(row);
+  });
+}
+
+if (selectedSignalWorkbenchEl) {
+  selectedSignalWorkbenchEl.addEventListener("click", (event) => {
+    const closeButton = event.target.closest("[data-workbench-close]");
+    if (!closeButton) return;
+    selectedSignalKey = null;
+    selectedMarketId = null;
+    renderSignals(lastDashboardState?.signals || []);
+    renderActivity(lastDashboardState?.activity || [], lastDashboardState?.telemetry || {}, lastDashboardState?.config || {});
   });
 }
 
