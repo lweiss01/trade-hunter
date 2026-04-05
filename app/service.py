@@ -214,30 +214,68 @@ class TradeHunterService:
     def get_kalshi_markets(self) -> list[str]:
         return list(self.settings.kalshi_markets)
 
+    def get_dead_kalshi_markets(self) -> list[str]:
+        for feed in self.feeds:
+            if isinstance(feed, KalshiPykalshiFeed):
+                return feed.dead_tickers()
+        return []
+
     def search_kalshi_by_category(self, category: str, limit: int = 20) -> list[dict]:
         """Resolve a category label to open Kalshi event tickers via the public API.
 
         Returns a list of dicts with keys: event_ticker, series_ticker, title, category, open_markets.
         Each entry's series_ticker can be added to KALSHI_MARKETS for auto-resolution.
+
+        Kalshi's public /events endpoint does not reliably honor the category query param,
+        so we fetch a broader open-events window and filter locally.
         """
         import json as _json
         import urllib.request as _ureq
+
         base = "https://api.elections.kalshi.com/trade-api/v2"
         results: list[dict] = []
+        query = str(category or "").strip().lower()
+
         try:
-            params = f"?status=open&limit={limit}"
-            if category:
-                params += f"&category={_ureq.quote(category, safe='')}"
+            fetch_limit = max(limit * 10, 100)
             req = _ureq.Request(
-                f"{base}/events{params}",
+                f"{base}/events?status=open&limit={fetch_limit}",
                 headers={"User-Agent": "trade-hunter/1.0"},
             )
             data = _json.load(_ureq.urlopen(req, timeout=8))
-            for ev in data.get("events") or []:
+            events = data.get("events") or []
+
+            def _event_matches(ev: dict[str, Any]) -> bool:
+                if not query:
+                    return True
+                haystacks = [
+                    str(ev.get("category") or "").lower(),
+                    str(ev.get("title") or "").lower(),
+                    str(ev.get("event_ticker") or ev.get("ticker") or "").lower(),
+                ]
+                aliases = {
+                    "crypto": ["crypto", "bitcoin", "btc", "ethereum", "eth", "solana", "xrp", "doge"],
+                    "macro": ["macro", "economy", "economic", "inflation", "recession", "gdp", "rates", "oil", "tariff"],
+                    "geopolitics": ["geopolitics", "world", "war", "israel", "ukraine", "russia", "china", "iran"],
+                    "sports": ["sports", "nba", "nfl", "mlb", "nhl", "f1", "golf", "soccer", "tennis"],
+                    "elections": ["elections", "election", "president", "prime minister", "vote", "senate", "house"],
+                }
+                terms = aliases.get(query, [query])
+
+                def _matches_term(text: str, term: str) -> bool:
+                    if len(term) <= 3:
+                        normalized = ''.join(ch if ch.isalnum() else ' ' for ch in text)
+                        return term in normalized.split()
+                    return term in text
+
+                return any(_matches_term(text, term) for term in terms for text in haystacks)
+
+            matched_events = [ev for ev in events if _event_matches(ev)]
+
+            for ev in matched_events[:limit]:
                 ticker = ev.get("event_ticker") or ev.get("ticker") or ""
                 if not ticker:
                     continue
-                # Try to find associated series ticker via markets search
                 series_ticker = None
                 try:
                     mreq = _ureq.Request(
@@ -398,6 +436,8 @@ class TradeHunterService:
             "subscribed_tickers": _safe_len(self.settings.kalshi_markets),
         }
 
+        dead_kalshi_markets = self.get_dead_kalshi_markets()
+
         # Attach analyst reads to signals if available
         if self._analyst:
             enriched = []
@@ -430,6 +470,7 @@ class TradeHunterService:
             "kalshi": self.settings.enable_kalshi,
             "active_mode": self._active_mode,
             "kalshi_markets": self.settings.kalshi_markets,
+            "dead_kalshi_markets": dead_kalshi_markets,
             "discord_routes": sorted(self.settings.discord_webhook_routes.keys()),
             # applied_thresholds — these are the live detector settings, not suggestions
             "applied_thresholds": {
