@@ -627,7 +627,8 @@ h2 {
 
 .panel-body-signals,
 .panel-body-tuning {
-  padding: 0;
+  padding: 12px 14px;
+  gap: 8px;
 }
 
 .panel-body-flow,
@@ -821,15 +822,13 @@ h2 {
 /* ── Proposal-spec signal card styles ── */
 .signal-card {
   background: var(--surface-2);
-  border-radius: 0;
-  padding: 12px 14px 12px 17px;
+  border-radius: 9px;
+  padding: 12px 14px;
   border: 1px solid var(--border);
-  border-left: none;
-  border-right: none;
   display: grid;
   gap: 7px;
   position: relative;
-  transition: border-color 0.15s;
+  transition: transform 0.15s, border-color 0.15s;
   cursor: pointer;
 }
 
@@ -837,11 +836,11 @@ h2 {
   content: '';
   position: absolute;
   left: 0;
-  top: -1px;
-  bottom: -1px;
+  top: 0;
+  bottom: 0;
   width: 3px;
   background: var(--warn);
-  border-radius: 0;
+  border-radius: 9px 0 0 9px;
 }
 
 .signal-card.tier-watch::before  { background: var(--warn); }
