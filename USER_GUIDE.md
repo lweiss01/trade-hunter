@@ -4,6 +4,30 @@
 
 ---
 
+## Local startup
+
+On Windows, use the repo-local launcher:
+
+```powershell
+.\trade-hunter.cmd
+```
+
+It runs the guarded single-instance startup path, so starting it again replaces the already-running local Trade Hunter instance on the configured port instead of piling up another server.
+
+The launcher also forwards arguments to the app entrypoint:
+
+```powershell
+.\trade-hunter.cmd --smoke-test
+```
+
+On macOS/Linux, continue to use:
+
+```bash
+python -m app
+```
+
+---
+
 ## Operating modes
 
 Trade Hunter runs in exactly **one** mode. Live and simulation are mutually exclusive.
@@ -240,14 +264,16 @@ Current planned tuning work is tracked in the roadmap milestone **M005** and in 
 
 ## Multiple server instances
 
-Each bg_shell restart accumulates a new process. If you see alternating status strings in the feed detail (different ws_msgs counts on successive refreshes), there are stray instances running. Kill all and start one clean:
+Trade Hunter now treats the configured host/port as a single-instance local startup target. On Windows, use `trade-hunter.cmd` as the supported launcher. Starting it again will ask the already-running local Trade Hunter instance on that port to shut down cleanly before the new one starts.
+
+If you still see alternating status strings in the feed detail (different ws_msgs counts on successive refreshes), there may be an older pre-guard instance or a manually started stray process outside the supported path. Kill all and start one clean:
 
 ```powershell
 # Windows
 Get-CimInstance Win32_Process |
   Where-Object { $_.CommandLine -match "-m app" } |
   ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
-py -m app
+.\trade-hunter.cmd
 ```
 
 ```bash

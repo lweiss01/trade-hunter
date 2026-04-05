@@ -32,7 +32,7 @@ Every agent working in this repo should:
 4. If the Holistic daemon is installed, assume passive capture is already running in the background.
 5. Use the repo-local Holistic helper for explicit recap or recovery flows in this repo.
 6. Recap the current state for the user and ask whether to continue, tweak the plan, or start something new.
-7. Record a checkpoint when focus changes, before likely context compaction, and before handoff.
+7. Record a checkpoint when focus changes, when tests passed in the current verification pass, when a bug is fixed (example: "bug fixed"), when a feature is complete (example: "feature complete"), before likely context compaction, and before handoff. If your client exposes "/checkpoint" or "/handoff" wrappers, treat them as safety valves; otherwise use the repo-local Holistic helper commands below.
 
 Use the repo-local Holistic helper in this repo: Windows `.\.holistic\system\holistic.cmd resume --agent <your-agent-name>`; macOS/Linux `./.holistic/system/holistic resume --agent <your-agent-name>`.
 
@@ -64,29 +64,3 @@ To add instructions for a new agent, create a file at:
 
 Copy any existing adapter as a template and customise the agent name and startup steps.
 Do not edit Holistic source files to register agents - adapters are data, not code.
-
-## Landing the Plane (Session Completion)
-
-**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
-
-**MANDATORY WORKFLOW:**
-
-1. **File issues for remaining work** - Create issues for anything that needs follow-up
-2. **Run quality gates** (if code changed) - Tests, linters, builds
-3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - This is MANDATORY:
-   ```bash
-   git pull --rebase
-   bd sync
-   git push
-   git status  # MUST show "up to date with origin"
-   ```
-5. **Clean up** - Clear stashes, prune remote branches
-6. **Verify** - All changes committed AND pushed
-7. **Hand off** - Provide context for next session
-
-**CRITICAL RULES:**
-- Work is NOT complete until `git push` succeeds
-- NEVER stop before pushing - that leaves work stranded locally
-- NEVER say "ready to push when you are" - YOU must push
-- If push fails, resolve and retry until it succeeds

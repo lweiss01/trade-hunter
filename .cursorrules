@@ -11,11 +11,11 @@ At the start of every session, before doing anything else:
 
 ## Current Objective
 
-Review recent repo activity and decide what to work on.
+Continue work around .bg-shell/manifest.json, .gitattributes, .pytest_cache/v/cache/nodeids
 
 ## Latest Status
 
-Holistic is set up and tracking this repo.
+Session started.
 
 ## Before ending this session
 

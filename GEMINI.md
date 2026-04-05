@@ -9,10 +9,13 @@
 
 **After significant work or on any git commit (hook fires automatically):**
 - Run `holistic checkpoint --reason '<what you just did>'`
+- Prefer checkpoints at natural breakpoints like tests passed, bug fixed, feature complete, focus change, or before compaction.
+- If your client exposes `/checkpoint`, you can use it as the safety valve for the same action.
 - To record a fix that must not regress: `holistic checkpoint --fixed '<bug>' --fix-files '<file>' --fix-risk '<what reintroduces it>'`
 
 **At the end of every session:**
 - Run `holistic handoff` - this opens a dialog to capture the summary and prepares a pending handoff commit.
+- If your client exposes `/handoff`, it is the matching session-end safety valve.
 - If you want the Holistic files committed, make that git commit explicitly.
 
 **Never touch files listed in the KNOWN FIXES section of HOLISTIC.md without reading that section first.**

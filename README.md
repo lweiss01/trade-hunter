@@ -23,7 +23,7 @@ A real-time prediction market monitoring dashboard. Subscribes to live Kalshi We
 
 ```bash
 # Windows
-py -m app
+.\trade-hunter.cmd
 
 # macOS / Linux
 python -m app
@@ -31,7 +31,27 @@ python -m app
 
 Open `http://127.0.0.1:8765`.
 
+On Windows, `trade-hunter.cmd` is the repo-supported launcher and uses the guarded single-instance startup path for you.
+
+If Trade Hunter is already running on the configured port, starting it again now requests a scoped shutdown of the old local instance and replaces it with one clean server.
+
 With `ENABLE_SIMULATION=true` (the default), the dashboard fills with synthetic data immediately. No credentials needed.
+
+### Windows launcher
+
+Use the repo-local launcher for normal local work:
+
+```powershell
+.\trade-hunter.cmd
+```
+
+The launcher forwards arguments to the app entrypoint, so smoke tests still work:
+
+```powershell
+.\trade-hunter.cmd --smoke-test
+```
+
+Use `py -m app` only if you intentionally need the raw module entrypoint.
 
 ---
 

@@ -30,9 +30,13 @@ Use the repo-local Holistic helper in this repo: Windows `.\.holistic\system\hol
 Use the repo-local Holistic helper for checkpoints in this repo when:
 
 - the task focus changes
+- tests passed and you reached a clean breakpoint
+- you fixed a bug that should not regress
+- a feature is complete or ready for review
 - you are about to compact or clear context
-- you finish a meaningful chunk of work
-- you fix or alter behavior that could regress later
+- before handoff
+
+If your client exposes `/checkpoint` or `/handoff` wrappers, treat them as safety valves. Otherwise, use the explicit repo-local commands below.
 
 Include impact notes and regression risks when they matter.
 

@@ -1,9 +1,13 @@
 ﻿from __future__ import annotations
 
 import argparse
+import json
+import time
+import urllib.error
+import urllib.request
 from datetime import UTC, datetime
 
-from .config import load_settings
+from .config import Settings, load_settings
 from .models import MarketEvent
 from .server import run_server
 from .service import TradeHunterService
@@ -68,6 +72,75 @@ def run_smoke_test() -> int:
     return 0 if signals else 1
 
 
+def _probe_host(settings: Settings) -> str:
+    host = (settings.host or "127.0.0.1").strip()
+    if host in {"0.0.0.0", "::", ""}:
+        return "127.0.0.1"
+    return host
+
+
+def _app_url(settings: Settings, path: str) -> str:
+    return f"http://{_probe_host(settings)}:{settings.port}{path}"
+
+
+def _read_json(url: str, *, method: str = "GET", timeout: float = 1.5) -> dict | None:
+    request = urllib.request.Request(url, method=method)
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            return json.loads(response.read().decode("utf-8") or "{}")
+    except (
+        urllib.error.URLError,
+        TimeoutError,
+        json.JSONDecodeError,
+        ConnectionResetError,
+        ConnectionAbortedError,
+        BrokenPipeError,
+    ):
+        return None
+
+
+def _existing_trade_hunter_running(settings: Settings) -> bool:
+    payload = _read_json(_app_url(settings, "/api/settings"))
+    return isinstance(payload, dict) and isinstance(payload.get("settings"), dict)
+
+
+def _request_existing_instance_shutdown(settings: Settings) -> bool:
+    payload = _read_json(_app_url(settings, "/api/admin/shutdown"), method="POST")
+    return bool(payload and payload.get("ok"))
+
+
+def _wait_for_existing_instance_to_exit(settings: Settings, *, timeout_seconds: float = 8.0) -> bool:
+    deadline = time.time() + timeout_seconds
+    while time.time() < deadline:
+        if not _existing_trade_hunter_running(settings):
+            return True
+        time.sleep(0.2)
+    return False
+
+
+def _replace_existing_local_instance(settings: Settings) -> None:
+    if not _existing_trade_hunter_running(settings):
+        return
+
+    location = f"{_probe_host(settings)}:{settings.port}"
+    print(f"Trade Hunter already running at {location}; requesting shutdown before restart.")
+
+    shutdown_acknowledged = _request_existing_instance_shutdown(settings)
+    if not shutdown_acknowledged and not _wait_for_existing_instance_to_exit(settings, timeout_seconds=2.5):
+        raise RuntimeError(
+            "Trade Hunter is already running, but the existing instance did not accept a scoped shutdown request. "
+            "Stop the old instance manually before retrying."
+        )
+
+    if not _wait_for_existing_instance_to_exit(settings):
+        raise RuntimeError(
+            "Trade Hunter shutdown was requested, but the existing instance did not release the port in time. "
+            "Stop the old instance manually before retrying."
+        )
+
+    print(f"Previous Trade Hunter instance at {location} stopped cleanly.")
+
+
 def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
@@ -75,6 +148,11 @@ def main() -> int:
         return run_smoke_test()
 
     settings = load_settings()
+    try:
+        _replace_existing_local_instance(settings)
+    except RuntimeError as exc:
+        print(str(exc))
+        return 1
     run_server(settings)
     return 0
 

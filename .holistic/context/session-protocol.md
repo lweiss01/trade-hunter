@@ -22,9 +22,13 @@ Use the repo-local Holistic helper in this repo: Windows `.\.holistic\system\hol
 Use the repo-local Holistic helper for checkpoints in this repo:
 
 - when the task focus changes
+- when tests passed in the current verification pass
+- when you fix a bug that should not regress
+- when a feature is complete or ready for review
 - before likely context compaction
-- after meaningful progress
-- when you fix something another agent might accidentally re-break later
+- before handoff
+
+If your client exposes `/checkpoint` or `/handoff` wrappers, treat them as safety valves for those moments. Otherwise, use the explicit repo-local commands below.
 
 Use the repo-local Holistic helper with `watch` if you want foreground background checkpoints while working manually.
 

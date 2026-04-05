@@ -1,6 +1,10 @@
 $ErrorActionPreference = 'Stop'
 if (Get-Variable PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue) { $PSNativeCommandUseErrorActionPreference = $false }
-$root = 'D:\Projects\active\trade-hunter'
+$root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+if (-not (Test-Path "$root\.git")) {
+  Write-Error "holistic sync-state: ERROR: Could not find .git directory in resolved ROOT: $root"
+  exit 1
+}
 $remote = 'origin'
 $stateRef = 'refs/holistic/state'
 $legacySeedRef = 'refs/heads/holistic/state'

@@ -1,5 +1,11 @@
 #!/usr/bin/env sh
-ROOT='D:\Projects\active\trade-hunter'
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+if [ ! -d "$ROOT/.git" ]; then
+  echo 'holistic sync-state: ERROR: Could not find .git directory in resolved ROOT.' >&2
+  echo "Resolved ROOT: $ROOT" >&2
+  exit 1
+fi
 REMOTE='origin'
 STATE_REF='refs/holistic/state'
 LEGACY_SEED_REF='refs/heads/holistic/state'
