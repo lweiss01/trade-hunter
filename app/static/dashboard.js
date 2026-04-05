@@ -989,6 +989,14 @@ function renderTickerList(markets) {
   const marketSnapshots = lastDashboardState?.markets || [];
   const deadTickers = lastDashboardState?.config?.dead_kalshi_markets || [];
 
+  // Update panel badge with active count
+  const tickerBadgeEl = document.getElementById("ticker-panel-badge");
+  if (tickerBadgeEl) {
+    tickerBadgeEl.textContent = trackedTickers.length
+      ? `${trackedTickers.length} active`
+      : "no tickers";
+  }
+
   if (!trackedTickers.length) {
     tickerListEl.innerHTML = `<div class="empty">No Kalshi tickers tracked yet.</div>`;
     return;
@@ -1017,8 +1025,7 @@ function renderTickerList(markets) {
       <table class="market-table-compact tracked-table-compact">
         <thead>
           <tr>
-            <th>Ticker</th>
-            <th>Title</th>
+            <th>Market</th>
             <th>Yes</th>
             <th>Status</th>
             <th></th>
@@ -1027,8 +1034,10 @@ function renderTickerList(markets) {
         <tbody>
           ${rows.map((row) => `
             <tr class="${row.statusClass === 'dead' ? 'tracked-row-dead' : ''}">
-              <td class="mkt-cell tracked-ticker-cell">${escapeHtml(row.ticker)}</td>
-              <td class="mkt-cell tracked-title-cell">${escapeHtml(row.title)}</td>
+              <td class="tracked-market-cell">
+                <span class="tracked-ticker-code">${escapeHtml(row.ticker)}</span>
+                <span class="tracked-ticker-title">${escapeHtml(row.title)}</span>
+              </td>
               <td class="mkt-cell mkt-price tracked-price-cell">${row.yesPrice != null ? formatPrice(row.yesPrice) : "n/a"}</td>
               <td class="tracked-status-cell"><span class="tracked-status-pill ${row.statusClass}">${escapeHtml(row.statusLabel)}</span></td>
               <td class="tracked-remove-cell"><button class="ticker-remove tracked-remove-btn" type="button" data-ticker="${escapeHtml(row.ticker)}" title="Remove ${escapeHtml(row.ticker)}" aria-label="Remove ${escapeHtml(row.ticker)}">×</button></td>
