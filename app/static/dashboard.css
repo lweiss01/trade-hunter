@@ -633,8 +633,8 @@ h2 {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 13px 16px 12px;
+  gap: 10px;
+  padding: 12px 15px 11px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -664,14 +664,14 @@ h2 {
 .panel-head-signals {
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   flex-wrap: nowrap;
 }
 
 .signals-title-wrap {
   display: flex;
   align-items: baseline;
-  gap: 10px;
+  gap: 8px;
   flex: 1 1 auto;
   min-width: 0;
 }
@@ -685,7 +685,7 @@ h2 {
 .signals-controls {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
   flex-shrink: 0;
   justify-content: flex-end;
@@ -1043,9 +1043,9 @@ h2 {
 }
 
 .signals-label {
-  color: var(--muted);
+  color: var(--text-muted);
   font-family: Consolas, "Liberation Mono", monospace;
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -1058,10 +1058,11 @@ h2 {
   background: rgba(20, 18, 13, 0.78);
   color: var(--text);
   font-family: Consolas, "Liberation Mono", monospace;
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  padding: 5px 10px;
+  min-height: 28px;
+  padding: 4px 9px;
 }
 
 .signal-toggle {
