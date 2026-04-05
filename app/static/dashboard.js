@@ -94,6 +94,7 @@ let currentPage = "dashboard";
 let lastDashboardState = null;
 let lastSettingsState = null;
 let settingsSaveInFlight = false;
+let tickerMutationInFlight = false;
 
 // Per-market price history for sparklines (last 20 yes_price values)
 const priceHistory = new Map();
@@ -827,35 +828,28 @@ function renderFeeds(state) {
     pushPill(`window ${freshnessWindow}m`, "info");
   }
 
-  const latestEventAge = formatAgeFromNow(telemetry.latest_event_at);
-  const latestEventClass = latestEventAge === "unknown" ? "warn" : (latestEventAge.includes("h") ? "danger" : "ok");
-  pushPill(`event ${latestEventAge}`, latestEventClass, latestEventClass === "ok");
-
+  // ── Kalshi WebSocket connection pill ──
   const kalshiFeed = feeds["kalshi-pykalshi"] || {};
   const kalshiRunning = Boolean(kalshiFeed.running);
-  const kalshiAge = formatAgeFromNow(telemetry.kalshi_last_event_at);
-  let kalshiLabel = `kalshi ${kalshiAge}`;
-  let kalshiTone = "ok";
-  let kalshiDot = true;
+  const kalshiDetail = kalshiFeed.detail || "";
+  const kalshiWsMatch = kalshiDetail.match(/ws_msgs:(\d+)/);
+  const kalshiWsActive = kalshiWsMatch && Number(kalshiWsMatch[1]) > 0;
 
   if (!kalshiRunning) {
-    kalshiLabel = "kalshi offline";
-    kalshiTone = "danger";
-  } else if (kalshiAge === "unknown") {
-    kalshiLabel = "kalshi stale";
-    kalshiTone = "warn";
-  } else if (kalshiAge.includes("h")) {
-    kalshiLabel = "kalshi stale";
-    kalshiTone = "danger";
+    pushPill("kalshi offline", "danger", false);
+  } else if (kalshiWsActive) {
+    pushPill("kalshi connected", "ok", true);
   } else {
-    const kalshiAgeMinutes = Number.parseInt(kalshiAge, 10);
-    if (Number.isFinite(kalshiAgeMinutes) && freshnessWindow && kalshiAgeMinutes > freshnessWindow) {
-      kalshiLabel = "kalshi stale";
-      kalshiTone = "danger";
-    }
+    pushPill("kalshi stale", "warn", false);
   }
 
-  pushPill(kalshiLabel, kalshiTone, kalshiDot);
+  // ── Markets open pill — only visible when ticker/trade events are flowing ──
+  const kalshiEventAge = formatAgeFromNow(telemetry.kalshi_last_event_at);
+  if (kalshiRunning && kalshiEventAge !== "unknown" && !kalshiEventAge.includes("h")) {
+    const marketsAgeMin = Number.parseInt(kalshiEventAge, 10);
+    const marketsTone = Number.isFinite(marketsAgeMin) && freshnessWindow && marketsAgeMin > freshnessWindow ? "warn" : "ok";
+    pushPill(`markets open ${kalshiEventAge}`, marketsTone, marketsTone === "ok");
+  }
 
   pushPill(`tickers ${Number(telemetry.subscribed_tickers || 0)}`, "info");
 
