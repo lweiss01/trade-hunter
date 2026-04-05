@@ -1200,11 +1200,11 @@ h2 {
 
 .market-table-compact thead th {
   font-family: var(--font-data);
-  font-size: 0.62rem;
+  font-size: 0.60rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-muted);
-  padding: 6px 10px;
+  padding: 5px 10px;
   text-align: left;
   border-bottom: 1px solid var(--border);
   font-weight: 500;
@@ -1219,7 +1219,7 @@ h2 {
 .market-table-compact tbody tr:hover { background: rgba(255,255,255,0.02); }
 
 .market-table-compact tbody td {
-  padding: 8px 10px;
+  padding: 7px 10px;
   vertical-align: middle;
 }
 
@@ -1230,21 +1230,22 @@ h2 {
 }
 
 .mkt-title {
-  font-size: 0.82rem;
+  font-size: 0.80rem;
+  line-height: 1.28;
   font-weight: 500;
   color: var(--text);
 }
 
 .mkt-id {
   font-family: var(--font-data);
-  font-size: 0.65rem;
+  font-size: 0.63rem;
   color: var(--text-muted);
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
 .mkt-cell {
   font-family: var(--font-data);
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   color: var(--text-muted);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
@@ -1264,7 +1265,7 @@ h2 {
   display: flex;
   flex-direction: column;
   gap: 0;
-  padding: 4px 14px 8px;
+  padding: 3px 14px 6px;
   font-family: var(--font-data);
 }
 
@@ -1276,10 +1277,10 @@ h2 {
   display: grid;
   grid-template-columns: 18px 12px 1fr auto auto auto auto;
   align-items: center;
-  gap: 7px;
-  padding: 6px 4px;
+  gap: 6px;
+  padding: 5px 4px;
   border-bottom: 1px solid var(--border);
-  font-size: 0.73rem;
+  font-size: 0.71rem;
   transition: background 0.1s;
 }
 
@@ -1319,29 +1320,29 @@ h2 {
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--text);
-  font-size: 0.73rem;
+  font-size: 0.71rem;
 }
 
 .flow-price {
   color: var(--live);
   font-weight: 600;
-  font-size: 0.73rem;
+  font-size: 0.71rem;
   white-space: nowrap;
 }
 
 .flow-vol {
   color: var(--text-muted);
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   white-space: nowrap;
 }
 
 .flow-side {
   color: var(--text-muted);
-  font-size: 0.68rem;
+  font-size: 0.66rem;
 }
 
 .flow-age {
-  font-size: 0.62rem;
+  font-size: 0.60rem;
   white-space: nowrap;
 }
 
