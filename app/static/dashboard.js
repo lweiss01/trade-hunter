@@ -758,9 +758,14 @@ function renderTuningAdvisor(state) {
     ? suggestedEntries.map(([key, value]) => `<span class="tuning-threshold-item">${escapeHtml(key)} <strong>${escapeHtml(formatThresholdValue(key, value))}</strong> <span class="tuning-live">live ${escapeHtml(formatThresholdValue(key, applied[key]))}</span></span>`).join("")
     : "";
 
-  // Surface a TB label so the advisor reads as a trackable recommendation
-  const tbLabel = advisor.tb_id || null;
-  const tbHtml = tbLabel ? `<span class="tuning-tb-id">${escapeHtml(tbLabel)}</span>` : "";
+  // Derive a stable TB-id from the recommendation content
+  const tbId = advisor.tb_id || (() => {
+    const src = (advisor.global_recommendation || "") + (advisor.summary || "");
+    let h = 0;
+    for (let i = 0; i < src.length; i++) { h = (Math.imul(31, h) + src.charCodeAt(i)) | 0; }
+    return `TB-${String(Math.abs(h) % 900 + 100)}`;
+  })();
+  const tbHtml = `<span class="tuning-tb-id">${escapeHtml(tbId)}</span>`;
 
   tuningAdvisorEl.innerHTML = `
     <div class="tuning-summary">${escapeHtml(advisor.summary || "")}</div>
