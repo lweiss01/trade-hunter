@@ -464,7 +464,7 @@ h2 {
 }
 
 h2 {
-  font-size: 0.88rem;
+  font-size: 0.82rem;
   font-weight: 600;
   letter-spacing: 0.01em;
 }
@@ -1039,8 +1039,14 @@ h2 {
 }
 
 .badge {
-  color: var(--accent);
-  font-size: 0.68rem;
+  font-family: var(--font-data);
+  font-size: 0.60rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--border);
 }
 
 .stack {
