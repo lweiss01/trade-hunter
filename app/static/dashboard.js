@@ -1098,7 +1098,7 @@ function getTrackedTickerRows(tickers, markets, deadTickers = []) {
     const statusLabel = isDeadTicker
       ? "expired/invalid"
       : bestMatch
-        ? (seriesMatches.length > 1 && !exactMatch ? `${freshness.label} • ${seriesMatches.length} markets` : freshness.label)
+        ? freshness.label
         : "unresolved";
     const resolvedTitle = isDeadTicker
       ? "Ticker no longer resolves on the Kalshi API"
@@ -1163,9 +1163,9 @@ function renderTickerList(markets) {
             <tr class="${row.statusClass === 'dead' ? 'tracked-row-dead' : ''}">
               <td class="mkt-cell tracked-ticker-cell">${escapeHtml(row.ticker)}</td>
               <td class="mkt-cell tracked-title-cell">${escapeHtml(row.title)}</td>
-              <td class="mkt-cell mkt-price">${row.yesPrice != null ? formatPrice(row.yesPrice) : "n/a"}</td>
-              <td><span class="nav-pill ${row.statusClass === 'fresh' ? 'ok' : row.statusClass === 'dead' ? 'danger' : row.statusClass === 'stale' ? 'warn' : 'info'}" style="font-size:0.60rem;">${escapeHtml(row.statusLabel)}</span></td>
-              <td class="tracked-remove-cell"><button class="ticker-remove tracked-remove-btn" type="button" data-ticker="${escapeHtml(row.ticker)}" title="Remove ${escapeHtml(row.ticker)}">×</button></td>
+              <td class="mkt-cell mkt-price tracked-price-cell">${row.yesPrice != null ? formatPrice(row.yesPrice) : "n/a"}</td>
+              <td class="tracked-status-cell"><span class="tracked-status-pill ${row.statusClass}">${escapeHtml(row.statusLabel)}</span></td>
+              <td class="tracked-remove-cell"><button class="ticker-remove tracked-remove-btn" type="button" data-ticker="${escapeHtml(row.ticker)}" title="Remove ${escapeHtml(row.ticker)}" aria-label="Remove ${escapeHtml(row.ticker)}">×</button></td>
             </tr>
           `).join("")}
         </tbody>

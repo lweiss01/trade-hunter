@@ -135,22 +135,14 @@
               <button class="topic-chip" type="button" data-category-shortcut="Geopolitics">Geopolitics</button>
             </div>
             <form id="category-form" class="category-form">
-              <label for="category-input" class="ticker-label">Category</label>
-              <input id="category-input" class="ticker-input" type="text" name="category" placeholder="e.g. Crypto, Elections, Sports, World" autocomplete="off">
-              <button id="category-search" class="ticker-add" type="submit">Search</button>
+              <label for="category-input" class="ticker-label category-form-label">Category</label>
+              <input id="category-input" class="ticker-input category-input-field" type="text" name="category" placeholder="e.g. Crypto, Elections, Sports, World" autocomplete="off">
+              <button id="category-search" class="category-search-btn" type="submit">Search</button>
             </form>
             <div id="category-message" class="ticker-message" aria-live="polite"></div>
             <div id="category-results" class="category-results"></div>
           </section>
         </div>
-
-        <section class="panel markets-panel">
-          <div class="panel-head">
-            <h2>Market Tape</h2>
-            <span class="badge">latest activity</span>
-          </div>
-          <div id="markets" class="market-table"></div>
-        </section>
       </section>
 
       <section id="page-settings" class="page-view settings-page" data-page-view="settings" hidden>
