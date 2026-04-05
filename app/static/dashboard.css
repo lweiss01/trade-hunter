@@ -1233,6 +1233,10 @@ h2 {
   font-family: var(--font-data);
 }
 
+#activity > .empty {
+  padding: 4px 14px 8px;
+}
+
 .flow-row {
   display: grid;
   grid-template-columns: 18px 12px 1fr auto auto auto auto;
