@@ -646,14 +646,14 @@ h2 {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding: 12px 14px;
+  padding: 11px 14px;
   gap: 8px;
 }
 
 .panel-body-signals,
 .panel-body-tuning {
-  padding: 12px 14px;
-  gap: 8px;
+  padding: 10px 14px;
+  gap: 7px;
 }
 
 .panel-body-flow,
@@ -1144,6 +1144,13 @@ h2 {
   line-height: 1.5;
   font-size: 0.92rem;
   font-variant-numeric: tabular-nums;
+}
+
+.empty {
+  padding: 16px 14px;
+  color: var(--text-muted);
+  font-size: 0.80rem;
+  text-align: center;
 }
 
 .signal-score {
