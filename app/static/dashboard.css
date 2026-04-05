@@ -1868,52 +1868,73 @@ h2 {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
-  margin-top: 18px;
-  padding: 14px 4px 0;
-  color: var(--text-faint);
-  font-family: var(--font-data);
-  font-size: 0.68rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 24px;
+  padding: 14px 0 0;
+  border-top: 1px solid var(--border);
+}
+
+.site-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.site-footer-links {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
 .site-footer-version {
   color: var(--text-muted);
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.site-footer-copy {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .footer-link {
   display: inline-flex;
   align-items: center;
-  min-height: 30px;
-  padding: 0 10px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.03);
   color: var(--text-muted);
   text-decoration: none;
-  transition: background 140ms ease, border-color 140ms ease, color 140ms ease, transform 140ms ease;
+  transition: color 140ms ease, background 140ms ease, border-color 140ms ease;
 }
 
 .footer-link:hover,
 .footer-link:focus-visible {
   outline: none;
-  transform: translateY(-1px);
-  border-color: var(--border-hi);
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text);
+  color: var(--live);
 }
 
 .footer-link.primary {
-  border-color: rgba(53, 224, 194, 0.3);
-  background: var(--live-dim);
+  min-height: auto;
+  padding: 3px 9px;
+  border-radius: 4px;
+  border: 1px solid rgba(53, 224, 194, 0.3);
+  background: transparent;
   color: var(--live);
+  font-family: var(--font-data);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .footer-link.primary:hover,
 .footer-link.primary:focus-visible {
   border-color: rgba(53, 224, 194, 0.42);
-  background: rgba(53, 224, 194, 0.18);
+  background: rgba(53, 224, 194, 0.12);
 }
 
 .settings-placeholder-panel {
