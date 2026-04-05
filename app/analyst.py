@@ -6,6 +6,8 @@ from __future__ import annotations
 
 import logging
 import os
+import pathlib
+import re
 import threading
 from collections import OrderedDict
 from dataclasses import dataclass, field
@@ -440,6 +442,77 @@ def analyze_tuning(
     return None
 
 
+def _persist_tuning_snapshot(payload: dict[str, Any]) -> tuple[str | None, dict[str, Any]]:
+    """Append a new advisor snapshot to docs/TUNING-BACKLOG.md with real TB ids.
+    Returns (first_tb_id, updated_payload_with_tb_ids)."""
+    try:
+        backlog_path = pathlib.Path(__file__).parent.parent / "docs" / "TUNING-BACKLOG.md"
+        existing = backlog_path.read_text(encoding="utf-8") if backlog_path.exists() else ""
+
+        # Find current highest TB number so we assign the next ones sequentially.
+        existing_ids = [int(m) for m in re.findall(r"TB-(\d+)", existing)]
+        next_tb = max(existing_ids, default=0) + 1
+
+        today = datetime.now(UTC).strftime("%Y-%m-%d")
+        summary = payload.get("summary", "")
+        global_rec = payload.get("global_recommendation", "")
+        recs = payload.get("recommendations") or []
+        suggested = payload.get("suggested_thresholds") or {}
+
+        # Build recommendation bullet lines with sequential TB ids.
+        rec_lines = []
+        tb_ids = []
+        for i, rec in enumerate(recs):
+            tb = f"TB-{next_tb + i:03d}"
+            tb_ids.append(tb)
+            rec_lines.append(f"- [ ] **{tb}** `planned` — {rec}")
+
+        first_tb = tb_ids[0] if tb_ids else f"TB-{next_tb:03d}"
+        next_tb += len(recs)
+
+        # Build suggested threshold note if present.
+        threshold_note = ""
+        if suggested:
+            parts = [f"`{k}` → `{v}`" for k, v in suggested.items() if v is not None]
+            if parts:
+                threshold_note = f"\n### Suggested thresholds\n" + ", ".join(parts) + "\n"
+
+        snapshot_count = len(re.findall(r"^## \d{4}-\d{2}-\d{2}", existing, re.MULTILINE))
+        label_ord = 65 + snapshot_count  # A=65
+        snapshot_label = chr(label_ord) if label_ord <= 90 else str(snapshot_count + 1)
+
+        block = f"""
+## {today} — Advisor snapshot {snapshot_label}
+
+### Summary
+{summary}
+
+### Next step
+{global_rec}
+{threshold_note}
+### Recommendations
+
+{chr(10).join(rec_lines)}
+
+---
+"""
+        # Update header date and append block.
+        updated = re.sub(r"Last updated: \d{4}-\d{2}-\d{2}", f"Last updated: {today}", existing, count=1)
+        # Insert before the Applied changes section if present, otherwise append.
+        applied_marker = "## Applied changes"
+        if applied_marker in updated:
+            updated = updated.replace(applied_marker, block + applied_marker, 1)
+        else:
+            updated = updated + block
+
+        backlog_path.write_text(updated, encoding="utf-8")
+        log.info("tuning advisor: persisted snapshot to %s (first=%s)", backlog_path, first_tb)
+        return first_tb, {**payload, "tb_id": first_tb, "tb_ids": tb_ids}
+    except Exception as exc:
+        log.warning("tuning advisor: failed to persist snapshot: %s", exc)
+        return None, payload
+
+
 class TuningAdvisor:
     """Background second-pass advisor over analyst-labelled signals."""
 
@@ -485,8 +558,10 @@ class TuningAdvisor:
                 perplexity_model=self._perplexity_model,
             )
             if result:
+                payload = result.to_dict()
+                _tb_id, enriched = _persist_tuning_snapshot(payload)
                 with self._lock:
-                    self._cache = result.to_dict()
+                    self._cache = enriched
         finally:
             with self._lock:
                 self._in_flight = False
