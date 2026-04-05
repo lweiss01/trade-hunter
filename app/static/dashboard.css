@@ -130,7 +130,8 @@ body::after {
   height: 36px;
   border-radius: 50%;
   object-fit: cover;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 8px rgba(0, 201, 177, 0.28));
 }
 
 .brand-copy {
@@ -142,8 +143,9 @@ body::after {
 .brand-name {
   font-size: 0.92rem;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
+  color: var(--text);
 }
 
 .brand-tagline {
