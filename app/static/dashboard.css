@@ -903,6 +903,13 @@ h2 {
 .sig-tag.fresh  { border-color: rgba(53, 224, 194, 0.3);  color: var(--live);  background: var(--live-dim); }
 .sig-tag.warm   { border-color: rgba(255, 190, 107, 0.3); color: var(--warn);  background: var(--warn-dim); }
 .sig-tag.stale  { border-color: rgba(255, 107, 107, 0.3); color: var(--alert); background: var(--alert-dim); }
+.sig-tag.analyst-pending { border-color: rgba(142, 184, 255, 0.3); color: var(--info); background: var(--info-dim); }
+.sig-tag.analyst-signal { border-color: rgba(53, 224, 194, 0.35); color: var(--live); background: var(--live-dim); }
+.sig-tag.analyst-noise { border-color: rgba(255, 107, 107, 0.35); color: var(--alert); background: var(--alert-dim); }
+.sig-tag.analyst-uncertain { border-color: rgba(255, 190, 107, 0.35); color: var(--warn); background: var(--warn-dim); }
+.sig-tag.analyst-high-conf { border-color: rgba(53, 224, 194, 0.35); color: var(--live); }
+.sig-tag.analyst-med-conf { border-color: rgba(255, 190, 107, 0.35); color: var(--warn); }
+.sig-tag.analyst-low-conf { border-color: var(--border); color: var(--text-muted); }
 
 .sig-meta {
   font-family: var(--font-data);
@@ -941,10 +948,14 @@ h2 {
 }
 
 .sig-reason {
-  font-size: 0.80rem;
+  font-size: 0.78rem;
   color: var(--text);
-  line-height: 1.45;
-  opacity: 0.85;
+  line-height: 1.35;
+  opacity: 0.82;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .sig-analyst {

@@ -800,29 +800,17 @@ function renderSignals(signals) {
     // cap score at 10 for bar width; normalise to percentage
     const scoreBarPct = Math.min(100, Math.round((scoreRaw / 10) * 100));
 
-    let analystHtml = "";
+    let analystTagHtml = "";
     if (analyst?.pending) {
-      analystHtml = `<div class="sig-analyst analyst-pending">⏳ Analyst review in progress…</div>`;
+      analystTagHtml = `<span class="sig-tag analyst-pending">reviewing</span>`;
     } else if (analyst) {
       const conf = analyst.confidence || "low";
       const ns = analyst.noise_or_signal || "uncertain";
-      const dir = analyst.direction || "unclear";
-      const confClass = conf === "high" ? "high-conf" : conf === "medium" ? "med-conf" : "low-conf";
-      const nsIcon = ns === "signal" ? "▲" : ns === "noise" ? "✕" : "~";
       const nsClass = ns === "signal" ? "signal" : ns === "noise" ? "noise" : "uncertain";
-      analystHtml = `
-        <div class="sig-analyst">
-          <div class="analyst-tags-row">
-            <span class="analyst-tag ${nsClass}">${nsIcon} ${ns}</span>
-            <span class="analyst-tag ${confClass}">${escapeHtml(dir)} · ${escapeHtml(conf)} conf</span>
-          </div>
-          <div class="analyst-copy">
-            <span class="analyst-rationale">${escapeHtml(analyst.rationale)}</span>
-            ${analyst.threshold_note && analyst.threshold_note !== "none"
-              ? `<div class="sig-threshold-note">⚙ ${escapeHtml(analyst.threshold_note)}</div>`
-              : ""}
-          </div>
-        </div>
+      const confClass = conf === "high" ? "high-conf" : conf === "medium" ? "med-conf" : "low-conf";
+      analystTagHtml = `
+        <span class="sig-tag analyst-${nsClass}">${escapeHtml(ns)}</span>
+        <span class="sig-tag analyst-${confClass}">${escapeHtml(conf)} conf</span>
       `;
     }
 
@@ -834,6 +822,7 @@ function renderSignals(signals) {
         <div class="sig-tags">
           <span class="sig-tag tier-${escapeHtml(tier)}">${escapeHtml(tier)}</span>
           <span class="sig-tag ${freshness.className}">${escapeHtml(freshness.label)}</span>
+          ${analystTagHtml}
         </div>
       </div>
       <div class="sig-meta">${escapeHtml(signal.event.platform)} · ${escapeHtml(signal.event.market_id)} · ${escapeHtml(signal.source_label || signal.event.source)} · ${formatTimestamp(signal.detected_at)}</div>
@@ -843,7 +832,6 @@ function renderSignals(signals) {
         <span class="sig-tag score">score ${scoreRaw.toFixed(2)}</span>
       </div>
       <div class="sig-reason">${escapeHtml(summarizeReason(signal.reason))}</div>
-      ${analystHtml}
     </article>
   `;
   }).join("");
