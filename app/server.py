@@ -260,19 +260,25 @@ def run_server(settings: Settings) -> None:
 
         def _serve_file(self, filename: str, content_type: str) -> None:
             body = (STATIC_ROOT / filename).read_bytes()
-            self.send_response(HTTPStatus.OK)
-            self.send_header("Content-Type", content_type)
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
+            try:
+                self.send_response(HTTPStatus.OK)
+                self.send_header("Content-Type", content_type)
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+            except (ConnectionError, BrokenPipeError):
+                pass
 
         def _json_response(self, payload: dict[str, Any], status: HTTPStatus = HTTPStatus.OK) -> None:
             body = json.dumps(payload).encode("utf-8")
-            self.send_response(status)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
+            try:
+                self.send_response(status)
+                self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+            except (ConnectionError, BrokenPipeError):
+                pass
 
     server = ThreadingHTTPServer((settings.host, settings.port), Handler)
     print(f"Trade Hunter running at http://{settings.host}:{settings.port}")
