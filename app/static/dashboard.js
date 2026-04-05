@@ -420,15 +420,15 @@ function renderMetrics(state) {
   const telemetry = state.telemetry || {};
   const routeCount = Object.keys(config.discord_routes || {}).length;
   const liveWindow = telemetry.freshness_window_minutes;
-  const windowLabel = liveWindow ? `in ${liveWindow}m window` : "active";
+  const windowLabel = liveWindow ? `${liveWindow}m` : null;
 
   const stats = [
-    { label: "tracked markets",  value: markets.length,              sub: windowLabel },
-    { label: "signals",          value: signals.length,              sub: windowLabel },
+    { label: "tracked markets",  value: markets.length,                sub: windowLabel },
+    { label: "signals",          value: signals.length,                sub: windowLabel },
     { label: "flow events",      value: (state.activity || []).length, sub: windowLabel },
-    { label: "trades",           value: summary.trade_events || 0,   sub: windowLabel },
-    { label: "active feeds",     value: Object.keys(feeds).length,   sub: null },
-    { label: "discord routes",   value: routeCount,                  sub: routeCount ? null : "default or disabled" },
+    { label: "trades",           value: summary.trade_events || 0,     sub: windowLabel },
+    { label: "active feeds",     value: Object.keys(feeds).length,     sub: null },
+    { label: "discord routes",   value: routeCount,                    sub: routeCount ? null : "default or disabled" },
   ];
 
   metricsEl.innerHTML = `<div class="metric-strip">${
