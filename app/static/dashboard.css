@@ -1843,6 +1843,11 @@ h2 {
   background: rgba(53, 224, 194, 0.18);
 }
 
+.category-message {
+  padding: 10px 14px 0;
+  margin-bottom: 0;
+}
+
 .category-results {
   margin-top: 0;
   padding: 12px 14px 14px;

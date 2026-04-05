@@ -1197,11 +1197,11 @@ async function runCategorySearch(query) {
     const trackedSet = new Set(trackedTickers);
 
     if (!results.length) {
-      categoryMessageEl.textContent = `No open markets found for "${q}".`;
+      categoryMessageEl.textContent = `No open series found for "${q}".`;
       return;
     }
 
-    categoryMessageEl.textContent = `${results.length} event(s) found. Click a series slug to track it.`;
+    categoryMessageEl.textContent = `${results.length} series found. Choose one to track it.`;
     categoryResultsEl.innerHTML = results.map((r) => {
       const ticker = r.series_ticker || "";
       const alreadyTracked = ticker && trackedSet.has(ticker);
@@ -1254,7 +1254,7 @@ async function runCategorySearch(query) {
       });
     });
   } catch {
-    categoryMessageEl.textContent = "Search failed — check network.";
+    categoryMessageEl.textContent = "Series lookup failed — check network.";
   }
 }
 
