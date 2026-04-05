@@ -2135,49 +2135,49 @@ h2 {
 }
 
 .tuning-threshold-summary {
-  color: var(--text-muted);
-  font-size: 0.74rem;
-  line-height: 1.45;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   padding: 0 2px;
+}
+
+.tuning-threshold-item {
+  font-family: var(--font-data);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 3px 8px;
 }
 
 .tuning-live {
   color: var(--text-faint);
-  font-family: var(--font-data);
   font-size: 0.68rem;
 }
 
-.tuning-details {
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  padding-top: 8px;
-}
-
-.tuning-details summary {
-  cursor: pointer;
-  list-style: none;
-  color: var(--text-muted);
+.tuning-tb-id {
+  display: inline-block;
   font-family: var(--font-data);
-  font-size: 0.68rem;
-  letter-spacing: 0.05em;
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
+  color: var(--info);
+  border: 1px solid rgba(142, 184, 255, 0.22);
+  border-radius: 3px;
+  padding: 1px 6px;
+  margin-right: 8px;
+  vertical-align: middle;
 }
 
-.tuning-details summary::-webkit-details-marker {
-  display: none;
-}
-
-.tuning-details summary::after {
-  content: "+";
-  margin-left: 8px;
-  color: var(--live);
-}
-
-.tuning-details[open] summary::after {
-  content: "−";
+.tuning-settings-note {
+  font-size: 0.74rem;
+  color: var(--text-faint);
+  padding-top: 2px;
 }
 
 .tuning-list {
-  margin: 10px 0 0;
+  margin: 4px 0 0;
   padding-left: 18px;
   color: var(--muted);
   font-size: 0.76rem;
@@ -2186,10 +2186,6 @@ h2 {
 
 .tuning-list li + li {
   margin-top: 4px;
-}
-
-.tuning-actions {
-  padding-top: 2px;
 }
 
 .ticker-form {

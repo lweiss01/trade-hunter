@@ -755,26 +755,20 @@ function renderTuningAdvisor(state) {
   const applied = state.config?.applied_thresholds || {};
   const suggestedEntries = Object.entries(suggested);
   const thresholdSummary = suggestedEntries.length
-    ? suggestedEntries.map(([key, value]) => `${escapeHtml(key)} ${escapeHtml(formatThresholdValue(key, value))} <span class="tuning-live">live ${escapeHtml(formatThresholdValue(key, applied[key]))}</span>`).join(" · ")
+    ? suggestedEntries.map(([key, value]) => `<span class="tuning-threshold-item">${escapeHtml(key)} <strong>${escapeHtml(formatThresholdValue(key, value))}</strong> <span class="tuning-live">live ${escapeHtml(formatThresholdValue(key, applied[key]))}</span></span>`).join("")
     : "";
+
+  // Surface a TB label so the advisor reads as a trackable recommendation
+  const tbLabel = advisor.tb_id || null;
+  const tbHtml = tbLabel ? `<span class="tuning-tb-id">${escapeHtml(tbLabel)}</span>` : "";
+
   tuningAdvisorEl.innerHTML = `
     <div class="tuning-summary">${escapeHtml(advisor.summary || "")}</div>
-    <div class="tuning-global tuning-global-primary"><strong>Best next tweak:</strong> ${escapeHtml(advisor.global_recommendation || "")}</div>
-    ${thresholdSummary ? `<div class="tuning-threshold-summary"><strong>Suggested thresholds:</strong> ${thresholdSummary}</div>` : ""}
-    ${recs.length ? `
-      <details class="tuning-details">
-        <summary>Details</summary>
-        <ul class="tuning-list">${recs.map(r => `<li>${escapeHtml(r)}</li>`).join("")}</ul>
-      </details>
-    ` : ""}
-    ${suggestedEntries.length ? `
-      <div class="tuning-actions"><button id="apply-tuning" class="action" type="button" ${tuningApplyInFlight ? "disabled" : ""}>${tuningApplyInFlight ? "Applying…" : "Apply recommended tweak"}</button></div>
-    ` : ""}
+    <div class="tuning-global tuning-global-primary">${tbHtml}<strong>Best next tweak:</strong> ${escapeHtml(advisor.global_recommendation || "")}</div>
+    ${thresholdSummary ? `<div class="tuning-threshold-summary">${thresholdSummary}</div>` : ""}
+    ${recs.length ? `<ul class="tuning-list">${recs.map(r => `<li>${escapeHtml(r)}</li>`).join("")}</ul>` : ""}
+    <div class="tuning-settings-note">To apply: go to <strong>Settings → Detector tuning</strong>.</div>
   `;
-  const applyButton = tuningAdvisorEl.querySelector("#apply-tuning");
-  if (applyButton) {
-    applyButton.addEventListener("click", applyRecommendedTuning, { once: true });
-  }
 }
 
 function renderSignals(signals) {
