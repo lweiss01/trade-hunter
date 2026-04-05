@@ -140,11 +140,6 @@
       </section>
 
       <section id="page-settings" class="page-view settings-page" data-page-view="settings" hidden>
-        <div class="settings-annotation-banner">
-          Each field maps to an env variable in <code>.env</code> (see <code>app/config.py</code>).
-          Saving writes editable fields to <code>.env</code> — server-side behavior updates after restart.
-          <span id="settings-load-status" class="badge" style="margin-left:auto;">read-only</span>
-        </div>
 
         <div class="settings-grid">
 
@@ -399,9 +394,16 @@
 
         <!-- Hidden master save trigger wired to JS save handler -->
         <button id="settings-save-btn" style="display:none;" type="button"></button>
-        <!-- Global save status shown as a floating strip above the tuning backlog -->
-        <div id="settings-save-strip" style="display:none;" class="settings-annotation-banner" style="border-style:solid;">
-          <span id="settings-save-status" class="settings-save-status"></span>
+
+        <!-- Save status + restart strip -->
+        <div class="settings-footer-strip">
+          <div class="settings-footer-left">
+            <span id="settings-load-status" class="badge">read-only</span>
+            <span id="settings-save-status" class="settings-save-status"></span>
+          </div>
+          <div class="settings-footer-right">
+            <button id="settings-restart-btn" class="btn-ghost" type="button">Restart server</button>
+          </div>
         </div>
 
         <!-- Tuning Backlog — full width -->

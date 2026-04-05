@@ -206,8 +206,6 @@ function setSettingsSaveStatus(message, tone = "") {
   if (!settingsSaveStatusEl) return;
   settingsSaveStatusEl.className = `settings-save-status ${tone}`.trim();
   settingsSaveStatusEl.textContent = message;
-  const strip = document.getElementById("settings-save-strip");
-  if (strip) strip.style.display = message ? "flex" : "none";
 }
 
 function collectSettingsPayload() {
@@ -1453,6 +1451,25 @@ if (settingsSaveButtonEl) {
       settingsSaveInFlight = false;
       setSettingsControlsEditable(true);
     }
+  });
+}
+
+const settingsRestartBtnEl = document.querySelector("#settings-restart-btn");
+if (settingsRestartBtnEl) {
+  settingsRestartBtnEl.addEventListener("click", async () => {
+    if (!confirm("Restart the server now? The page will reload automatically.")) return;
+    settingsRestartBtnEl.disabled = true;
+    settingsRestartBtnEl.textContent = "Restarting…";
+    try {
+      await fetch("/api/admin/shutdown", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+    } catch { /* server shutting down — connection error is expected */ }
+    // Poll until the server comes back, then reload
+    const poll = setInterval(async () => {
+      try {
+        const r = await fetch("/api/health");
+        if (r.ok) { clearInterval(poll); location.reload(); }
+      } catch { /* still restarting */ }
+    }, 1000);
   });
 }
 
