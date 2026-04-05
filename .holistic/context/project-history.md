@@ -7,7 +7,7 @@ This archive is the durable memory of what agents changed, why they changed it, 
 - Session: session-2026-04-04T00-43-40-475Z
 - Agent: unknown
 - Status: active
-- When: 2026-04-05T20:23:59.881Z
+- When: 2026-04-05T22:08:05.265Z
 - Goal: Continue work around .bg-shell/manifest.json, .gitattributes, .pytest_cache/v/cache/nodeids
 - Summary: Session started.
 - Work done:

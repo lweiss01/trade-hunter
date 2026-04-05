@@ -70,13 +70,7 @@ Session started.
 - .bg-shell/manifest.json
 - .env
 - app/server.py
-- app/service.py
-- app/static/dashboard.css
 - app/static/dashboard.js
-- app/static/index.html
-- current_feeds.txt
-- docs/TUNING-BACKLOG.md
-- proposal_feeds.txt
 - trade_hunter.db
 - trade_hunter.db-shm
 - trade_hunter.db-wal
@@ -111,6 +105,6 @@ Session started.
 
 ## Historical Memory
 
-- Last updated: 2026-04-05T18:14:38.675Z
+- Last updated: 2026-04-05T20:23:59.949Z
 - Last handoff: None yet.
 - Pending sessions remembered: 0
