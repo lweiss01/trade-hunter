@@ -140,49 +140,11 @@
       </section>
 
       <section id="page-settings" class="page-view settings-page" data-page-view="settings" hidden>
-        <section class="panel settings-intro-panel">
-          <div class="panel-head">
-            <div>
-              <h2>Settings</h2>
-              <div class="settings-page-subtitle">Grouped by workflow so setup reads like the app, not the env file.</div>
-            </div>
-            <span id="settings-load-status" class="badge">read-only</span>
-          </div>
-          <div class="settings-intro-grid">
-            <div class="settings-intro-card">
-              <span class="priority-kicker">Recommended</span>
-              <strong>Simulation only</strong>
-              <p>Keep local testing lightweight with simulation on, Kalshi off, and Discord optional.</p>
-            </div>
-            <div class="settings-intro-card">
-              <span class="priority-kicker">Live basic</span>
-              <strong>Kalshi + dashboard</strong>
-              <p>Enable live Kalshi monitoring with tracked tickers, but leave analyst and Discord follow-ups minimal.</p>
-            </div>
-            <div class="settings-intro-card">
-              <span class="priority-kicker">Full stack</span>
-              <strong>Analyst + alerts</strong>
-              <p>Turn on the full monitoring loop: live data, analyst classification, Discord routing, and durable retention.</p>
-            </div>
-          </div>
-          <div class="settings-hint-strip" aria-label="Settings guidance">
-            <div class="settings-hint-card">
-              <span class="settings-hint-kicker">Source of truth</span>
-              <strong>.env-backed config</strong>
-              <p>These fields reflect the current loaded runtime config. Secret-backed entries only show configured/not set, not raw values.</p>
-            </div>
-            <div class="settings-hint-card">
-              <span class="settings-hint-kicker">Managed elsewhere</span>
-              <strong>Markets owns ticker tracking</strong>
-              <p>Tracked Kalshi tickers are shown here for visibility, but they are still added and removed from the Markets workspace.</p>
-            </div>
-            <div class="settings-hint-card warn">
-              <span class="settings-hint-kicker">Restart required</span>
-              <strong>Edits persist to .env</strong>
-              <p>Saving writes editable fields to .env. Server-side behavior updates after restart, so save first, then restart when ready.</p>
-            </div>
-          </div>
-        </section>
+        <div class="settings-annotation-banner">
+          Each field maps to an env variable in <code>.env</code> (see <code>app/config.py</code>).
+          Saving writes editable fields to <code>.env</code> — server-side behavior updates after restart.
+          <span id="settings-load-status" class="badge" style="margin-left:auto;">read-only</span>
+        </div>
 
         <div class="settings-grid">
           <section class="panel settings-panel">

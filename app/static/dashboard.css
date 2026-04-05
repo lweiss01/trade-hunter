@@ -1970,7 +1970,21 @@ h2 {
 
 .settings-page.active {
   display: grid;
-  gap: 18px;
+  gap: 14px;
+}
+
+.settings-annotation-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(162,155,254,0.06);
+  border: 1px dashed rgba(162,155,254,0.3);
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 0.78rem;
+  color: var(--info);
+  line-height: 1.5;
+  flex-wrap: wrap;
 }
 
 .settings-intro-grid,
