@@ -88,7 +88,7 @@ body::after {
 }
 
 .app-shell {
-  padding: 76px 0 56px;
+  padding: 72px 0 56px;
 }
 
 .page-shell {
@@ -1273,9 +1273,9 @@ h2 {
   vertical-align: middle;
 }
 
+.market-table-compact tbody td:nth-child(3),
 .market-table-compact tbody td:nth-child(4),
-.market-table-compact tbody td:nth-child(5),
-.market-table-compact tbody td:nth-child(6) {
+.market-table-compact tbody td:nth-child(5) {
   text-align: right;
 }
 
@@ -1298,6 +1298,11 @@ h2 {
   color: var(--text-muted);
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+}
+
+.mkt-kind {
+  font-weight: 700;
+  color: var(--text-muted);
 }
 
 .mkt-price {

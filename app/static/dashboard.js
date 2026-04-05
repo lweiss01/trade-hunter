@@ -1016,6 +1016,18 @@ function renderMarkets(markets, telemetry = {}, config = {}) {
 
   let html = "";
 
+  const thead = `
+    <thead>
+      <tr>
+        <th>Market</th>
+        <th>Type</th>
+        <th>Yes</th>
+        <th>Volume</th>
+        <th>Seen</th>
+      </tr>
+    </thead>
+  `;
+
   if (!markets.length) {
     const mode = config.active_mode || "unknown";
     const windowMinutes = telemetry.freshness_window_minutes;
@@ -1027,18 +1039,9 @@ function renderMarkets(markets, telemetry = {}, config = {}) {
     html = `
       <div class="market-table-scroll">
         <table class="market-table-compact">
-          <thead>
-            <tr>
-              <th>Market</th>
-              <th>Platform</th>
-              <th>Event</th>
-              <th>Yes</th>
-              <th>Volume</th>
-              <th>Seen</th>
-            </tr>
-          </thead>
+          ${thead}
           <tbody>
-            <tr><td colspan="6" class="empty">${emptyCopy}</td></tr>
+            <tr><td colspan="5" class="empty">${emptyCopy}</td></tr>
           </tbody>
         </table>
       </div>
@@ -1053,11 +1056,12 @@ function renderMarkets(markets, telemetry = {}, config = {}) {
            <div class="mkt-id">${escapeHtml(market.topic || "general")}</div>`
         : `<div class="mkt-title">${escapeHtml(market.title)}</div>
            <div class="mkt-id">${escapeHtml(market.market_id)} · ${escapeHtml(market.topic || "general")}</div>`;
+      const kindLabel = market.event_kind === "trade" ? "T" : "Q";
+      const countLabel = count > 1 ? ` ×${count}` : "";
       return `
       <tr>
         <td>${titleHtml}</td>
-        <td class="mkt-cell">${escapeHtml(market.platform)}</td>
-        <td class="mkt-cell">${escapeHtml(market.event_kind || "quote")} ${count > 1 ? `· x${count}` : ""} · ${escapeHtml(market.live ? "live" : "demo")}</td>
+        <td class="mkt-cell mkt-kind">${kindLabel}${countLabel}</td>
         <td class="mkt-cell mkt-price">${formatPrice(market.yes_price)}</td>
         <td class="mkt-cell">${formatVolume(market.volume)}</td>
         <td class="mkt-cell">${formatTimestamp(market.timestamp)}</td>
@@ -1068,16 +1072,7 @@ function renderMarkets(markets, telemetry = {}, config = {}) {
     html = `
       <div class="market-table-scroll">
         <table class="market-table-compact">
-          <thead>
-            <tr>
-              <th>Market</th>
-              <th>Platform</th>
-              <th>Event</th>
-              <th>Yes</th>
-              <th>Volume</th>
-              <th>Seen</th>
-            </tr>
-          </thead>
+          ${thead}
           <tbody>${rows}</tbody>
         </table>
       </div>
