@@ -1,7 +1,6 @@
 const metricsEl = document.querySelector("#metrics");
 const signalsEl = document.querySelector("#signals");
 const topicFilterRowEl = document.querySelector("#topic-filter-row");
-const selectedSignalWorkbenchEl = document.querySelector("#selected-signal-workbench");
 const signalSortEl = document.querySelector("#signal-sort");
 const signalLatestToggleEl = document.querySelector("#signal-latest-toggle");
 const activityEl = document.querySelector("#activity");
@@ -88,14 +87,10 @@ const readOnlySettingsControls = [
   settingPolyalerthubTokenEl,
 ].filter(Boolean);
 
-let tickerMutationInFlight = false;
-let tuningApplyInFlight = false;
 let trackedTickers = [];
 let signalSortMode = "newest";
 let signalLatestOnly = false;
 let activeSignalTopic = "all";
-let selectedSignalKey = null;
-let selectedMarketId = null;
 let currentPage = "dashboard";
 let lastDashboardState = null;
 let lastSettingsState = null;
@@ -576,138 +571,6 @@ function renderWhatMattersNow(signal) {
   `;
 }
 
-function renderSelectedSignalWorkbench(signals, activity) {
-  if (!selectedSignalWorkbenchEl) return;
-
-  const ordered = signals || [];
-  const allActivity = activity || [];
-
-  if (!ordered.length && !selectedMarketId) {
-    selectedSignalWorkbenchEl.hidden = true;
-    selectedSignalWorkbenchEl.innerHTML = "";
-    return;
-  }
-
-  const selected = ordered.find((signal) => getSignalKey(signal) === selectedSignalKey) || null;
-
-  if (selected) {
-    selectedSignalWorkbenchEl.hidden = false;
-    selectedSignalKey = getSignalKey(selected);
-    selectedMarketId = selected?.event?.market_id || selectedMarketId;
-    selectedMarketId = selected?.event?.market_id || selectedMarketId;
-
-    const relatedActivity = allActivity.filter((item) => item.market_id === selected?.event?.market_id).slice(0, 6);
-    const analyst = selected.analyst || null;
-    const freshness = signalFreshness(selected.detected_at);
-    const liquidityBits = [
-      selected?.event?.yes_price != null ? `yes ${formatPrice(selected.event.yes_price)}` : null,
-      selected?.event?.volume != null ? `vol ${formatVolume(selected.event.volume)}` : null,
-      selected?.event?.trade_size != null ? `trade ${formatVolume(selected.event.trade_size)}` : null,
-    ].filter(Boolean);
-    const checklist = [
-      `confirm catalyst for ${normalizeTopic(selected?.event?.topic || selected?.topic)}`,
-      `review latest flow for ${selected?.event?.market_id || "market"}`,
-      `check liquidity before action`,
-    ];
-
-    selectedSignalWorkbenchEl.innerHTML = `
-      <div class="panel-head workbench-head">
-        <div>
-          <h2>Selected Signal Workbench</h2>
-          <div class="workbench-subtitle">List = triage. Detail = investigation.</div>
-        </div>
-        <div class="workbench-actions">
-          <div class="priority-tags">
-            <span class="mini-badge">${escapeHtml(selected.tier || "watch")}</span>
-            <span class="flow-pill info">score ${Number(selected.score || 0).toFixed(2)}</span>
-            <span class="flow-pill ${freshness.className}">${escapeHtml(freshness.label)}</span>
-          </div>
-          <button type="button" class="workbench-close-btn" data-workbench-close="true" aria-label="Close selected signal workbench">Close</button>
-        </div>
-      </div>
-      <div class="workbench-grid">
-        <section class="workbench-panel">
-          <span class="priority-kicker">Event summary</span>
-          <strong class="workbench-title">${escapeHtml(selected?.event?.title || selected?.event?.market_id || "Signal")}</strong>
-          <div class="workbench-meta">${escapeHtml(selected?.event?.platform || "unknown")} · ${escapeHtml(selected?.event?.market_id || "unknown-market")} · ${escapeHtml(selected?.source_label || selected?.event?.source || "unknown")} · ${formatTimestamp(selected.detected_at)}</div>
-          <p class="workbench-copy">${escapeHtml(selected.reason || "No detector rationale available.")}</p>
-          ${analyst ? `<div class="workbench-analyst"><span class="priority-label">Analyst view</span><p class="workbench-copy">${escapeHtml(analyst.rationale || "No analyst rationale available.")}</p></div>` : ""}
-        </section>
-        <section class="workbench-panel">
-          <span class="priority-kicker">Liquidity context</span>
-          <div class="workbench-pill-row">${liquidityBits.map((item) => `<span class="priority-check">${escapeHtml(item)}</span>`).join("") || '<span class="empty">No liquidity fields on this signal yet.</span>'}</div>
-          <span class="priority-kicker">Research checklist</span>
-          <ul class="workbench-list">${checklist.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
-        </section>
-        <section class="workbench-panel workbench-panel-wide">
-          <span class="priority-kicker">Recent market-only flow</span>
-          ${relatedActivity.length ? `<div class="workbench-flow">${relatedActivity.map((item) => `<div class="workbench-flow-row"><span class="flow-kind ${item.event_kind === "trade" ? "trade" : "quote"}">${item.event_kind === "trade" ? "T" : "Q"}</span><span class="flow-mid">${escapeHtml(item.market_id || "unknown")}</span><span class="flow-val">${item.yes_price != null ? formatPrice(item.yes_price) : "n/a"}</span><span class="flow-muted">vol ${item.volume != null ? formatVolume(item.volume) : "n/a"}</span><span class="flow-age ${flowFreshness(item.timestamp).className}">${escapeHtml(flowFreshness(item.timestamp).label)}</span></div>`).join("")}</div>` : `<div class="empty">No recent activity matched this signal’s market.</div>`}
-        </section>
-      </div>
-    `;
-    return;
-  }
-
-  const fallbackActivity = allActivity.filter((item) => item.market_id === selectedMarketId).slice(0, 6);
-  const fallbackEvent = fallbackActivity[0] || null;
-
-  selectedSignalKey = null;
-
-  if (!fallbackEvent) {
-    selectedSignalWorkbenchEl.hidden = true;
-    selectedSignalWorkbenchEl.innerHTML = "";
-    return;
-  }
-
-  selectedSignalWorkbenchEl.hidden = false;
-
-  const fallbackFreshness = flowFreshness(fallbackEvent.timestamp);
-  const fallbackChecks = [
-    `review latest flow for ${fallbackEvent.market_id || "market"}`,
-    `check whether price movement is backed by trades`,
-    `inspect liquidity before action`,
-  ];
-  const fallbackLiquidity = [
-    fallbackEvent.yes_price != null ? `yes ${formatPrice(fallbackEvent.yes_price)}` : null,
-    fallbackEvent.volume != null ? `vol ${formatVolume(fallbackEvent.volume)}` : null,
-    fallbackEvent.trade_side ? `${fallbackEvent.trade_side}` : null,
-  ].filter(Boolean);
-
-  selectedSignalWorkbenchEl.innerHTML = `
-    <div class="panel-head workbench-head">
-      <div>
-        <h2>Selected Signal Workbench</h2>
-        <div class="workbench-subtitle">List = triage. Detail = investigation.</div>
-      </div>
-      <div class="workbench-actions">
-        <div class="priority-tags">
-          <span class="mini-badge">flow-only</span>
-          <span class="flow-pill ${fallbackFreshness.className}">${escapeHtml(fallbackFreshness.label)}</span>
-        </div>
-        <button type="button" class="workbench-close-btn" data-workbench-close="true" aria-label="Close selected signal workbench">Close</button>
-      </div>
-    </div>
-    <div class="workbench-grid">
-      <section class="workbench-panel">
-        <span class="priority-kicker">Event summary</span>
-        <strong class="workbench-title">${escapeHtml(fallbackEvent.title || fallbackEvent.market_id || "Market flow")}</strong>
-        <div class="workbench-meta">${escapeHtml(fallbackEvent.platform || "unknown")} · ${escapeHtml(fallbackEvent.market_id || "unknown-market")} · ${escapeHtml(fallbackEvent.source || "unknown")} · ${formatTimestamp(fallbackEvent.timestamp)}</div>
-        <p class="workbench-copy">No current signal matches this market. Showing the latest flow context directly so the workbench still supports investigation.</p>
-      </section>
-      <section class="workbench-panel">
-        <span class="priority-kicker">Liquidity context</span>
-        <div class="workbench-pill-row">${fallbackLiquidity.map((item) => `<span class="priority-check">${escapeHtml(item)}</span>`).join("") || '<span class="empty">No liquidity fields on this market flow yet.</span>'}</div>
-        <span class="priority-kicker">Research checklist</span>
-        <ul class="workbench-list">${fallbackChecks.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
-      </section>
-      <section class="workbench-panel workbench-panel-wide">
-        <span class="priority-kicker">Recent market-only flow</span>
-        <div class="workbench-flow">${fallbackActivity.map((item) => `<div class="workbench-flow-row"><span class="flow-kind ${item.event_kind === "trade" ? "trade" : "quote"}">${item.event_kind === "trade" ? "T" : "Q"}</span><span class="flow-mid">${escapeHtml(item.market_id || "unknown")}</span><span class="flow-val">${item.yes_price != null ? formatPrice(item.yes_price) : "n/a"}</span><span class="flow-muted">vol ${item.volume != null ? formatVolume(item.volume) : "n/a"}</span><span class="flow-age ${flowFreshness(item.timestamp).className}">${escapeHtml(flowFreshness(item.timestamp).label)}</span></div>`).join("")}</div>
-      </section>
-    </div>
-  `;
-}
-
 async function applyRecommendedTuning() {
   if (tuningApplyInFlight) return;
   tuningApplyInFlight = true;
@@ -778,7 +641,6 @@ function renderTuningAdvisor(state) {
 function renderSignals(signals) {
   renderTopicFilterRow(signals || []);
   const ordered = normalizeSignals(signals || []);
-  renderSelectedSignalWorkbench(ordered, lastDashboardState?.activity || []);
 
   if (!ordered.length) {
     const latestSignalAge = formatAgeFromNow(lastDashboardState?.telemetry?.latest_signal_at);
@@ -813,9 +675,8 @@ function renderSignals(signals) {
       `;
     }
 
-    const isSelected = getSignalKey(signal) === selectedSignalKey;
     return `
-    <article class="signal-card tier-${escapeHtml(tier)} ${isSelected ? "selected" : ""}" data-signal-key="${escapeHtml(getSignalKey(signal))}" tabindex="0" role="button" aria-pressed="${isSelected ? "true" : "false"}">
+    <article class="signal-card tier-${escapeHtml(tier)}" data-signal-key="${escapeHtml(getSignalKey(signal))}">
       <div class="sig-row1">
         <strong class="sig-title">${escapeHtml(signal.event.title)}</strong>
         <div class="sig-tags">
@@ -940,9 +801,6 @@ function renderActivity(activity, telemetry = {}, config = {}) {
     const kind = `<span class="flow-kind ${kindClass}">${kindClass}</span>`;
     const dup = count > 1 ? `<span class="flow-dup">×${count}</span>` : `<span class="flow-dup"></span>`;
     const age = `<span class="flow-age ${freshness.className}">${escapeHtml(freshness.label)}</span>`;
-    const matchedSignal = findBestSignalForMarket(lastDashboardState?.signals || [], item.market_id);
-    const signalKey = matchedSignal ? getSignalKey(matchedSignal) : "";
-    const isSelected = signalKey ? signalKey === selectedSignalKey : item.market_id === selectedMarketId;
 
     return `
       <div class="flow-row" data-market-id="${escapeHtml(item.market_id || "")}">
@@ -1296,42 +1154,6 @@ if (topicFilterRowEl) {
     if (!button) return;
     activeSignalTopic = button.dataset.topic || "all";
     renderSignals(lastDashboardState?.signals || []);
-  });
-}
-
-if (signalsEl) {
-  const activateSignalFromElement = (target) => {
-    const card = target.closest(".signal-card[data-signal-key]");
-    if (!card) return;
-    selectedSignalKey = card.dataset.signalKey || null;
-    selectedMarketId = null;
-    renderSignals(lastDashboardState?.signals || []);
-    renderActivity(lastDashboardState?.activity || [], lastDashboardState?.telemetry || {}, lastDashboardState?.config || {});
-  };
-
-  signalsEl.addEventListener("click", (event) => {
-    activateSignalFromElement(event.target);
-  });
-
-  signalsEl.addEventListener("keydown", (event) => {
-    if (event.key !== "Enter" && event.key !== " ") return;
-    const card = event.target.closest(".signal-card[data-signal-key]");
-    if (!card) return;
-    event.preventDefault();
-    activateSignalFromElement(card);
-  });
-}
-
-
-
-if (selectedSignalWorkbenchEl) {
-  selectedSignalWorkbenchEl.addEventListener("click", (event) => {
-    const closeButton = event.target.closest("[data-workbench-close]");
-    if (!closeButton) return;
-    selectedSignalKey = null;
-    selectedMarketId = null;
-    renderSignals(lastDashboardState?.signals || []);
-    renderActivity(lastDashboardState?.activity || [], lastDashboardState?.telemetry || {}, lastDashboardState?.config || {});
   });
 }
 
