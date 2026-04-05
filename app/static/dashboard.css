@@ -2310,25 +2310,17 @@ h2 {
   line-height: 1.45;
 }
 
-.tuning-global {
+.tuning-recommendation {
   color: var(--text);
   font-size: 0.8rem;
-  padding: 8px 10px;
-  border-radius: 10px;
-  background: rgba(75,191,201,0.06);
-  border: 1px solid rgba(75,191,201,0.18);
-}
-
-.tuning-global-primary {
-  background: rgba(53, 224, 194, 0.08);
-  border-color: rgba(53, 224, 194, 0.22);
+  line-height: 1.45;
 }
 
 .tuning-threshold-summary {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  padding: 0 2px;
+  padding: 0;
 }
 
 .tuning-threshold-item {
@@ -2358,12 +2350,6 @@ h2 {
   padding: 1px 6px;
   margin-right: 8px;
   vertical-align: middle;
-}
-
-.tuning-settings-note {
-  font-size: 0.74rem;
-  color: var(--text-faint);
-  padding-top: 2px;
 }
 
 .tuning-list {

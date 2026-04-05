@@ -769,10 +769,9 @@ function renderTuningAdvisor(state) {
 
   tuningAdvisorEl.innerHTML = `
     <div class="tuning-summary">${escapeHtml(advisor.summary || "")}</div>
-    <div class="tuning-global tuning-global-primary">${tbHtml}<strong>Next step:</strong> ${escapeHtml(advisor.global_recommendation || "")}</div>
+    <div class="tuning-recommendation">${tbHtml}<strong>Next step:</strong> ${escapeHtml(advisor.global_recommendation || "")}</div>
     ${thresholdSummary ? `<div class="tuning-threshold-summary">${thresholdSummary}</div>` : ""}
     ${recs.length ? `<ul class="tuning-list">${recs.map(r => `<li>${escapeHtml(r)}</li>`).join("")}</ul>` : ""}
-    <div class="tuning-settings-note">To apply: go to <strong>Settings → Detector tuning</strong>.</div>
   `;
 }
 
