@@ -646,7 +646,7 @@ function renderSignals(signals) {
     const latestSignalAge = formatAgeFromNow(lastDashboardState?.telemetry?.latest_signal_at);
     const windowMinutes = lastDashboardState?.telemetry?.freshness_window_minutes;
     if (windowMinutes) {
-      signalsEl.innerHTML = `<div class="empty">No signals in the last ${windowMinutes} minutes. Last stored signal: ${escapeHtml(latestSignalAge)}.</div>`;
+      signalsEl.innerHTML = `<div class="empty">No signals in the ${windowMinutes}m window. Last signal ${escapeHtml(latestSignalAge)}.</div>`;
     } else {
       signalsEl.innerHTML = `<div class="empty">No spikes yet. Keep the page open or trigger the demo event.</div>`;
     }
@@ -781,7 +781,7 @@ function renderActivity(activity, telemetry = {}, config = {}) {
     const tickerCount = Number(telemetry.subscribed_tickers || 0);
 
     if (mode === "live" && windowMinutes) {
-      activityEl.innerHTML = `<div class="empty">No fresh events in the last ${windowMinutes} minutes. Last stored event: ${escapeHtml(latestAge)}. Subscribed tickers: ${tickerCount}.</div>`;
+      activityEl.innerHTML = `<div class="empty">No fresh events in the ${windowMinutes}m window. Last event ${escapeHtml(latestAge)}.</div>`;
     } else {
       activityEl.innerHTML = `<div class="empty">No live flow yet. Simulation or real feeds will start filling this stream.</div>`;
     }
@@ -877,7 +877,7 @@ function renderMarkets(markets, telemetry = {}, config = {}) {
     const windowMinutes = telemetry.freshness_window_minutes;
     const latestAge = formatAgeFromNow(telemetry.latest_event_at);
     const emptyCopy = mode === "live" && windowMinutes
-      ? `No market snapshots inside the ${windowMinutes}m live window. Last stored market event: ${escapeHtml(latestAge)}.`
+      ? `No market snapshots in the ${windowMinutes}m window. Last market ${escapeHtml(latestAge)}.`
       : "No market events yet.";
 
     html = `
