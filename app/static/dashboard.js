@@ -430,9 +430,9 @@ function renderMetrics(state) {
   const stats = [
     { label: "tracked markets",  value: markets.length,              sub: windowLabel },
     { label: "signals",          value: signals.length,              sub: windowLabel },
-    { label: "live flow events", value: (state.activity || []).length, sub: windowLabel },
-    { label: "trade events",     value: summary.trade_events || 0,   sub: windowLabel },
-    { label: "active feeds",     value: Object.keys(feeds).length,   sub: null },
+    { label: "flow events",      value: (state.activity || []).length, sub: windowLabel },
+    { label: "trades",           value: summary.trade_events || 0,   sub: windowLabel },
+    { label: "feeds",            value: Object.keys(feeds).length,   sub: null },
     { label: "discord routes",   value: routeCount,                  sub: routeCount ? null : "default or disabled" },
   ];
 
