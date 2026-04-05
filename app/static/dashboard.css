@@ -1610,6 +1610,72 @@ h2 {
   justify-content: flex-end;
 }
 
+/* Compact tracked-ticker table — proposal style */
+.tracked-table-wrap {
+  width: 100%;
+  overflow: hidden;
+}
+
+.tracked-table-compact {
+  table-layout: fixed;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tracked-table-compact th:nth-child(1),
+.tracked-table-compact td:nth-child(1) { width: 28%; }
+
+.tracked-table-compact th:nth-child(2),
+.tracked-table-compact td:nth-child(2) { width: auto; }
+
+.tracked-table-compact th:nth-child(3),
+.tracked-table-compact td:nth-child(3) { width: 10%; text-align: right; }
+
+.tracked-table-compact th:nth-child(4),
+.tracked-table-compact td:nth-child(4) { width: 18%; text-align: right; }
+
+.tracked-table-compact th:nth-child(5),
+.tracked-table-compact td:nth-child(5) { width: 6%; text-align: right; }
+
+.tracked-table-compact .tracked-ticker-cell {
+  color: var(--live);
+  font-family: var(--font-data);
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+
+.tracked-table-compact .tracked-title-cell {
+  color: var(--text);
+  font-size: 0.82rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tracked-table-compact .tracked-row-dead td {
+  opacity: 0.5;
+}
+
+.tracked-remove-cell {
+  text-align: right;
+}
+
+.tracked-remove-btn {
+  appearance: none;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+  transition: color 0.15s;
+}
+
+.tracked-remove-btn:hover {
+  color: var(--alert);
+}
+
 .prune-bar {
   display: flex;
   align-items: center;
@@ -1652,22 +1718,24 @@ h2 {
 }
 
 .category-panel {
-  margin-bottom: 24px;
+  margin-bottom: 0;
 }
 
 .category-shortcuts {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin: -4px 0 12px;
+  gap: 6px;
+  padding: 12px 14px 0;
 }
 
 .category-form {
   display: grid;
-  grid-template-columns: auto minmax(180px, 1fr) auto;
-  gap: 10px;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
   align-items: center;
   margin-bottom: 10px;
+  padding: 0 14px 12px;
+  border-bottom: 1px solid var(--border);
 }
 
 .category-results {

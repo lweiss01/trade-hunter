@@ -1147,23 +1147,29 @@ function renderTickerList(markets) {
 
   tickerListEl.innerHTML = `
     ${pruneBar}
-    <div class="tracked-table">
-      <div class="tracked-head">
-        <div>Ticker</div>
-        <div>Title</div>
-        <div>Yes</div>
-        <div>Status</div>
-        <div>Action</div>
-      </div>
-      ${rows.map((row) => `
-        <div class="tracked-row">
-          <div class="tracked-cell tracked-code">${escapeHtml(row.ticker)}</div>
-          <div class="tracked-cell tracked-title">${escapeHtml(row.title)}</div>
-          <div class="tracked-cell tracked-price">${row.yesPrice != null ? formatPrice(row.yesPrice) : "n/a"}</div>
-          <div class="tracked-cell"><span class="tracked-status ${row.statusClass}">${escapeHtml(row.statusLabel)}</span></div>
-          <div class="tracked-cell tracked-action"><button class="ticker-remove" type="button" data-ticker="${escapeHtml(row.ticker)}">Remove</button></div>
-        </div>
-      `).join("")}
+    <div class="tracked-table-wrap">
+      <table class="market-table-compact tracked-table-compact">
+        <thead>
+          <tr>
+            <th>Ticker</th>
+            <th>Title</th>
+            <th>Yes</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map((row) => `
+            <tr class="${row.statusClass === 'dead' ? 'tracked-row-dead' : ''}">
+              <td class="mkt-cell tracked-ticker-cell">${escapeHtml(row.ticker)}</td>
+              <td class="mkt-cell tracked-title-cell">${escapeHtml(row.title)}</td>
+              <td class="mkt-cell mkt-price">${row.yesPrice != null ? formatPrice(row.yesPrice) : "n/a"}</td>
+              <td><span class="nav-pill ${row.statusClass === 'fresh' ? 'ok' : row.statusClass === 'dead' ? 'danger' : row.statusClass === 'stale' ? 'warn' : 'info'}" style="font-size:0.60rem;">${escapeHtml(row.statusLabel)}</span></td>
+              <td class="tracked-remove-cell"><button class="ticker-remove tracked-remove-btn" type="button" data-ticker="${escapeHtml(row.ticker)}" title="Remove ${escapeHtml(row.ticker)}">×</button></td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
     </div>
   `;
 }
