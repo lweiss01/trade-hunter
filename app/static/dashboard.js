@@ -743,7 +743,7 @@ function renderTuningAdvisor(state) {
   if (!tuningAdvisorEl) return;
   const advisor = state.tuning_advisor || null;
   if (!advisor) {
-    tuningAdvisorEl.innerHTML = `<div class="empty">Waiting for enough analysed signals to recommend threshold tweaks.</div>`;
+    tuningAdvisorEl.innerHTML = `<div class="empty">Waiting for enough analysed signals to recommend next steps.</div>`;
     return;
   }
   if (advisor.pending) {
