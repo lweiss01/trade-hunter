@@ -88,11 +88,11 @@ body::after {
 }
 
 .app-shell {
-  padding: 72px 0 56px;
+  padding: 68px 0 56px;
 }
 
 .page-shell {
-  padding: 24px 0 56px;
+  padding: 20px 0 56px;
 }
 
 .topbar {
@@ -104,7 +104,7 @@ body::after {
   display: flex;
   align-items: center;
   gap: 0;
-  height: 56px;
+  height: 52px;
   margin: 0;
   padding: 0;
   border: 0;
@@ -140,17 +140,18 @@ body::after {
 }
 
 .brand-name {
-  font-size: 1rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .brand-tagline {
   color: var(--text-muted);
   font-family: var(--font-data);
-  font-size: 0.67rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 0.64rem;
+  letter-spacing: 0.04em;
+  margin-top: 1px;
 }
 
 .topbar-status,
@@ -229,8 +230,8 @@ th,
   border: 1px solid var(--border);
   background: transparent;
   color: var(--text-muted);
-  min-height: 32px;
-  padding: 0 12px;
+  min-height: 30px;
+  padding: 0 11px;
   border-radius: 8px;
   cursor: pointer;
   font-size: 0.68rem;
@@ -258,7 +259,7 @@ th,
 .topbar-pills {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   padding: 0 14px;
   flex: 1;
   min-width: 0;
@@ -275,8 +276,8 @@ th,
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  min-height: 26px;
-  padding: 0 9px;
+  min-height: 24px;
+  padding: 3px 9px;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: transparent;
@@ -311,8 +312,8 @@ th,
 
 .nav-pill .dot,
 .mode-badge .dot {
-  width: 7px;
-  height: 7px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   background: currentColor;
   box-shadow: none;
@@ -353,22 +354,22 @@ th,
   border: 0;
   background: transparent;
   width: 100%;
-  padding: 8px 10px;
+  padding: 6px 10px;
 }
 
 .topbar-ticker-form .ticker-add {
   border-radius: 0;
-  min-height: 34px;
-  padding: 0 14px;
+  min-height: 32px;
+  padding: 0 12px;
 }
 
 .settings-icon-btn {
   appearance: none;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   display: inline-grid;
   place-items: center;
-  border-radius: 12px;
+  border-radius: 7px;
   border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.03);
   color: var(--text-muted);
