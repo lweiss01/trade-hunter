@@ -47,11 +47,11 @@ const settingSpikeCooldownSecondsEl = document.querySelector("#setting-spike-coo
 const settingRetentionDaysEl = document.querySelector("#setting-retention-days");
 const settingAppHostEl = document.querySelector("#setting-app-host");
 const settingAppPortEl = document.querySelector("#setting-app-port");
-const settingsStatusCoreEl = document.querySelector("#settings-status-core");
-const settingsStatusKalshiEl = document.querySelector("#settings-status-kalshi");
-const settingsStatusAnalystEl = document.querySelector("#settings-status-analyst");
+const settingsStatusCoreEl = null; // removed — merged into Feeds panel
+const settingsStatusKalshiEl = document.querySelector("#settings-status-kalshi"); // now the Feeds panel badge
+const settingsStatusAnalystEl = null; // removed — merged into Discord panel
 const settingsStatusDiscordEl = document.querySelector("#settings-status-discord");
-const settingsStatusIngestEl = document.querySelector("#settings-status-ingest");
+const settingsStatusIngestEl = null; // removed — merged into Feeds panel
 const settingsStatusDetectorEl = document.querySelector("#settings-status-detector");
 const settingsStatusStorageEl = document.querySelector("#settings-status-storage");
 const settingsSaveButtonEl = document.querySelector("#settings-save-btn");
@@ -206,6 +206,8 @@ function setSettingsSaveStatus(message, tone = "") {
   if (!settingsSaveStatusEl) return;
   settingsSaveStatusEl.className = `settings-save-status ${tone}`.trim();
   settingsSaveStatusEl.textContent = message;
+  const strip = document.getElementById("settings-save-strip");
+  if (strip) strip.style.display = message ? "flex" : "none";
 }
 
 function collectSettingsPayload() {
@@ -333,15 +335,16 @@ function renderSettings(settingsPayload) {
   if (settingAppHostEl) settingAppHostEl.value = settings.host || "";
   if (settingAppPortEl) settingAppPortEl.value = settings.port ?? "";
 
-  setSettingsStatus(settingsStatusCoreEl, "configured", "configured");
-  setSettingsStatus(settingsStatusAnalystEl, "configured", "configured");
   setSettingsStatus(settingsStatusDetectorEl, "configured", "configured");
   setSettingsStatus(settingsStatusStorageEl, "configured", "configured");
 
-  if (!settings.enable_kalshi) {
-    setSettingsStatus(settingsStatusKalshiEl, "disabled", "disabled");
-  } else if (presence.kalshi_api_key_id && presence.kalshi_private_key_path) {
-    setSettingsStatus(settingsStatusKalshiEl, "configured", "configured");
+  // Feeds panel: show worst-case status across Kalshi + ingest
+  const kalshiOk = settings.enable_kalshi && presence.kalshi_api_key_id && presence.kalshi_private_key_path;
+  const ingestOk = presence.ingest_api_token || presence.polyalerthub_token;
+  if (kalshiOk || ingestOk) {
+    setSettingsStatus(settingsStatusKalshiEl, "configured", "data sources");
+  } else if (!settings.enable_kalshi) {
+    setSettingsStatus(settingsStatusKalshiEl, "disabled", "simulation only");
   } else {
     setSettingsStatus(settingsStatusKalshiEl, "missing", "missing key");
   }
@@ -350,12 +353,6 @@ function renderSettings(settingsPayload) {
     setSettingsStatus(settingsStatusDiscordEl, "configured", "configured");
   } else {
     setSettingsStatus(settingsStatusDiscordEl, "disabled", "disabled");
-  }
-
-  if (presence.ingest_api_token || presence.polyalerthub_token) {
-    setSettingsStatus(settingsStatusIngestEl, "configured", "configured");
-  } else {
-    setSettingsStatus(settingsStatusIngestEl, "missing", "missing key");
   }
 
   if (!settingsSaveInFlight) {

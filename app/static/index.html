@@ -147,38 +147,18 @@
         </div>
 
         <div class="settings-grid">
-          <section class="panel settings-panel">
-            <div class="panel-head">
-              <h2>Core mode</h2>
-              <span id="settings-status-core" class="settings-status configured">configured</span>
-            </div>
-            <div class="settings-row">
-              <div>
-                <div class="settings-label">Simulation feed</div>
-                <div class="settings-desc">Toggle the local simulated market feed used for smoke tests and demos.</div>
-                <code class="settings-code">ENABLE_SIMULATION</code>
-              </div>
-              <label class="settings-toggle-shell"><input id="setting-enable-simulation" type="checkbox" disabled><span class="settings-toggle-track"></span></label>
-            </div>
-            <div class="settings-row">
-              <div>
-                <div class="settings-label">Quiet mode</div>
-                <div class="settings-desc">Reduce console chatter for longer-running local sessions.</div>
-                <code class="settings-code">QUIET_MODE</code>
-              </div>
-              <label class="settings-toggle-shell"><input id="setting-quiet-mode" type="checkbox" disabled><span class="settings-toggle-track"></span></label>
-            </div>
-          </section>
 
+          <!-- ── Feeds ─────────────────────────────────────────────────── -->
           <section class="panel settings-panel">
             <div class="panel-head">
-              <h2>Kalshi connection</h2>
-              <span id="settings-status-kalshi" class="settings-status missing">missing key</span>
+              <h2>Feeds</h2>
+              <span id="settings-status-kalshi" class="settings-status missing">data sources</span>
             </div>
+            <div class="settings-section-title">Kalshi</div>
             <div class="settings-row">
               <div>
-                <div class="settings-label">Live Kalshi feed</div>
-                <div class="settings-desc">Enable the live Kalshi adapter in addition to simulation mode.</div>
+                <div class="settings-label">Enable Kalshi feed</div>
+                <div class="settings-desc">Connect to Kalshi via pykalshi WebSocket.</div>
                 <code class="settings-code">ENABLE_KALSHI</code>
               </div>
               <label class="settings-toggle-shell"><input id="setting-enable-kalshi" type="checkbox" disabled><span class="settings-toggle-track"></span></label>
@@ -186,7 +166,7 @@
             <div class="settings-row">
               <div>
                 <div class="settings-label">Kalshi API key ID</div>
-                <div class="settings-desc">Public key identifier for authenticated Kalshi requests.</div>
+                <div class="settings-desc">UUID from your Kalshi account settings.</div>
                 <code class="settings-code">KALSHI_API_KEY_ID</code>
               </div>
               <input id="setting-kalshi-api-key-id" class="settings-input wide" type="text" placeholder="not set" disabled>
@@ -194,57 +174,128 @@
             <div class="settings-row">
               <div>
                 <div class="settings-label">Private key path</div>
-                <div class="settings-desc">Path to the signing key used for authenticated Kalshi requests.</div>
+                <div class="settings-desc">Path to your RSA private key file.</div>
                 <code class="settings-code">KALSHI_PRIVATE_KEY_PATH</code>
               </div>
               <input id="setting-kalshi-private-key-path" class="settings-input wide" type="text" placeholder="not set" disabled>
             </div>
+            <div class="settings-section-title">Simulation</div>
             <div class="settings-row">
               <div>
-                <div class="settings-label">Tracked series tickers</div>
-                <div class="settings-desc">Series-level subscriptions currently managed from the Markets workspace.</div>
-                <code class="settings-code">KALSHI_MARKETS</code>
+                <div class="settings-label">Enable simulation feed</div>
+                <div class="settings-desc">Generate synthetic events for local testing. Auto-disabled in live mode.</div>
+                <code class="settings-code">ENABLE_SIMULATION</code>
               </div>
-              <input id="setting-kalshi-markets" class="settings-input wide" type="text" placeholder="none tracked" disabled>
+              <label class="settings-toggle-shell"><input id="setting-enable-simulation" type="checkbox" disabled><span class="settings-toggle-track"></span></label>
+            </div>
+            <div class="settings-section-title">Ingest API</div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Ingest API token</div>
+                <div class="settings-desc">Bearer token for <code>/api/events</code> and PolyAlertHub endpoint.</div>
+                <code class="settings-code">INGEST_API_TOKEN / POLYALERTHUB_TOKEN</code>
+              </div>
+              <input id="setting-ingest-api-token" class="settings-input wide" type="password" placeholder="not set" disabled>
+            </div>
+            <div class="settings-save-bar">
+              <span class="settings-save-note">Changes require feed restart.</span>
+              <div style="display:flex;gap:8px;">
+                <button class="btn-ghost" type="button" onclick="refreshSettings(true)">Reset</button>
+                <button class="btn-primary" id="settings-save-btn" type="button">Save Feeds</button>
+              </div>
             </div>
           </section>
 
+          <!-- ── Detector ───────────────────────────────────────────────── -->
           <section class="panel settings-panel">
             <div class="panel-head">
-              <h2>AI analyst</h2>
-              <span id="settings-status-analyst" class="settings-status configured">configured</span>
+              <h2>Detector</h2>
+              <span id="settings-status-detector" class="settings-status configured">spike thresholds</span>
             </div>
             <div class="settings-row">
               <div>
-                <div class="settings-label">Analyst follow-up minimum confidence</div>
-                <div class="settings-desc">Only send analyst follow-up alerts at or above this confidence threshold.</div>
-                <code class="settings-code">DISCORD_ANALYST_MIN_CONFIDENCE</code>
+                <div class="settings-label">Min volume delta</div>
+                <div class="settings-desc">Minimum raw volume change to consider a spike. Lower = more sensitive.</div>
+                <code class="settings-code">SPIKE_MIN_VOLUME_DELTA · default 120</code>
               </div>
-              <select id="setting-discord-analyst-min-confidence" class="settings-select" disabled>
-                <option value="low">low</option>
-                <option value="medium">medium</option>
-                <option value="high">high</option>
-              </select>
+              <input id="setting-spike-min-volume-delta" class="settings-input" type="number" disabled>
             </div>
             <div class="settings-row">
               <div>
-                <div class="settings-label">Analyst follow-up delivery</div>
-                <div class="settings-desc">Send a second message after analyst classification when enabled.</div>
-                <code class="settings-code">DISCORD_ANALYST_FOLLOWUP</code>
+                <div class="settings-label">Min price move</div>
+                <div class="settings-desc">Minimum yes-price move (0–1 scale) to qualify. 0.03 = 3¢.</div>
+                <code class="settings-code">SPIKE_MIN_PRICE_MOVE · default 0.03</code>
               </div>
-              <label class="settings-toggle-shell"><input id="setting-discord-analyst-followup" type="checkbox" disabled><span class="settings-toggle-track"></span></label>
+              <input id="setting-spike-min-price-move" class="settings-input" type="number" step="0.005" disabled>
+            </div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Score threshold</div>
+                <div class="settings-desc">Minimum combined score (volume + price) to fire an alert.</div>
+                <code class="settings-code">SPIKE_SCORE_THRESHOLD · default 3.0</code>
+              </div>
+              <input id="setting-spike-score-threshold" class="settings-input" type="number" step="0.5" disabled>
+            </div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Baseline window size</div>
+                <div class="settings-desc">Number of recent volume deltas to average for the rolling baseline.</div>
+                <code class="settings-code">SPIKE_BASELINE_POINTS · default 24</code>
+              </div>
+              <input id="setting-spike-baseline-points" class="settings-input" type="number" disabled>
+            </div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Cooldown (seconds)</div>
+                <div class="settings-desc">Minimum gap between signals for the same market to prevent alert floods.</div>
+                <code class="settings-code">SPIKE_COOLDOWN_SECONDS · default 300</code>
+              </div>
+              <input id="setting-spike-cooldown-seconds" class="settings-input" type="number" disabled>
+            </div>
+            <div class="settings-section-title">Signal tiers (read-only)</div>
+            <div class="settings-row">
+              <div>
+                <span class="sig-tag tier-watch" style="font-size:0.66rem;">Watch</span>
+                <div class="settings-desc" style="margin-top:4px;">Score qualifies but directional bias is weak or below notable threshold.</div>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div>
+                <span class="sig-tag tier-signal" style="font-size:0.66rem;">Notable</span>
+                <div class="settings-desc" style="margin-top:4px;">Price move ≥ 1.2× min and volume ≥ 2.4× baseline, or score ≥ 4.0.</div>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div>
+                <span class="sig-tag tier-high" style="font-size:0.66rem;">High conviction flow</span>
+                <div class="settings-desc" style="margin-top:4px;">Score ≥ 6, price move ≥ 1.75× min, volume ≥ 3× baseline simultaneously.</div>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div>
+                <span class="sig-tag" style="border-color:rgba(90,200,250,0.4);color:#5ac8fa;font-size:0.66rem;">Cross-venue divergence</span>
+                <div class="settings-desc" style="margin-top:4px;">Market flagged with cross_venue metadata from ingest payload.</div>
+              </div>
+            </div>
+            <div class="settings-save-bar">
+              <span class="settings-save-note">Applied immediately — no restart needed.</span>
+              <div style="display:flex;gap:8px;">
+                <button class="btn-ghost" type="button" onclick="refreshSettings(true)">Reset to defaults</button>
+                <button class="btn-primary" type="button" onclick="document.getElementById('settings-save-btn').click()">Save Thresholds</button>
+              </div>
             </div>
           </section>
 
+          <!-- ── Discord ────────────────────────────────────────────────── -->
           <section class="panel settings-panel">
             <div class="panel-head">
-              <h2>Discord / notifications</h2>
-              <span id="settings-status-discord" class="settings-status configured">configured</span>
+              <h2>Discord</h2>
+              <span id="settings-status-discord" class="settings-status configured">webhook alerts</span>
             </div>
             <div class="settings-row">
               <div>
                 <div class="settings-label">Default webhook URL</div>
-                <div class="settings-desc">Fallback destination for alerts with no topic-specific route override.</div>
+                <div class="settings-desc">Fallback channel for alerts with no topic-specific route.</div>
                 <code class="settings-code">DISCORD_WEBHOOK_URL</code>
               </div>
               <input id="setting-discord-webhook-url" class="settings-input wide" type="text" placeholder="not set" disabled>
@@ -252,7 +303,7 @@
             <div class="settings-row">
               <div>
                 <div class="settings-label">Alert mode</div>
-                <div class="settings-desc">Controls which detector and analyst events are sent to Discord.</div>
+                <div class="settings-desc">Controls which alerts are sent to Discord.</div>
                 <code class="settings-code">DISCORD_ALERT_MODE</code>
               </div>
               <select id="setting-discord-alert-mode" class="settings-select" disabled>
@@ -261,127 +312,97 @@
                 <option value="analyst-signals-only">analyst-signals-only</option>
               </select>
             </div>
-            <div class="settings-section-title">Topic routing</div>
-            <div class="settings-route-row"><span class="route-topic">crypto</span><input id="setting-discord-route-crypto" class="settings-input wide" type="text" placeholder="not set" disabled></div>
-            <div class="settings-route-row"><span class="route-topic">macro</span><input id="setting-discord-route-macro" class="settings-input wide" type="text" placeholder="not set" disabled></div>
-            <div class="settings-route-row"><span class="route-topic">elections</span><input id="setting-discord-route-elections" class="settings-input wide" type="text" placeholder="not set" disabled></div>
-          </section>
-
-          <section class="panel settings-panel">
-            <div class="panel-head">
-              <h2>Ingest / auth</h2>
-              <span id="settings-status-ingest" class="settings-status missing">missing key</span>
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Analyst follow-up</div>
+                <div class="settings-desc">Send a second message when the analyst classifies a signal.</div>
+                <code class="settings-code">DISCORD_ANALYST_FOLLOWUP</code>
+              </div>
+              <label class="settings-toggle-shell"><input id="setting-discord-analyst-followup" type="checkbox" disabled><span class="settings-toggle-track"></span></label>
             </div>
             <div class="settings-row">
               <div>
-                <div class="settings-label">Generic ingest token</div>
-                <div class="settings-desc">Bearer token required by the generic /api/events ingest endpoint.</div>
-                <code class="settings-code">INGEST_API_TOKEN</code>
+                <div class="settings-label">Min analyst confidence</div>
+                <div class="settings-desc">Only send follow-ups at or above this confidence level.</div>
+                <code class="settings-code">DISCORD_ANALYST_MIN_CONFIDENCE</code>
               </div>
-              <input id="setting-ingest-api-token" class="settings-input wide" type="text" placeholder="not set" disabled>
+              <select id="setting-discord-analyst-min-confidence" class="settings-select" disabled>
+                <option value="low">low</option>
+                <option value="medium">medium</option>
+                <option value="high">high</option>
+              </select>
             </div>
-            <div class="settings-row">
-              <div>
-                <div class="settings-label">PolyAlertHub token</div>
-                <div class="settings-desc">Bearer token for the /api/alerts/polyalerthub relay endpoint.</div>
-                <code class="settings-code">POLYALERTHUB_TOKEN</code>
+            <div class="settings-section-title">Topic routing — override webhook per topic</div>
+            <div class="settings-route-row"><span class="route-topic">Crypto</span><input id="setting-discord-route-crypto" class="settings-input wide" type="text" placeholder="leave blank to use default" disabled></div>
+            <div class="settings-route-row"><span class="route-topic">Macro</span><input id="setting-discord-route-macro" class="settings-input wide" type="text" placeholder="leave blank to use default" disabled></div>
+            <div class="settings-route-row"><span class="route-topic">Elections</span><input id="setting-discord-route-elections" class="settings-input wide" type="text" placeholder="leave blank to use default" disabled></div>
+            <div class="settings-route-row"><span class="route-topic">Sports</span><input id="setting-discord-route-sports" class="settings-input wide" type="text" placeholder="leave blank to use default" disabled></div>
+            <div class="settings-route-row"><span class="route-topic">Geopolitics</span><input id="setting-discord-route-geopolitics" class="settings-input wide" type="text" placeholder="leave blank to use default" disabled></div>
+            <div class="settings-save-bar">
+              <span class="settings-save-note">Changes take effect on next alert.</span>
+              <div style="display:flex;gap:8px;">
+                <button class="btn-ghost" type="button" onclick="refreshSettings(true)">Reset</button>
+                <button class="btn-primary" type="button" onclick="document.getElementById('settings-save-btn').click()">Save Discord</button>
               </div>
-              <input id="setting-polyalerthub-token" class="settings-input wide" type="text" placeholder="not set" disabled>
-            </div>
-          </section>
-
-          <section class="panel settings-panel">
-            <div class="panel-head">
-              <h2>Detector tuning</h2>
-              <span id="settings-status-detector" class="settings-status configured">configured</span>
-            </div>
-            <div class="settings-row">
-              <div>
-                <div class="settings-label">Min volume delta</div>
-                <div class="settings-desc">Minimum raw volume change before a spike is considered meaningful.</div>
-                <code class="settings-code">SPIKE_MIN_VOLUME_DELTA</code>
-              </div>
-              <input id="setting-spike-min-volume-delta" class="settings-input" type="number" disabled>
-            </div>
-            <div class="settings-row">
-              <div>
-                <div class="settings-label">Min price move</div>
-                <div class="settings-desc">Required price move floor before a volume spike can escalate.</div>
-                <code class="settings-code">SPIKE_MIN_PRICE_MOVE</code>
-              </div>
-              <input id="setting-spike-min-price-move" class="settings-input" type="number" step="0.01" disabled>
-            </div>
-            <div class="settings-row">
-              <div>
-                <div class="settings-label">Score threshold</div>
-                <div class="settings-desc">Detector score required before a spike becomes actionable.</div>
-                <code class="settings-code">SPIKE_SCORE_THRESHOLD</code>
-              </div>
-              <input id="setting-spike-score-threshold" class="settings-input" type="number" step="0.01" disabled>
-            </div>
-            <div class="settings-row">
-              <div>
-                <div class="settings-label">Baseline points</div>
-                <div class="settings-desc">How many recent points define the detector baseline window.</div>
-                <code class="settings-code">SPIKE_BASELINE_POINTS</code>
-              </div>
-              <input id="setting-spike-baseline-points" class="settings-input" type="number" disabled>
-            </div>
-            <div class="settings-row">
-              <div>
-                <div class="settings-label">Cooldown seconds</div>
-                <div class="settings-desc">Minimum cooldown before the same detector can emit again for the same market.</div>
-                <code class="settings-code">SPIKE_COOLDOWN_SECONDS</code>
-              </div>
-              <input id="setting-spike-cooldown-seconds" class="settings-input" type="number" disabled>
             </div>
           </section>
 
+          <!-- ── Data & Server ──────────────────────────────────────────── -->
           <section class="panel settings-panel">
             <div class="panel-head">
-              <h2>Storage / retention</h2>
-              <span id="settings-status-storage" class="settings-status configured">configured</span>
+              <h2>Data &amp; Server</h2>
+              <span id="settings-status-storage" class="settings-status configured">storage · retention · server</span>
             </div>
             <div class="settings-row">
               <div>
-                <div class="settings-label">Retention days</div>
-                <div class="settings-desc">How long market events and signals remain in storage before pruning.</div>
-                <code class="settings-code">RETENTION_DAYS</code>
+                <div class="settings-label">Retention (days)</div>
+                <div class="settings-desc">Events and signals older than this are pruned from the database.</div>
+                <code class="settings-code">RETENTION_DAYS · default 7</code>
               </div>
               <input id="setting-retention-days" class="settings-input" type="number" disabled>
             </div>
             <div class="settings-row">
               <div>
-                <div class="settings-label">Host</div>
-                <div class="settings-desc">Local bind address for the dashboard server.</div>
-                <code class="settings-code">APP_HOST</code>
+                <div class="settings-label">Quiet mode</div>
+                <div class="settings-desc">Suppress most console log output. Useful in background deployments.</div>
+                <code class="settings-code">QUIET_MODE</code>
               </div>
-              <input id="setting-app-host" class="settings-input wide" type="text" disabled>
+              <label class="settings-toggle-shell"><input id="setting-quiet-mode" type="checkbox" disabled><span class="settings-toggle-track"></span></label>
+            </div>
+            <div class="settings-section-title">Server</div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">Host</div>
+                <div class="settings-desc">Interface to bind. Use 0.0.0.0 to expose on your local network.</div>
+                <code class="settings-code">APP_HOST · default 127.0.0.1</code>
+              </div>
+              <input id="setting-app-host" class="settings-input" type="text" disabled>
             </div>
             <div class="settings-row">
               <div>
                 <div class="settings-label">Port</div>
-                <div class="settings-desc">HTTP port the local dashboard listens on.</div>
-                <code class="settings-code">APP_PORT</code>
+                <div class="settings-desc">HTTP port the dashboard server listens on.</div>
+                <code class="settings-code">APP_PORT · default 8765</code>
               </div>
               <input id="setting-app-port" class="settings-input" type="number" disabled>
             </div>
+            <div class="settings-save-bar">
+              <span class="settings-save-note">Host/port changes require server restart.</span>
+              <div style="display:flex;gap:8px;">
+                <button class="btn-ghost" type="button" onclick="refreshSettings(true)">Reset</button>
+                <button class="btn-primary" type="button" onclick="document.getElementById('settings-save-btn').click()">Save</button>
+              </div>
+            </div>
           </section>
+
         </div>
 
-        <section class="panel settings-note-panel">
-          <div class="panel-head">
-            <h2>Save settings</h2>
-            <span class="badge">restart required</span>
-          </div>
-          <div class="settings-placeholder-copy">
-            <p>Editable fields below persist to <code>.env</code>. Secret-backed and Markets-owned fields remain visibility-only.</p>
-            <div class="settings-save-row">
-              <button id="settings-save-btn" class="action" type="button">Save settings</button>
-              <span id="settings-save-status" class="settings-save-status">No unsaved changes yet.</span>
-            </div>
-          </div>
-        </section>
+        <!-- Hidden master save trigger wired to JS save handler -->
+        <button id="settings-save-btn" style="display:none;" type="button"></button>
+        <!-- Global save status shown as a floating strip above the tuning backlog -->
+        <div id="settings-save-strip" style="display:none;" class="settings-annotation-banner" style="border-style:solid;">
+          <span id="settings-save-status" class="settings-save-status"></span>
+        </div>
 
         <!-- Tuning Backlog — full width -->
         <section class="panel" id="tuning-backlog-panel">

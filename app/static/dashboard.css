@@ -453,6 +453,59 @@ th,
   transform: scale(0.98);
 }
 
+.btn-primary {
+  appearance: none;
+  background: var(--live);
+  border: 1px solid var(--live);
+  border-radius: 6px;
+  color: #060d18;
+  font-family: var(--font-data);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 7px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-primary:hover { background: rgba(0,201,177,0.85); }
+
+.btn-ghost {
+  appearance: none;
+  background: var(--surface-2);
+  border: 1px solid var(--border-mid);
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-family: var(--font-data);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 7px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-ghost:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+
+.settings-save-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--surface-2);
+  border-top: 1px solid var(--border);
+}
+
+.settings-save-note {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-family: var(--font-data);
+}
+
 h1,
 h2 {
   margin: 0;
