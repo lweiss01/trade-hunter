@@ -315,6 +315,120 @@ Require minimum executed trade volume confirmation alongside order book delta, a
 - [ ] **TB-047** `planned` — Implement volume_delta_baseline_multiplier rule requiring volΔ > 1.5x rolling 30-min baseline to reduce sensitivity to absolute volume figures in low-liquidity pairs
 
 ---
+
+## 2026-04-05 — Advisor snapshot P
+
+### Summary
+False positives stem from quote-only volume spikes without sustained trade follow-through, and high scores driven by volume deltas that don't correlate with genuine price conviction or informed positioning.
+
+### Next step
+Introduce a trade-volume confirmation gate: require a minimum percentage of the volume delta to be represented by actual executed trades (not just quote/bid-ask activity) before emitting a signal.
+
+### Suggested thresholds
+`min_volume_delta` → `50000.0`, `min_price_move` → `0.04`
+
+### Recommendations
+
+- [ ] **TB-048** `planned` — Add minimum executed trade count requirement (e.g., 10+ contracts traded) relative to total volume delta to filter market-making noise
+- [ ] **TB-049** `planned` — Require price move persistence: price must hold or improve for at least N subsequent trades after the spike event, not just static snapshot
+- [ ] **TB-050** `planned` — Reduce reliance on raw volume_delta in score calculation; weight it lower relative to trade-count and price-move conviction metrics
+
+---
+
+## 2026-04-05 — Advisor snapshot Q
+
+### Summary
+False positives are driven by thin-market noise: high relative volume deltas on low absolute baselines (SDUF) and high conviction scores disconnected from actual price impact (KXCABOUT-26APR-TGAB with 9% move but only 3% underlying probability).
+
+### Next step
+Introduce liquidity-aware thresholds that scale requirements based on baseline volume and market depth. For markets with baseline volume <20, enforce stricter absolute volume deltas and require price-volume correlation.
+
+### Suggested thresholds
+`min_price_move` → `0.005`
+
+### Recommendations
+
+- [ ] **TB-051** `planned` — Require sustained volume >5x baseline (not 3.3x) for 'high conviction flow' classification on tail outcomes (yes probability <10%)
+- [ ] **TB-052** `planned` — For ultra-low-liquidity markets (baseline volume <20), enforce minimum absolute volume delta of 50+ units AND price move >0.5%, or volume >20x baseline only if accompanied by directional price move
+- [ ] **TB-053** `planned` — Reduce reliance on score alone for emission—add veto rule: suppress signals where price delta is <1% AND baseline volume <50, regardless of score, unless volume delta >10x baseline with coherent directionality
+
+---
+
+## 2026-04-05 — Advisor snapshot R
+
+### Summary
+Thin markets and low-liquidity contracts are generating false positives through amplified price moves and inflated scores on minimal volume. The spike detector lacks safeguards for markets with low absolute liquidity or microprice conditions.
+
+### Next step
+Introduce a minimum absolute volume threshold (e.g., 10,000+ contracts in market) and exclude or dampen signals from contracts priced below 0.05 before applying spike detection logic.
+
+### Suggested thresholds
+`min_volume_delta` → `5000.0`, `min_price_move` → `0.05`, `score_threshold` → `100.0`
+
+### Recommendations
+
+- [ ] **TB-054** `planned` — Add market liquidity floor: skip spike detection for markets with total outstanding contracts < 10,000 or current price < 0.05
+- [ ] **TB-055** `planned` — Require minimum confirmed trade volume within a time window (5 min): demand 10+ contracts in recent trades, not just quoted volume delta, to validate a spike
+- [ ] **TB-056** `planned` — Reduce score_threshold for low-liquidity markets or apply a liquidity-adjusted score multiplier (e.g., divide score by sqrt(market_volume)) to penalize thin-market signals
+
+---
+
+## 2026-04-05 — Advisor snapshot S
+
+### Summary
+Low-liquidity nickname markets are generating false positives from single-trade outliers and mechanical quote-flush events that lack sustained flow conviction.
+
+### Next step
+Implement a liquidity-tier-based minimum trade size requirement: require multi-contract spikes or sustained order flow on markets with typical trade sizes below 20 contracts, rather than relying on single outlier trades.
+
+### Suggested thresholds
+`min_volume_delta` → `1500.0`, `min_price_move` → `0.05`, `score_threshold` → `6.5`
+
+### Recommendations
+
+- [ ] **TB-057** `planned` — For markets with typical trade size < 20 contracts, require spike_min_contracts ≥ 3 (or equivalent notional minimum) instead of accepting single-trade volume deltas
+- [ ] **TB-058** `planned` — Add a sustained_flow check: spike signals on low-liquidity venues should require either multiple fills in same direction within short window, or price persistence, not just instantaneous price move
+- [ ] **TB-059** `planned` — Raise spike_min_volume_delta for tier=notable contracts with yes/no confidence near 0.50 (indicating genuine uncertainty rather than directional conviction)
+
+---
+
+## 2026-04-05 — Advisor snapshot T
+
+### Summary
+Low-liquidity niche markets (TRUMP nickname contracts) are generating false positives from thin order books where small single trades cause outsized price moves without reflecting genuine market consensus.
+
+### Next step
+Implement liquidity-tier-aware thresholds that require higher volume deltas and minimum trade sizes for low-liquidity markets, rather than applying uniform global thresholds.
+
+### Suggested thresholds
+`min_volume_delta` → `1.3`, `min_price_move` → `0.08`
+
+### Recommendations
+
+- [ ] **TB-060** `planned` — For markets with typical trade size <20 contracts, raise minimum trade size threshold from 1 contract to 3+ contracts or require sustained multi-trade order flow within a window
+- [ ] **TB-061** `planned` — For low-liquidity markets, increase volume delta multiplier requirement from 1.1x to 1.3x+ to filter mechanical quote-flush and single-outlier events
+- [ ] **TB-062** `planned` — Implement a liquidity-adjusted score penalty that reduces spike_score for thin markets (e.g., typical trade size <20 or open interest <1000) unless price move exceeds 8%+ and volume delta exceeds 1.5x
+
+---
+
+## 2026-04-05 — Advisor snapshot U
+
+### Summary
+Low-liquidity niche markets (like nickname contracts) are generating false positives from small absolute volumes and single large trades that create outsized price moves without reflecting genuine market consensus.
+
+### Next step
+Implement market-liquidity-aware thresholds: apply stricter volume delta multipliers (1.3x+) and minimum contract size filters for low-liquidity tiers, rather than using uniform global thresholds.
+
+### Suggested thresholds
+`min_volume_delta` → `1.3`
+
+### Recommendations
+
+- [ ] **TB-063** `planned` — Raise minimum contract size threshold for single-trade spikes on low-liquidity markets from current baseline to ≥15–20 contracts to filter fat-finger/execution noise on nickname markets
+- [ ] **TB-064** `planned` — Increase volume delta multiplier floor for low-liquidity contracts from 1.1x to 1.3x to require more sustained volume flow, not just absolute deltas
+- [ ] **TB-065** `planned` — Add liquidity-tier routing: detect base liquidity (e.g., total open interest or avg daily volume) and apply stricter price_move thresholds (e.g. 0.05+ for low-liquidity vs 0.03+ for standard) to reduce noise sensitivity
+
+---
 ## Applied changes
 
 - [x] **AP-001** `applied` — Added Claude/Perplexity signal analyst to classify individual spikes as `signal`, `noise`, or `uncertain` and provide threshold notes inline on signal cards.

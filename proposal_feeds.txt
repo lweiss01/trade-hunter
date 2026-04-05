@@ -1,0 +1,7 @@
+      <!-- ── Feeds ─────────────────────────────────────────────────────── -->
+      <div class="panel">
+        <div class="panel-hd">
+          <div class="panel-hd-left">
+            <span class="panel-title">Feeds</span>
+            <span class="panel-badge">data sources</span>
+          </div>
