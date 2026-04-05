@@ -1133,6 +1133,71 @@ async function runCategorySearch(query) {
   }
 }
 
+async function fetchAndRenderBacklog() {
+  const bodyEl = document.getElementById("tuning-backlog-body");
+  const appliedEl = document.getElementById("tb-stat-applied");
+  const plannedEl = document.getElementById("tb-stat-planned");
+  if (!bodyEl) return;
+
+  try {
+    const resp = await fetch("/api/tuning/backlog");
+    const data = await resp.json();
+
+    if (appliedEl) appliedEl.textContent = `${data.applied_count} applied`;
+    if (plannedEl) plannedEl.textContent = `${data.planned_count} planned`;
+
+    if (!data.snapshots || !data.snapshots.length) {
+      bodyEl.innerHTML = `<div style="padding:20px 16px;color:var(--text-muted);font-size:0.8rem;">No backlog entries yet.</div>`;
+      return;
+    }
+
+    const plannedIds = data.snapshots
+      .flatMap(s => s.items)
+      .filter(i => i.status === "planned")
+      .slice(0, 3)
+      .map(i => i.id);
+
+    const priorityBar = plannedIds.length ? `
+      <div class="tb-priority-bar">
+        <span class="tb-priority-label">Next recommended:</span>
+        ${plannedIds.map((id, n) => `<span class="tb-priority-chip">${n + 1} · ${escapeHtml(id)}</span>`).join("")}
+      </div>` : "";
+
+    const snapshotHtml = data.snapshots.map(snap => {
+      const itemsHtml = snap.items.map(item => {
+        const isPlanned = item.status === "planned";
+        const isApplied = item.status === "applied";
+        const rowClass = isApplied ? "tb-row tb-applied" : "tb-row tb-planned";
+        const actionBtn = isPlanned
+          ? `<button class="tb-apply-btn ${item.id === plannedIds[0] ? 'tb-apply-btn-primary' : ''}" data-tb-id="${escapeHtml(item.id)}">${item.id === plannedIds[0] ? 'Apply next' : 'Mark applied'}</button>`
+          : "";
+        return `
+          <div class="${rowClass}">
+            <div class="tb-id">${escapeHtml(item.id)}</div>
+            <span class="tb-badge ${escapeHtml(item.status)}">${escapeHtml(item.status)}</span>
+            <div class="tb-body">
+              <div class="tb-rule">${escapeHtml(item.rule)}</div>
+              ${item.detail ? `<div class="tb-detail">${escapeHtml(item.detail)}</div>` : ""}
+              ${item.note ? `<div class="tb-note">${escapeHtml(item.note)}</div>` : ""}
+            </div>
+            <div class="tb-actions">${actionBtn}</div>
+          </div>`;
+      }).join("");
+
+      return `
+        <div class="tb-snapshot-hd">
+          <span class="tb-snapshot-label">${escapeHtml(snap.label)}</span>
+          ${snap.summary ? `<span class="tb-snapshot-summary">${escapeHtml(snap.summary)}</span>` : ""}
+        </div>
+        ${itemsHtml}`;
+    }).join("");
+
+    bodyEl.innerHTML = priorityBar + snapshotHtml;
+  } catch (err) {
+    bodyEl.innerHTML = `<div style="padding:20px 16px;color:var(--text-muted);font-size:0.8rem;">Failed to load backlog.</div>`;
+  }
+}
+
 async function refreshSettings(force = false) {
   if (!force && currentPage !== "settings" && lastSettingsState) {
     return;
@@ -1148,6 +1213,7 @@ async function refreshSettings(force = false) {
     setSettingsControlsEditable(false);
     setSettingsSaveStatus("Failed to load settings.", "error");
   }
+  fetchAndRenderBacklog();
 }
 
 async function refresh() {

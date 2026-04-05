@@ -337,6 +337,102 @@ class TradeHunterService:
                 feed.start()
                 break
 
+    def get_tuning_backlog(self) -> dict:
+        """Parse docs/TUNING-BACKLOG.md into structured data for the Settings panel."""
+        import pathlib, re
+        backlog_path = pathlib.Path(__file__).parent.parent / "docs" / "TUNING-BACKLOG.md"
+        if not backlog_path.exists():
+            return {"snapshots": [], "applied_count": 0, "planned_count": 0}
+
+        text = backlog_path.read_text(encoding="utf-8")
+        snapshots: list[dict] = []
+        current_snapshot: dict | None = None
+        current_items: list[dict] = []
+
+        for line in text.splitlines():
+            # Snapshot header: ## 2026-04-03 — Advisor snapshot A
+            snap_m = re.match(r'^## (.+)', line)
+            if snap_m:
+                if current_snapshot is not None:
+                    current_snapshot["items"] = current_items
+                    snapshots.append(current_snapshot)
+                current_snapshot = {"label": snap_m.group(1).strip(), "summary": "", "items": []}
+                current_items = []
+                continue
+
+            if current_snapshot is None:
+                continue
+
+            # Summary line after ### Summary
+            if line.startswith("### Summary"):
+                continue
+
+            # Item line: - [x] **TB-001** `applied` — rule text
+            item_m = re.match(
+                r'^\s*-\s+\[([ xX])\]\s+\*\*([\w-]+)\*\*\s+`(\w+)`\s+[—–-]+\s*(.*)',
+                line
+            )
+            if item_m:
+                checked, item_id, status, rule = item_m.groups()
+                current_items.append({
+                    "id": item_id,
+                    "status": status,
+                    "rule": rule.strip(),
+                    "detail": "",
+                    "note": "",
+                })
+                continue
+
+            # Shorter item line (no status): - [ ] **TB-042** `planned` — rule
+            item_m2 = re.match(r'^\s*-\s+\[([ xX])\]\s+\*\*([\w-]+)\*\*\s+`(\w+)`\s+(.*)', line)
+            if item_m2 and not current_items or (item_m2 and current_items and item_m2.group(2) != current_items[-1]["id"]):
+                checked, item_id, status, rule = item_m2.groups()
+                # strip leading em-dash if present
+                rule = re.sub(r'^[—–-]+\s*', '', rule).strip()
+                current_items.append({
+                    "id": item_id,
+                    "status": status,
+                    "rule": rule,
+                    "detail": "",
+                    "note": "",
+                })
+                continue
+
+            # Continuation lines for current item
+            if current_items:
+                detail_m = re.match(r'^\s+-\s+Rule:\s*(.*)', line)
+                if detail_m:
+                    current_items[-1]["detail"] = detail_m.group(1).strip()
+                    continue
+                note_m = re.match(r'^\s+-\s+Notes?:\s*(.*)', line)
+                if note_m:
+                    current_items[-1]["note"] = note_m.group(1).strip()
+                    continue
+
+            # Snapshot summary (free text after header, before first item)
+            if not current_items and current_snapshot and line.strip() and not line.startswith("#") and not line.startswith("-") and not line.startswith("`"):
+                if current_snapshot["summary"]:
+                    current_snapshot["summary"] += " " + line.strip()
+                else:
+                    current_snapshot["summary"] = line.strip()
+
+        if current_snapshot is not None:
+            current_snapshot["items"] = current_items
+            snapshots.append(current_snapshot)
+
+        # Filter out non-item snapshots (preamble, etc.)
+        snapshots = [s for s in snapshots if s["items"]]
+
+        all_items = [item for s in snapshots for item in s["items"]]
+        applied_count = sum(1 for i in all_items if i["status"] == "applied")
+        planned_count = sum(1 for i in all_items if i["status"] == "planned")
+
+        return {
+            "snapshots": snapshots,
+            "applied_count": applied_count,
+            "planned_count": planned_count,
+        }
+
     def apply_tuning_suggestions(self) -> dict[str, float]:
         if not self._tuning_advisor:
             raise ValueError("tuning advisor unavailable")

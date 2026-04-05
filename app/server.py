@@ -92,6 +92,8 @@ def run_server(settings: Settings) -> None:
                     "feeds": state.get("feeds", {}),
                     "retention": cleanup_status,
                 })
+            if path == "/api/tuning/backlog":
+                return self._json_response(service.get_tuning_backlog())
             self._json_response({"error": "not found"}, status=HTTPStatus.NOT_FOUND)
 
         def do_POST(self) -> None:
