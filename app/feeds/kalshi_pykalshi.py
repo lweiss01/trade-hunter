@@ -32,6 +32,7 @@ class KalshiPykalshiFeed(FeedAdapter):
         self._api_mode = "unknown"
         self._valid_tickers: list[str] = []
         self._dead_tickers: list[str] = []
+        self._title_cache: dict[str, str] = {}
 
     def start(self) -> None:
         self._thread = threading.Thread(target=self._run_loop, name="kalshi-feed", daemon=True)
@@ -226,7 +227,10 @@ class KalshiPykalshiFeed(FeedAdapter):
             data = _json.load(ureq.urlopen(req, timeout=5))
             m = data.get("market", data)
             if m.get("status") == "active":
-                return [m.get("ticker", ticker)]
+                resolved = m.get("ticker", ticker)
+                if m.get("title"):
+                    self._title_cache[resolved] = m["title"]
+                return [resolved]
             log.debug("kalshi ticker %s exists but status=%s — skipping", ticker, m.get("status"))
             return []
         except Exception:
@@ -239,7 +243,13 @@ class KalshiPykalshiFeed(FeedAdapter):
             data = _json.load(ureq.urlopen(req, timeout=5))
             markets = data.get("markets", [])
             if markets:
-                tickers = [m.get("ticker") for m in markets if m.get("ticker")]
+                tickers = []
+                for m in markets:
+                    t = m.get("ticker")
+                    if t:
+                        tickers.append(t)
+                        if m.get("title"):
+                            self._title_cache[t] = m["title"]
                 log.info("kalshi: resolved series %s → %s", ticker, tickers)
                 return tickers
         except Exception as exc:
@@ -252,7 +262,13 @@ class KalshiPykalshiFeed(FeedAdapter):
             data = _json.load(ureq.urlopen(req, timeout=5))
             markets = data.get("markets", [])
             if markets:
-                tickers = [m.get("ticker") for m in markets if m.get("ticker")]
+                tickers = []
+                for m in markets:
+                    t = m.get("ticker")
+                    if t:
+                        tickers.append(t)
+                        if m.get("title"):
+                            self._title_cache[t] = m["title"]
                 log.info("kalshi: resolved event %s → %d sub-markets: %s", ticker, len(tickers), tickers[:3])
                 return tickers
         except Exception as exc:
@@ -287,6 +303,9 @@ class KalshiPykalshiFeed(FeedAdapter):
         if self._lifecycle_count == 1:
             log.info("kalshi market_lifecycle_v2 dispatch confirmed (first event received)")
 
+
+    def dead_tickers(self) -> list[str]:
+        return list(self._dead_tickers)
 
     def _status_payload(self, feed: object | None = None) -> dict[str, object]:
         mode = self._api_mode if self._api_mode != "unknown" else "pending"
@@ -425,7 +444,7 @@ class KalshiPykalshiFeed(FeedAdapter):
             source="pykalshi",
             platform="kalshi",
             market_id=str(market_id),
-            title=str(market_id),
+            title=self._title_cache.get(str(market_id), str(market_id)),
             event_kind=event_kind,
             yes_price=float(yes_price) if yes_price is not None else None,
             volume=volume_delta,

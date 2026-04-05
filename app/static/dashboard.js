@@ -959,7 +959,7 @@ function renderActivity(activity, telemetry = {}, config = {}) {
     const isSelected = signalKey ? signalKey === selectedSignalKey : item.market_id === selectedMarketId;
 
     return `
-      <div class="flow-row ${isSelected ? "selected" : ""}" data-market-id="${escapeHtml(item.market_id || "")}" data-signal-key="${escapeHtml(signalKey)}" tabindex="0" role="button" aria-pressed="${isSelected ? "true" : "false"}">
+      <div class="flow-row" data-market-id="${escapeHtml(item.market_id || "")}">
         ${kind}
         ${dup}
         <span class="flow-mid">${escapeHtml(item.market_id)}</span>
@@ -1335,40 +1335,7 @@ if (signalsEl) {
   });
 }
 
-if (activityEl) {
-  const activateFlowRow = (target) => {
-    const row = target.closest(".flow-row[data-market-id]");
-    if (!row) return;
-    const signalKey = row.dataset.signalKey;
-    if (signalKey) {
-      selectedSignalKey = signalKey;
-      selectedMarketId = null;
-    } else {
-      const matchedSignal = findBestSignalForMarket(lastDashboardState?.signals || [], row.dataset.marketId || "");
-      if (matchedSignal) {
-        selectedSignalKey = getSignalKey(matchedSignal);
-        selectedMarketId = null;
-      } else {
-        selectedSignalKey = null;
-        selectedMarketId = row.dataset.marketId || null;
-      }
-    }
-    renderSignals(lastDashboardState?.signals || []);
-    renderActivity(lastDashboardState?.activity || [], lastDashboardState?.telemetry || {}, lastDashboardState?.config || {});
-  };
 
-  activityEl.addEventListener("click", (event) => {
-    activateFlowRow(event.target);
-  });
-
-  activityEl.addEventListener("keydown", (event) => {
-    if (event.key !== "Enter" && event.key !== " ") return;
-    const row = event.target.closest(".flow-row[data-market-id]");
-    if (!row) return;
-    event.preventDefault();
-    activateFlowRow(row);
-  });
-}
 
 if (selectedSignalWorkbenchEl) {
   selectedSignalWorkbenchEl.addEventListener("click", (event) => {
