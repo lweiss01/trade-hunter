@@ -141,6 +141,17 @@
 
       <section id="page-settings" class="page-view settings-page" data-page-view="settings" hidden>
 
+        <!-- Save status + restart strip -->
+        <div class="settings-header-strip">
+          <div class="settings-header-left">
+            <span id="settings-load-status" class="badge">read-only</span>
+            <span id="settings-save-status" class="settings-save-status"></span>
+          </div>
+          <div class="settings-header-right">
+            <button id="settings-restart-btn" class="btn-amber" type="button">Restart server</button>
+          </div>
+        </div>
+
         <div class="settings-grid">
 
           <!-- ── Feeds ─────────────────────────────────────────────────── -->
@@ -394,17 +405,6 @@
 
         <!-- Hidden master save trigger wired to JS save handler -->
         <button id="settings-save-btn" style="display:none;" type="button"></button>
-
-        <!-- Save status + restart strip -->
-        <div class="settings-footer-strip">
-          <div class="settings-footer-left">
-            <span id="settings-load-status" class="badge">read-only</span>
-            <span id="settings-save-status" class="settings-save-status"></span>
-          </div>
-          <div class="settings-footer-right">
-            <button id="settings-restart-btn" class="btn-ghost" type="button">Restart server</button>
-          </div>
-        </div>
 
         <!-- Tuning Backlog — full width -->
         <section class="panel" id="tuning-backlog-panel">
