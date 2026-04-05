@@ -1193,6 +1193,33 @@ async function fetchAndRenderBacklog() {
     }).join("");
 
     bodyEl.innerHTML = priorityBar + snapshotHtml;
+
+    // Wire mark-applied buttons
+    bodyEl.querySelectorAll(".tb-apply-btn[data-tb-id]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const id = btn.dataset.tbId;
+        btn.disabled = true;
+        btn.textContent = "…";
+        try {
+          const r = await fetch("/api/tuning/mark-applied", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id }),
+          });
+          const result = await r.json();
+          if (result.ok) {
+            await fetchAndRenderBacklog(); // re-render with updated state
+          } else {
+            btn.disabled = false;
+            btn.textContent = "Error";
+          }
+        } catch {
+          btn.disabled = false;
+          btn.textContent = "Failed";
+        }
+      });
+    });
+
   } catch (err) {
     bodyEl.innerHTML = `<div style="padding:20px 16px;color:var(--text-muted);font-size:0.8rem;">Failed to load backlog.</div>`;
   }

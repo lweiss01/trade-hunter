@@ -94,6 +94,16 @@ def run_server(settings: Settings) -> None:
                 })
             if path == "/api/tuning/backlog":
                 return self._json_response(service.get_tuning_backlog())
+            if path == "/docs/TUNING-BACKLOG.md":
+                import pathlib
+                md_path = pathlib.Path(__file__).parent.parent / "docs" / "TUNING-BACKLOG.md"
+                body = md_path.read_bytes() if md_path.exists() else b"# Not found"
+                self.send_response(HTTPStatus.OK)
+                self.send_header("Content-Type", "text/plain; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
             self._json_response({"error": "not found"}, status=HTTPStatus.NOT_FOUND)
 
         def do_POST(self) -> None:
@@ -104,9 +114,10 @@ def run_server(settings: Settings) -> None:
                 "/api/kalshi/markets",
                 "/api/kalshi/markets/remove",
                 "/api/config/apply-tuning",
+                "/api/tuning/mark-applied",
                 "/api/settings",
                 "/api/admin/shutdown",
-            }:
+            } and not self.path.startswith("/api/tuning/"):
                 return self._json_response({"error": "not found"}, status=HTTPStatus.NOT_FOUND)
 
             if self.path == "/api/admin/shutdown":
@@ -188,6 +199,16 @@ def run_server(settings: Settings) -> None:
                 except ValueError as exc:
                     return self._json_response({"error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
                 return self._json_response({"ok": True, "markets": markets})
+
+            if self.path == "/api/tuning/mark-applied":
+                tb_id = str(payload.get("id") or "").strip()
+                if not tb_id:
+                    return self._json_response({"error": "id required"}, status=HTTPStatus.BAD_REQUEST)
+                try:
+                    service.mark_tuning_item_applied(tb_id)
+                except ValueError as exc:
+                    return self._json_response({"error": str(exc)}, status=HTTPStatus.BAD_REQUEST)
+                return self._json_response({"ok": True, "id": tb_id})
 
             if self.path == "/api/config/apply-tuning":
                 try:

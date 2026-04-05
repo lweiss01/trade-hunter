@@ -26,7 +26,7 @@ Implement a mandatory minimum price-move threshold (`±0.5%` for liquid markets,
   - Rule: reject `notable` promotion unless `|priceΔ| >= 0.5%`.
   - Notes: already implemented in `app/detector.py` via `notable_min_price_move = 0.005` inside `_tier()`, with coverage in `tests/test_detector_migration.py` (`test_notable_requires_half_percent_absolute_price_move`, `test_notable_promotes_once_half_percent_price_move_is_met`).
 
-- [ ] **TB-002** `planned` — Extend minimum price-move gate to `watch` alerts.
+- [x] **TB-002** `applied` — Extend minimum price-move gate to `watch` alerts.
   - Rule: reject `watch` alerts unless `|priceΔ| >= 0.5%` for liquid markets.
   - Notes: advisor now recommends this should apply to both `watch` and `notable`; not implemented yet.
 
@@ -275,6 +275,44 @@ Implement a minimum executed trade volume filter (e.g., >20 shares) that must be
 - [ ] **TB-039** `planned` — Add executed_trade_volume_min threshold (suggest: >20 shares) and only count quote volume when this threshold is met
 - [ ] **TB-040** `planned` — Discount or exclude quote-only volume spikes from score calculation in markets with liquidity < some baseline (e.g., <500 total shares traded in period)
 - [ ] **TB-041** `planned` — Raise spike_score_threshold to >5.0 for tier=watch signals on political/low-liquidity markets to require stronger conviction before flagging
+
+---
+
+## 2026-04-05 — Advisor snapshot N
+
+### Summary
+False positives are concentrated in low-liquidity political markets where quote-only movements and minimal actual trades trigger signals despite low conviction. Price moves alone (2%) are insufficient filters without volume validation.
+
+### Next step
+Implement trade-count validation and tiered volume thresholds by liquidity/conviction level rather than a single global volume delta threshold.
+
+### Suggested thresholds
+`min_price_move` → `0.03`, `score_threshold` → `2.5`
+
+### Recommendations
+
+- [ ] **TB-042** `planned` — Require minimum number of actual trades (not just quote updates) during spike window to filter quote-only events in low-liquidity markets
+- [ ] **TB-043** `planned` — Set volume delta thresholds conditionally: for yes_prob < 0.10 or volumes < 500 baseline units, require volume delta ≥ 10% of baseline; for others use 5%
+- [ ] **TB-044** `planned` — Raise spike_min_price_move from 0.02 to 0.03 (3%) as a global floor, since 2% moves without supporting volume are predominantly noise in these markets
+
+---
+
+## 2026-04-05 — Advisor snapshot O
+
+### Summary
+High-scoring signals with minimal price impact (1-2%) and no executed trade confirmation are generating false positives, particularly in thin/political markets where order book activity doesn't translate to real price discovery.
+
+### Next step
+Require minimum executed trade volume confirmation alongside order book delta, and enforce a price-move floor that scales with market liquidity tier.
+
+### Suggested thresholds
+`min_price_move` → `0.025`
+
+### Recommendations
+
+- [ ] **TB-045** `planned` — Add executed_trade_volume_min threshold (e.g., >500 units or >$5k notional) to filter quote-only layering/spoofing in thin markets
+- [ ] **TB-046** `planned` — Raise spike_min_price_move to 0.025 (2.5%) for tier=watch/notable signals, or scale dynamically by liquidity tier (1.5% for high-liquidity, 3% for thin markets)
+- [ ] **TB-047** `planned` — Implement volume_delta_baseline_multiplier rule requiring volΔ > 1.5x rolling 30-min baseline to reduce sensitivity to absolute volume figures in low-liquidity pairs
 
 ---
 ## Applied changes

@@ -433,6 +433,24 @@ class TradeHunterService:
             "planned_count": planned_count,
         }
 
+    def mark_tuning_item_applied(self, tb_id: str) -> None:
+        """Flip the checkbox for a planned TB item in TUNING-BACKLOG.md to applied."""
+        import pathlib, re
+        backlog_path = pathlib.Path(__file__).parent.parent / "docs" / "TUNING-BACKLOG.md"
+        if not backlog_path.exists():
+            raise ValueError("TUNING-BACKLOG.md not found")
+        text = backlog_path.read_text(encoding="utf-8")
+        # Match: - [ ] **TB-042** `planned` — ...
+        pattern = re.compile(
+            r'^(\s*-\s+)\[ \](\s+\*\*' + re.escape(tb_id) + r'\*\*\s+)`planned`',
+            re.MULTILINE,
+        )
+        if not pattern.search(text):
+            raise ValueError(f"{tb_id} not found as a planned item")
+        updated = pattern.sub(r'\1[x]\2`applied`', text)
+        backlog_path.write_text(updated, encoding="utf-8")
+        log.info("tuning backlog: marked %s as applied", tb_id)
+
     def apply_tuning_suggestions(self) -> dict[str, float]:
         if not self._tuning_advisor:
             raise ValueError("tuning advisor unavailable")
