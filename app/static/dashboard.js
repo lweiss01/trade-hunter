@@ -9,7 +9,6 @@ const marketsEl = document.querySelector("#markets");
 const dashboardMarketsEl = document.querySelector("#dashboard-markets");
 const demoButton = document.querySelector("#demo-spike");
 const demoPanel = document.querySelector("#demo-panel");
-const modeBadgeEl = document.querySelector("#mode-badge");
 const settingsToggleEl = document.querySelector("#settings-toggle");
 const navTabEls = Array.from(document.querySelectorAll(".nav-tab"));
 const pageViewEls = Array.from(document.querySelectorAll("[data-page-view]"));
@@ -259,13 +258,6 @@ function setTickerMessage(message, isError = false) {
 
 function renderModeUI(config) {
   const mode = String(config?.active_mode || "none").toLowerCase();
-  const isLive = mode === "live";
-  const label = isLive ? "LIVE" : mode === "simulation" ? "SIM" : mode.toUpperCase();
-
-  if (modeBadgeEl) {
-    modeBadgeEl.className = `mode-badge ${isLive ? "live" : "sim"}`;
-    modeBadgeEl.innerHTML = `${isLive ? '<span class="live-dot"></span>' : ""}${escapeHtml(label)}`;
-  }
 
   if (demoPanel) {
     demoPanel.hidden = mode !== "simulation";
@@ -421,6 +413,8 @@ function renderMetrics(state) {
   const routeCount = Object.keys(config.discord_routes || {}).length;
   const liveWindow = telemetry.freshness_window_minutes;
   const windowLabel = liveWindow ? `${liveWindow}m` : null;
+  const mode = String(config.active_mode || "none").toLowerCase();
+  const modeValue = mode === "live" ? "Live" : mode === "simulation" ? "Simulation" : "Offline";
 
   const stats = [
     { label: "tracked markets",  value: markets.length,                sub: windowLabel },
@@ -429,12 +423,17 @@ function renderMetrics(state) {
     { label: "trades",           value: summary.trade_events || 0,     sub: windowLabel },
     { label: "active feeds",     value: Object.keys(feeds).length,     sub: null },
     { label: "discord routes",   value: routeCount,                    sub: routeCount ? null : "default or disabled" },
+    { label: "application mode", value: modeValue,                     sub: null, tone: mode === "live" ? "mode-live" : mode === "simulation" ? "mode-sim" : "mode-off" },
   ];
 
   metricsEl.innerHTML = `<div class="metric-strip">${
     stats.map((s, i) => {
       const sub = s.sub ? `<span class="metric-chip-sub">${s.sub}</span>` : "";
-      const cls = i === 0 ? "metric-chip highlight" : "metric-chip";
+      const tone = s.tone ? ` ${s.tone}` : "";
+      const cls = i === 0 ? `metric-chip highlight${tone}` : `metric-chip${tone}`;
+      if (s.label === "application mode") {
+        return `<span class="${cls}"><span class="metric-chip-label metric-chip-label-mode">Application mode:</span><span class="metric-chip-val metric-chip-val-mode">${s.value}</span>${sub}</span>`;
+      }
       return `<span class="${cls}"><span class="metric-chip-val">${s.value}</span><span class="metric-chip-label">${s.label}</span>${sub}</span>`;
     }).join("")
   }</div>`;

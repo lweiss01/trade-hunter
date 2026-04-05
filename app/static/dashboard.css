@@ -163,11 +163,6 @@ body::after {
   flex-shrink: 0;
 }
 
-.topbar-status {
-  padding: 0 14px;
-  border-right: 1px solid var(--border);
-}
-
 .mode-badge,
 .nav-pill,
 .nav-tab,
@@ -542,6 +537,27 @@ h2 {
   content: "·";
   margin-right: 4px;
   color: rgba(255,255,255,0.2);
+}
+
+.metric-chip.mode-live .metric-chip-val {
+  color: var(--live);
+}
+
+.metric-chip.mode-sim .metric-chip-val {
+  color: var(--warn);
+}
+
+.metric-chip.mode-off .metric-chip-val {
+  color: var(--alert);
+}
+
+.metric-chip-label-mode {
+  color: var(--text-muted);
+}
+
+.metric-chip-val-mode {
+  font-size: 0.92rem;
+  font-variant-numeric: normal;
 }
 
 /* keep metric/feed cards on the older panel treatment; signal cards own their proposal block below */
