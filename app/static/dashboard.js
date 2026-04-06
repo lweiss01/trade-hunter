@@ -687,6 +687,14 @@ function renderSignals(signals) {
         <span class="sig-tag score">score ${scoreRaw.toFixed(2)}</span>
       </div>
       <div class="sig-reason">${escapeHtml(summarizeReason(signal.reason))}</div>
+      ${analyst && !analyst.pending ? `
+        <div class="sig-analyst">
+          <div class="analyst-rationale">${escapeHtml(analyst.rationale)}</div>
+          ${analyst.threshold_note && analyst.threshold_note !== "none" ? `
+            <div class="sig-threshold-note">${escapeHtml(analyst.threshold_note)}</div>
+          ` : ""}
+        </div>
+      ` : ""}
     </article>
   `;
   }).join("");
