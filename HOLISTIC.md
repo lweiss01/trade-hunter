@@ -28,21 +28,26 @@ That is the intended end state for this project. Prefer changes that reduce cere
 
 ## Current Objective
 
-**Continue recent repo work**
+**Milestone Audit & Whale Detection Planning**
 
-Continue work around .bg-shell/manifest.json, .gitattributes, .pytest_cache/v/cache/nodeids
+Audit existing GSD milestones (M002-M008) to align the stale state with recent progress and determine the remaining work. Begin planning for Whale Detection (R002) to identify large-size position entries.
 
 ## Latest Work Status
 
-Session started.
+Dashboard parity work complete. Analyst rationale and threshold notes restored to signal cards. Project docs updated to reflect completion of UI work and new Whale Detection requirement (R002).
 
 ## What Was Tried
 
-- Nothing recorded yet.
+- Restored analyst rationale and threshold notes to dashboard signal cards.
+- Verified dashboard automatic refresh picks up analyst updates.
+- Recorded new Whale Detection requirement (R002) in REQUIREMENTS.md.
+- Updated PROJECT.md to reflect UI parity completion and set next focus.
 
 ## What To Try Next
 
-- Ask the user what they'd like to work on.
+- **Milestone Audit**: Review ROADMAP.md and slice plans for M002-M008. Many tasks in these milestones have already been implemented (e.g., tuning advisor, settings persistence) but are not marked as complete in GSD artifacts.
+- **Whale Detection Design**: Define the logic for "whale" detection—should it be a fixed notional floor ($5k+), a standard deviation from market mean, or a percentage of open interest?
+- **CSS cleanup**: Prune unused/duplicate styles in `dashboard.css`.
 
 ## Active Plan
 
