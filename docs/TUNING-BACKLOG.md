@@ -1309,6 +1309,44 @@ Introduce a minimum absolute volume floor (e.g., 500+ shares/hour baseline) inde
 - [ ] **TB-212** `planned` — For markets with <100 baseline shares/hour, increase spike_min_volume_delta multiplier threshold to 10x+ (not 5-6x) to avoid flagging routine block trades as notable
 
 ---
+
+## 2026-04-06 — Advisor snapshot 68
+
+### Summary
+Both signals are noisy detections in thin sports-betting markets where small absolute volumes trigger alerts despite marginal price moves. The issue is reliance on volume delta ratios without minimum absolute volume guards.
+
+### Next step
+Introduce a minimum absolute volume threshold (e.g., 200–300 contracts) before any signal qualifies as 'notable', regardless of delta ratio or score.
+
+### Suggested thresholds
+`min_price_move` → `0.04`, `score_threshold` → `45.0`
+
+### Recommendations
+
+- [ ] **TB-213** `planned` — Add min_absolute_volume constraint: reject signals where total volume in window < 200 contracts, even if volΔ ratio is high
+- [ ] **TB-214** `planned` — Raise spike_min_price_move from 0.02 to 0.04 (4%) for markets with <500 baseline volume to filter single-tick noise
+- [ ] **TB-215** `planned` — Require price impact persistence: flag only if price move sustained across 2+ consecutive ticks, not single-tick spikes in thin markets
+
+---
+
+## 2026-04-06 — Advisor snapshot 69
+
+### Summary
+The detector is generating false positives in thin sports betting markets by flagging routine liquidity provision and small absolute volumes that trigger high relative deltas. All three recent notable-tier signals were labeled noise/uncertain despite notable scores.
+
+### Next step
+Implement a minimum absolute volume threshold (200-250 contracts) before flagging as notable, combined with a dynamic volume delta multiplier that scales with baseline market thickness. This addresses the core issue: relative spike detection fails in thin markets.
+
+### Suggested thresholds
+`min_volume_delta` → `40.0`, `min_price_move` → `0.02`
+
+### Recommendations
+
+- [ ] **TB-216** `planned` — Add min_absolute_volume_threshold=200 contracts; reject signals where absolute volume activity is below this floor regardless of relative delta or score
+- [ ] **TB-217** `planned` — Raise spike_min_volume_delta multiplier to 40-50x for markets with baseline <100 contracts, to filter routine liquidity events in thin baseball/sports markets
+- [ ] **TB-218** `planned` — Require sustained price impact (price move confirmed over 2+ consecutive ticks or sustained >2% move) rather than single-tick detection to distinguish genuine flow from noise
+
+---
 ## Applied changes
 
 - [x] **AP-001** `applied` — Added Claude/Perplexity signal analyst to classify individual spikes as `signal`, `noise`, or `uncertain` and provide threshold notes inline on signal cards.
