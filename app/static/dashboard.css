@@ -1765,6 +1765,10 @@ h2 {
 .tb-applied {
     opacity: 1
     }
+.tb-rejected {
+    opacity: 0.6;
+    background: rgba(255, 69, 58, 0.02)
+    }
 .tb-id {
     font-family: var(--font-data);
     font-size: 0.72rem;
@@ -1792,6 +1796,11 @@ h2 {
     border-color: rgba(255, 159, 67, 0.35);
     color: var(--warn);
     background: var(--warn-dim)
+    }
+.tb-badge.rejected {
+    border-color: rgba(255, 69, 58, 0.4);
+    color: #ff453a;
+    background: rgba(255, 69, 58, 0.05)
     }
 .tb-body {
     display: flex;

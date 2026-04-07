@@ -625,6 +625,20 @@ function renderTuningAdvisor(state) {
   })();
   const tbHtml = `<span class="tuning-tb-id">${escapeHtml(tbId)}</span>`;
 
+  if (advisor.conflict) {
+    tuningAdvisorEl.innerHTML = `
+      <div class="tuning-summary">${escapeHtml(advisor.summary || "")}</div>
+      <div class="tuning-recommendation">${tbHtml}<strong>Proposed:</strong> ${escapeHtml(advisor.global_recommendation || "")}</div>
+      <div class="tuning-advisor-conflict" style="margin-top: 10px; padding: 8px 12px; border-left: 3px solid #ff453a; background: rgba(255, 69, 58, 0.05); font-size: 0.75rem; line-height: 1.5; color: var(--text-muted);">
+        <strong style="color: #ff453a; display: block; margin-bottom: 4px;">Locked by Governor Constraint</strong>
+        ${escapeHtml(advisor.conflict_reason || "Conflict with historical constraint.")
+            .replace(/Additionally,/g, "<br><br><strong>Additionally,</strong>")
+            .replace(/Finally,/g, "<br><br><strong>Finally,</strong>")}
+      </div>
+    `;
+    return;
+  }
+
   tuningAdvisorEl.innerHTML = `
     <div class="tuning-summary">${escapeHtml(advisor.summary || "")}</div>
     <div class="tuning-recommendation">${tbHtml}<strong>Next step:</strong> ${escapeHtml(advisor.global_recommendation || "")}</div>
@@ -1164,7 +1178,11 @@ async function fetchAndRenderBacklog() {
       const itemsHtml = snap.items.map(item => {
         const isPlanned = item.status === "planned";
         const isApplied = item.status === "applied";
-        const rowClass = isApplied ? "tb-row tb-applied" : "tb-row tb-planned";
+        const isRejected = item.status === "rejected";
+        let rowClass = "tb-row";
+        if (isApplied) rowClass += " tb-applied";
+        if (isPlanned) rowClass += " tb-planned";
+        if (isRejected) rowClass += " tb-rejected";
         const actionBtn = isPlanned
           ? `<button class="tb-apply-btn ${item.id === plannedIds[0] ? 'tb-apply-btn-primary' : ''}" data-tb-id="${escapeHtml(item.id)}">${item.id === plannedIds[0] ? 'Apply next' : 'Mark applied'}</button>`
           : "";
