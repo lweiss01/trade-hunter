@@ -259,13 +259,17 @@ def run_server(settings: Settings) -> None:
             return
 
         def _serve_file(self, filename: str, content_type: str) -> None:
-            body = (STATIC_ROOT / filename).read_bytes()
+            file_path = STATIC_ROOT / filename
+            if not file_path.exists():
+                return
             try:
                 self.send_response(HTTPStatus.OK)
                 self.send_header("Content-Type", content_type)
-                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Content-Length", str(file_path.stat().st_size))
                 self.end_headers()
-                self.wfile.write(body)
+                with open(file_path, "rb") as f:
+                    while chunk := f.read(65536):
+                        self.wfile.write(chunk)
             except (ConnectionError, BrokenPipeError):
                 pass
 
