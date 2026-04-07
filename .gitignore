@@ -67,5 +67,7 @@ design-proposal.html
 trade-hunter-ui-revision-checklist.md
 SESSION_SUMMARY.md
 FINAL_SESSION_SUMMARY.md
+.beads/
+.gsd.migrating/
 # Antigravity session state
 .antigravity_session/
