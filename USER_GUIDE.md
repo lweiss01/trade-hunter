@@ -277,6 +277,19 @@ Use that file as the durable source of truth for:
 - rejected ideas (with Governor notes)
 - superseded rules
 
+### Architectural Enhancements (AP Tracking)
+While `TB-XX` items refer specifically to numeric algorithmic thresholds and rules for the Tuning Governor, the backlog may also historically track system-wide feature deployments under `AP-XXX` (Architectural Proposal/Applied Project). 
+
+These are major integrations or behavioral changes rather than quantitative tuning dials:
+
+| ID | Status | Description |
+|---|---|---|
+| **AP-001** | `applied` | Added Claude/Perplexity signal analyst to classify individual spikes as `signal`, `noise`, or `uncertain` and provide threshold notes inline on signal cards. |
+| **AP-002** | `applied` | Changed signal threshold persistence so LLM advisor output does not wipe existing backlog; only manual explicit `tune <id>` sets threshold to applied. |
+| **AP-003** | `applied` | Implemented 60-second minimum duration for "sustained flow" metrics in order book delta. |
+
+*(Note: AP- items are not processed by the Tuning Governor as numeric constraints. They are kept for historical context on system capabilities.)*
+
 ---
 
 ## Spike detector tuning

@@ -574,7 +574,7 @@ class TuningGovernor:
             # Condense the extracted bullet points to save tokens and sharpen constraints
             prompt = (
                 "You are the Tuning Governor. Extract and condense these historical applied and rejected "
-                "tuning rules into a dense JSON list of active constraints. Return ONLY a JSON array of strings.\n\n"
+                "tuning rules into a dense list of active constraints. Return ONLY a markdown bulleted list. Do NOT use JSON.\n\n"
                 f"RAW:\n{raw_text}"
             )
             providers = []
@@ -587,9 +587,16 @@ class TuningGovernor:
             for name, call in providers:
                 try:
                     res_raw = call()
-                    data = _parse_json_response(res_raw)
-                    if isinstance(data, list):
-                        condensed = "\n".join(f"- {rule}" for rule in data)
+                    res_text = res_raw.strip()
+                    if "```" in res_text:
+                        res_text = res_text.split("```")[1]
+                        if res_text.startswith("markdown"):
+                            res_text = res_text[8:].strip()
+                        elif res_text.startswith("text"):
+                            res_text = res_text[4:].strip()
+                    
+                    if res_text:
+                        condensed = res_text
                     break
                 except Exception as e:
                     log.warning("tuning-governor-condense[%s]: failed: %s", name, e)
