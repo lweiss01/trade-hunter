@@ -231,6 +231,8 @@ class TuningAdvice:
     suggested_min_volume_delta: float | None = None
     suggested_min_price_move: float | None = None
     suggested_score_threshold: float | None = None
+    conflict: bool = False
+    conflict_reason: str | None = None
     generated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def to_dict(self) -> dict[str, Any]:
@@ -246,6 +248,8 @@ class TuningAdvice:
             "global_recommendation": self.global_recommendation,
             "recommendations": self.recommendations,
             "suggested_thresholds": suggested,  # empty dict when no structured suggestion
+            "conflict": self.conflict,
+            "conflict_reason": self.conflict_reason,
             "generated_at": self.generated_at.isoformat(),
         }
 
@@ -459,13 +463,20 @@ def _persist_tuning_snapshot(payload: dict[str, Any]) -> tuple[str | None, dict[
         recs = payload.get("recommendations") or []
         suggested = payload.get("suggested_thresholds") or {}
 
+        is_conflict = payload.get("conflict")
+        conflict_reason = payload.get("conflict_reason")
+        status_label = "rejected" if is_conflict else "planned"
+
         # Build recommendation bullet lines with sequential TB ids.
         rec_lines = []
         tb_ids = []
         for i, rec in enumerate(recs):
             tb = f"TB-{next_tb + i:03d}"
             tb_ids.append(tb)
-            rec_lines.append(f"- [ ] **{tb}** `planned` — {rec}")
+            rec_line = f"- [ ] **{tb}** `{status_label}` — {rec}"
+            if is_conflict:
+                rec_line += f"\n  - **Governor rejection**: {conflict_reason}"
+            rec_lines.append(rec_line)
 
         first_tb = tb_ids[0] if tb_ids else f"TB-{next_tb:03d}"
         next_tb += len(recs)
@@ -513,6 +524,126 @@ def _persist_tuning_snapshot(payload: dict[str, Any]) -> tuple[str | None, dict[
         return None, payload
 
 
+class TuningGovernor:
+    """Validates tuning advisor tweaks against historical constraints to prevent regressions."""
+
+    def __init__(
+        self,
+        anthropic_key: str = "",
+        perplexity_key: str = "",
+        anthropic_model: str = "claude-haiku-4-5",
+        perplexity_model: str = "sonar",
+    ) -> None:
+        self._anthropic_key = anthropic_key
+        self._perplexity_key = perplexity_key
+        self._anthropic_model = anthropic_model
+        self._perplexity_model = perplexity_model
+        self._lock = threading.Lock()
+        self._cached_hash = ""
+        self._cached_condensed = "No historical constraints."
+
+    def _extract_and_condense(self) -> str:
+        backlog_path = pathlib.Path(__file__).parent.parent / "docs" / "TUNING-BACKLOG.md"
+        if not backlog_path.exists():
+            return "No historical constraints."
+
+        text = backlog_path.read_text(encoding="utf-8")
+        import hashlib
+        current_hash = hashlib.md5(text.encode("utf-8")).hexdigest()
+
+        with self._lock:
+            if self._cached_hash == current_hash:
+                return self._cached_condensed
+
+        lines = text.splitlines()
+        extracted = []
+        capture = False
+        for line in lines:
+            if line.startswith("- [") and ("`applied`" in line or "`rejected`" in line):
+                extracted.append(line.strip())
+                capture = True
+            elif capture and line.startswith("  -"):
+                extracted.append(line.strip())
+            elif line.strip() == "" or line.startswith("- ["):
+                capture = False
+
+        raw_text = "\n".join(extracted)
+        if not raw_text.strip():
+            condensed = "No historical constraints."
+        else:
+            # Condense the extracted bullet points to save tokens and sharpen constraints
+            prompt = (
+                "You are the Tuning Governor. Extract and condense these historical applied and rejected "
+                "tuning rules into a dense JSON list of active constraints. Return ONLY a JSON array of strings.\n\n"
+                f"RAW:\n{raw_text}"
+            )
+            providers = []
+            if self._anthropic_key:
+                providers.append(("anthropic", lambda: _analyze_via_anthropic(prompt, self._anthropic_key, self._anthropic_model)))
+            if self._perplexity_key:
+                providers.append(("perplexity", lambda: _analyze_via_perplexity(prompt, self._perplexity_key, self._perplexity_model)))
+
+            condensed = raw_text
+            for name, call in providers:
+                try:
+                    res_raw = call()
+                    data = _parse_json_response(res_raw)
+                    if isinstance(data, list):
+                        condensed = "\n".join(f"- {rule}" for rule in data)
+                    break
+                except Exception as e:
+                    log.warning("tuning-governor-condense[%s]: failed: %s", name, e)
+
+        with self._lock:
+            self._cached_hash = current_hash
+            self._cached_condensed = condensed
+        return condensed
+
+    def review(self, advice: TuningAdvice) -> tuple[bool, str | None]:
+        condensed_rules = self._extract_and_condense()
+        if condensed_rules == "No historical constraints.":
+            return False, None
+
+        prompt = f"""You are the Tuning Governor for a spike detector.
+Your job is to prevent regressions by verifying that a proposed new tuning tweak does not conflict with historical constraints.
+
+HISTORICAL CONSTRAINTS (Applied or explicitly Rejected previously):
+{condensed_rules}
+
+PROPOSED NEW TWEAK:
+Summary: {advice.summary}
+Recommendation: {advice.global_recommendation}
+Suggested thresholds:
+  min_volume_delta: {advice.suggested_min_volume_delta}
+  min_price_move: {advice.suggested_min_price_move}
+  score_threshold: {advice.suggested_score_threshold}
+
+Does the proposed tweak conflict with the historical constraints? (e.g. relaxing a threshold that was explicitly tightened to fix noise).
+Return ONLY JSON:
+{{
+  "conflict": true or false,
+  "reason": "If conflict is true, explain exactly which TB-XXX rule is violated and why. Otherwise null."
+}}"""
+        providers = []
+        if self._anthropic_key:
+            providers.append(("anthropic", lambda: _analyze_via_anthropic(prompt, self._anthropic_key, self._anthropic_model)))
+        if self._perplexity_key:
+            providers.append(("perplexity", lambda: _analyze_via_perplexity(prompt, self._perplexity_key, self._perplexity_model)))
+
+        for name, call in providers:
+            try:
+                raw_res = call()
+                data = _parse_json_response(raw_res)
+                log.info("tuning-governor[%s]: generated", name)
+                is_conflict = bool(data.get("conflict"))
+                reason = data.get("reason")
+                return is_conflict, (str(reason) if reason else None)
+            except Exception as e:
+                log.warning("tuning-governor[%s]: failed: %s", name, e)
+
+        return False, None
+
+
 class TuningAdvisor:
     """Background second-pass advisor over analyst-labelled signals."""
 
@@ -531,6 +662,12 @@ class TuningAdvisor:
         self._in_flight = False
         self._cache: dict[str, Any] | None = None
         self._last_signature = ""
+        self._governor = TuningGovernor(
+            anthropic_key=anthropic_key,
+            perplexity_key=perplexity_key,
+            anthropic_model=anthropic_model,
+            perplexity_model=perplexity_model,
+        )
 
     def maybe_enqueue(self, signals: list[dict[str, Any]]) -> None:
         analyzed = [s for s in signals if s.get("analyst") and not s.get("analyst", {}).get("pending")]
@@ -558,6 +695,11 @@ class TuningAdvisor:
                 perplexity_model=self._perplexity_model,
             )
             if result:
+                is_conflict, reason = self._governor.review(result)
+                if is_conflict:
+                    result.conflict = True
+                    result.conflict_reason = reason
+
                 payload = result.to_dict()
                 _tb_id, enriched = _persist_tuning_snapshot(payload)
                 with self._lock:
