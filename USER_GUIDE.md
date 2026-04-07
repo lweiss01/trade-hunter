@@ -1,6 +1,6 @@
 # Trade Hunter — User Guide
 
-**Last updated:** 2026-04-03
+**Last updated:** 2026-04-06
 
 ---
 
@@ -79,6 +79,21 @@ curl -X POST http://127.0.0.1:8765/api/kalshi/markets/remove \
 ```
 
 Changes persist to `.env` automatically (restart-safe).
+
+---
+
+
+## Settings Page
+
+Trade Hunter includes a built-in **Settings** panel accessible via the gear icon in the top right of the dashboard. This allows you to configure the app on the fly without manually editing your `.env` file. 
+
+The Settings Page allows you to configure:
+*   **Data Sources:** Toggle the Live Kalshi feed or Simulation feed, and securely input your Kalshi API credentials.
+*   **Spike Thresholds:** Adjust `SPIKE_MIN_VOLUME_DELTA`, `SPIKE_SCORE_THRESHOLD`, and other detector variables in real-time. Changes to thresholds apply immediately without requiring a restart.
+*   **Webhook Alerts:** Configure your default Discord webhook URL, set the Alert Mode (`all`, `detector-only`, or `analyst-signals-only`), and route specific topics (e.g., Crypto, Elections) to different channels.
+*   **Storage & Server:** Modify database retention days, toggle quiet mode, or change the bind host/port.
+
+*Note: Changes to data sources, webhooks, or server ports may require a server restart, which can be initiated directly from the Settings page.*
 
 ---
 
@@ -220,7 +235,7 @@ If Anthropic fails or is unavailable, the app automatically tries Perplexity so 
 Trade Hunter actively tracks statistically improbable "Whale Clusters". 
 A single large trade might just be noise, but a coordinated cluster of massive trades is signal.
 
-The math:
+The math (currently hardcoded, but planned for Settings UI integration in M011):
 1. **The Baseline:** The app caches the 99th percentile trade size (minimum $200 notional) and the average rate of whales (λ) over the last 24 hours.
 2. **The Cluster:** It tracks a rolling 120-second window per market.
 3. **The Alert:** If 3 or more 99th-percentile trades occur in that 120s window, and the Poisson probability of that happening is less than 1% (p < 0.01), it overrides normal scoring and fires a `whale-cluster` alert.

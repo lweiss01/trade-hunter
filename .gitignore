@@ -33,3 +33,6 @@ tmp/
 trade_hunter.db-shm
 trade_hunter.db-wal
 trade_hunter.db.bak-*
+
+# ── GSD baseline (auto-generated) ──
+.gsd-id
