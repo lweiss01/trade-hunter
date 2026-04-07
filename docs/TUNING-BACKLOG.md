@@ -5346,6 +5346,187 @@ Implement minimum trade size (notional or contract count) requirement and distin
 - [ ] **TB-988** `planned` — For markets with <10k baseline volume, require volume concentration check: flag only if >30% of detection window volume executes in single direction within 2-second window
 
 ---
+
+## 2026-04-07 — Advisor snapshot 272
+
+### Summary
+False positives are driven by single large trades in low-volume markets that spike volume without sustained price movement. Volume deltas alone are insufficient signals without confirmatory price action or trade sequencing.
+
+### Next step
+Require sustained price confirmation: enforce either (a) minimum consecutive ticks in signaled direction, or (b) higher price_move threshold, especially in low absolute-volume regimes.
+
+### Suggested thresholds
+`min_price_move` → `0.05`
+
+### Recommendations
+
+- [ ] **TB-989** `planned` — Raise spike_min_price_move from 0.03 to 0.05 (5%) to filter out noise trades that move volume but not price
+- [ ] **TB-990** `planned` — Add consecutive_tick_confirmation rule: require ≥2 ticks moving in same direction post-spike before emitting signal, to eliminate single-outlier trades
+- [ ] **TB-991** `planned` — Implement volume-normalized thresholds: scale spike_min_volume_delta by market tier (higher absolute delta required for sub-1M volume markets)
+
+---
+
+## 2026-04-07 — Advisor snapshot 273
+
+### Summary
+False positives are dominated by single large trades in low-volume markets that create volume spikes without sustained price conviction or multi-trade confirmation. The detector is too sensitive to isolated outlier transactions.
+
+### Next step
+Require multi-trade confirmation (2-3 consecutive trades in same direction) or sustained price persistence (5+ ticks) before emitting signals, especially in low-volume and micro-timeframe markets.
+
+### Suggested thresholds
+`min_volume_delta` → `100000.0`, `min_price_move` → `0.02`, `score_threshold` → `6.5`
+
+### Recommendations
+
+- [ ] **TB-992** `planned` — Implement a consecutive-trade confirmation rule: require at least 2-3 trades in the same direction within 30 seconds before triggering watch/notable tiers, rather than firing on single large orders.
+- [ ] **TB-993** `planned` — For 15-minute micro-markets and low-volume instruments (volΔ < 100k or trade size < 50 shares), mandate price persistence across 5+ consecutive ticks in signaled direction before emission.
+- [ ] **TB-994** `planned` — Tier-specific minimum trade size floor: 'watch' tier requires ≥50 shares per trade; 'notable' tier requires either ≥100 shares OR multiple confirmed trades; block single-trade alerts in markets with <1k daily volume.
+
+---
+
+## 2026-04-07 — Advisor snapshot 274
+
+### Summary
+The detector is generating false positives across all tiers by flagging single large trades or mechanical oscillations without sustained directional conviction or multi-trade confirmation. Low-liquidity and micro-markets (15-min) are especially vulnerable to noise.
+
+### Next step
+Require multi-trade or multi-tick confirmation: enforce that spike signals must be backed by either 2+ consecutive trades in the same direction, or 3+ consecutive price ticks moving in the signaled direction, before emission.
+
+### Suggested thresholds
+`min_volume_delta` → `5000.0`, `min_price_move` → `0.05`, `score_threshold` → `6.5`
+
+### Recommendations
+
+- [ ] **TB-995** `planned` — Implement minimum executed trade count filter: require at least 2 consecutive same-direction trades (not single outliers) to trigger watch/notable alerts, especially in low-volume markets (<500 vol delta).
+- [ ] **TB-996** `planned` — For 15-minute micro-markets, add a multi-tick persistence rule: price move must hold or extend over 3+ consecutive ticks; reject signals backed by single 43-share trades or volume spikes with 0% price follow-through.
+- [ ] **TB-997** `planned` — Add market-liquidity-aware thresholds: raise minimum trade size from 1 to 5+ lots for contracts with <1000 baseline volume; raise to 50+ shares for tier 'watch' alerts in thin markets to filter conviction-lacking outliers.
+- [ ] **TB-998** `planned` — Filter volume spikes without directional imbalance: reject signals where cumulative buy/sell volume remains balanced despite large total delta; require buy-side or sell-side imbalance >60% of delta volume.
+
+---
+
+## 2026-04-07 — Advisor snapshot 275
+
+### Summary
+The detector is triggering on low-conviction, single-trade events and mechanical oscillations across illiquid markets. High score values (up to 13.4) paired with low yes-probability (0.05–0.51) indicate the scoring function weights volume delta too heavily relative to trade execution intent and follow-through.
+
+### Next step
+Require executed trade count ≥2 in the same direction within a 5-minute window, or introduce a quote-to-trade ratio filter and volume-weighted price conviction metric to exclude single-sided liquidity and micro-moves on thin order books.
+
+### Suggested thresholds
+`min_volume_delta` → `5000.0`, `min_price_move` → `0.04`, `score_threshold` → `8.5`
+
+### Recommendations
+
+- [ ] **TB-999** `planned` — Add minimum executed trade count requirement: ≥2 consecutive trades in same direction (buy or sell) within 5-minute lookback to qualify for any tier alert.
+- [ ] **TB-1000** `planned` — Implement quote-to-trade ratio filter: reject signals where quote volume is >3× executed trade volume, indicating single-sided orders without follow-through fills.
+- [ ] **TB-1001** `planned` — Raise minimum trade size thresholds by market liquidity tier: low-liquidity markets require ≥5 lots per trade; standard markets ≥3 lots; high-volume markets ≥1 lot. Reject alerts from single outlier trades.
+- [ ] **TB-1002** `planned` — For 15-minute and intraday micro-markets, require price conviction to persist across ≥3 ticks or ≥2 minutes before emitting 'notable' tier signals.
+- [ ] **TB-1003** `planned` — Apply volume-weighted price movement filter: exclude trades with identical cumulative volumes or mechanical oscillations that lack directional conviction.
+
+---
+
+## 2026-04-07 — Advisor snapshot 276
+
+### Summary
+The detector is generating false positives across low-liquidity and micro-markets by triggering on single trades, quote-only volume, and mechanical oscillations without sustained directional conviction or multi-trade confirmation.
+
+### Next step
+Implement a multi-trade confirmation rule requiring 2+ consecutive trades in the same direction within the spike window, combined with a minimum executed trade volume filter (5+ lots) to exclude single-contract outliers and quote-driven events.
+
+### Suggested thresholds
+`min_volume_delta` → `50000.0`, `min_price_move` → `0.04`, `score_threshold` → `8.5`
+
+### Recommendations
+
+- [ ] **TB-1004** `planned` — Require minimum 2+ distinct executed trades in the same direction within spike detection window, rather than flagging single outlier transactions
+- [ ] **TB-1005** `planned` — Filter quote-only volume: implement quote-to-trade ratio validation or require minimum confirmed executed trade volume (5+ lots for low-liquidity, 50+ shares for tier-watch markets) before emitting signal
+- [ ] **TB-1006** `planned` — Add sustained directional flow check: exclude mechanical oscillations and single-sided liquidity events by requiring net buy/sell imbalance to persist across 5+ price ticks or 2+ minutes in micro-markets
+- [ ] **TB-1007** `planned` — Raise minimum trade size thresholds: increase from 1 lot to 5+ lots for low-liquidity contracts; raise tier-watch threshold from 3 to 50+ shares to filter low-conviction noise
+
+---
+
+## 2026-04-07 — Advisor snapshot 277
+
+### Summary
+All 8 recent signals labeled as noise/unclear/low show a consistent pattern: low-liquidity markets are triggering alerts on single trades, quote-stuffing, or mechanical oscillations lacking genuine conviction. The detector conflates volume delta with executed trade volume and ignores market microstructure signals.
+
+### Next step
+Implement a minimum executed trade count filter (3+ trades in same direction within spike window) and require quote-to-trade ratio validation before emitting any signal, especially in tier=watch and tier=notable for illiquid markets.
+
+### Suggested thresholds
+`min_volume_delta` → `50000.0`, `min_price_move` → `0.05`, `score_threshold` → `5.5`
+
+### Recommendations
+
+- [ ] **TB-1008** `planned` — Add minimum executed trade count requirement: 3+ confirmed trades in the same direction within the spike detection window, scaled by market liquidity tier (5+ for niche/political markets, 3+ for standard, 2+ for high-volume)
+- [ ] **TB-1009** `planned` — Implement quote-to-trade ratio gate: reject signals where quote volume >> executed trade volume (e.g., ratio > 5:1 in low-liquidity markets), filtering out quote-stuffing and single-sided liquidity events
+- [ ] **TB-1010** `planned` — For sub-$10k volume_delta markets, require minimum trade size threshold (5+ lots/shares per trade) or multiple micro-trades (5+ trades ≥1 lot) to prevent single-contract outliers from triggering alerts
+- [ ] **TB-1011** `planned` — Add directional flow confirmation: require buy/sell side imbalance (≥60% one-sided) or sustained price pressure over 2+ ticks, not mechanical oscillations with balanced volume
+- [ ] **TB-1012** `planned` — Tier-based score multiplier: apply 1.5x multiplier to spike_score_threshold for low-liquidity markets (volume_delta < 50k) before emitting watch/notable tier signals
+
+---
+
+## 2026-04-07 — Advisor snapshot 278
+
+### Summary
+All 7 recent signals are labeled noise/unclear/low despite scoring above current thresholds. The detector is firing on quote-driven oscillations, single-sided liquidity events, and micro-trades lacking execution conviction rather than genuine informed flow.
+
+### Next step
+Pivot from volume-delta and price-move thresholds to execution-quality filters: require minimum executed trade count (3-5 trades) or minimum trade size (5-50 lots depending on market liquidity tier) before emitting any signal. Quote volume alone is insufficient.
+
+### Suggested thresholds
+`score_threshold` → `5.5`
+
+### Recommendations
+
+- [ ] **TB-1013** `planned` — Add min_executed_trade_count requirement: 3-5 actual trades (not quotes) within spike window to filter quote-stuffing and mechanical oscillations
+- [ ] **TB-1014** `planned` — Add min_trade_size_threshold that scales by market liquidity tier: 50+ shares for political/niche markets, 5+ lots for micro-contracts, relaxed for high-volume crypto
+- [ ] **TB-1015** `planned` — Add directional_conviction filter: require buy/sell side imbalance or sustained directional volume (not just symmetric oscillations) to distinguish real flow from quote-layer noise
+- [ ] **TB-1016** `planned` — Add quote_to_trade_ratio filter: exclude spikes where volume is quoted but not executed, or where single-sided quotes dominate without reciprocal fills
+- [ ] **TB-1017** `planned` — Add price_persistence check for micro-markets (15m): require price conviction to hold for 5+ ticks or 2+ minutes before elevating to notable tier
+
+---
+
+## 2026-04-07 — Advisor snapshot 279
+
+### Summary
+All five recent signals are labeled noise/unclear/low despite varying scores and volumes, indicating the detector is triggering on quote activity and mechanical oscillations rather than genuine executed flow, particularly in illiquid markets.
+
+### Next step
+Implement a trade-execution filter requiring minimum confirmed executed trades (not just quote volume) at moved price levels, with stricter thresholds for low-liquidity markets based on contract type and typical daily volume.
+
+### Suggested thresholds
+`score_threshold` → `4.5`
+
+### Recommendations
+
+- [ ] **TB-1018** `planned` — Require minimum 3–5 confirmed executed trades accompanying any spike, with trade count scaled by market liquidity tier (reality TV/political markets need stricter counts than crypto).
+- [ ] **TB-1019** `planned` — Add quote-to-trade ratio validation: reject spikes where quote volume >> executed trade volume, or where a single price level has no confirmed fills at the moved price.
+- [ ] **TB-1020** `planned` — Implement buy/sell-side imbalance or directional flow persistence check: require sustained one-sided volume flow across multiple time buckets rather than single mechanical oscillations or quote-stuffing events.
+- [ ] **TB-1021** `planned` — For markets with <1000 daily volume baseline, raise minimum executed trade volume to 5+ lots and require price moves to span 2+ distinct price levels with opposing-side depth to filter single-contract outliers.
+- [ ] **TB-1022** `planned` — Increase score_threshold to 4.5–5.0 for watch/notable tiers, since current scores (2.38–7.25) are triggering on low-conviction quote events.
+
+---
+
+## 2026-04-07 — Advisor snapshot 280
+
+### Summary
+High-scoring signals are being triggered by quote-driven volume spikes without corresponding executed trades, particularly in illiquid markets (niche reality TV, political betting, low-liquidity crypto). Volume delta alone is insufficient to distinguish genuine flow from quote-stuffing and one-sided liquidity events.
+
+### Next step
+Implement a trade-volume requirement filter: require minimum confirmed executed trade volume (not quote volume) or a quote-to-trade ratio threshold to validate that price moves are backed by actual transactional activity.
+
+### Suggested thresholds
+`min_price_move` → `0.05`, `score_threshold` → `5.5`
+
+### Recommendations
+
+- [ ] **TB-1023** `planned` — For tier=watch signals in illiquid markets (reality TV, political), require minimum 3-5 distinct executed trades accompanying any volume delta spike, or require cumulative volume across 2+ opposing price levels
+- [ ] **TB-1024** `planned` — Add a quote-to-trade ratio filter: reject signals where quote volume exceeds executed trade volume by >3:1 ratio, or require minimum 50+ confirmed trade volume at the moved price level
+- [ ] **TB-1025** `planned` — Segment thresholds by market liquidity tier: illiquid markets (niche, political) require higher min_price_move (0.05+) and min_trade_count; liquid markets (BTC futures) can use volume_delta alone but require quote-filtered confirmation
+
+---
 ## Applied changes
 
 - [x] **AP-001** `applied` — Added Claude/Perplexity signal analyst to classify individual spikes as `signal`, `noise`, or `uncertain` and provide threshold notes inline on signal cards.
