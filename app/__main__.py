@@ -1,5 +1,9 @@
 ﻿from __future__ import annotations
 
+import os
+import signal
+import subprocess
+import sys
 import argparse
 import json
 import time
@@ -118,27 +122,83 @@ def _wait_for_existing_instance_to_exit(settings: Settings, *, timeout_seconds: 
     return False
 
 
+
+
+def _get_pid_holding_port(port: int) -> int | None:
+    if sys.platform == "win32" or sys.platform == "cygwin" or sys.platform == "msys":
+        cmd = "netstat"
+        try:
+            subprocess.run(["where", "netstat"], capture_output=True, check=True)
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            cmd = os.path.join(os.environ.get("windir", r"C:\Windows"), "System32", "netstat.exe")
+        
+        try:
+            output = subprocess.check_output([cmd, "-ano"]).decode()
+            for line in output.splitlines():
+                if f":{port}" in line and "LISTEN" in line:
+                    parts = line.strip().split()
+                    if parts:
+                        return int(parts[-1])
+        except Exception:
+            pass
+    else:
+        try:
+            output = subprocess.check_output(["lsof", "-t", "-i", f":{port}"]).decode()
+            if output.strip():
+                return int(output.strip().split()[0])
+        except Exception:
+            pass
+    return None
+
+def _force_kill_pid(pid: int) -> None:
+    try:
+        os.kill(pid, signal.SIGTERM)
+    except Exception:
+        pass
+
+
 def _replace_existing_local_instance(settings: Settings) -> None:
-    if not _existing_trade_hunter_running(settings):
+    location = f"{_probe_host(settings)}:{settings.port}"
+    
+    # Check if someone holds the port (even if it's hung and not answering /api/settings)
+    pid = _get_pid_holding_port(settings.port)
+    if not pid and not _existing_trade_hunter_running(settings):
         return
 
-    location = f"{_probe_host(settings)}:{settings.port}"
-    print(f"Trade Hunter already running at {location}; requesting shutdown before restart.")
+    print(f"Trade Hunter (or another process) is using {location}; attempting cleanup before restart.")
 
-    shutdown_acknowledged = _request_existing_instance_shutdown(settings)
-    if not shutdown_acknowledged and not _wait_for_existing_instance_to_exit(settings, timeout_seconds=2.5):
+    if _existing_trade_hunter_running(settings):
+        shutdown_acknowledged = _request_existing_instance_shutdown(settings)
+        if shutdown_acknowledged and _wait_for_existing_instance_to_exit(settings, timeout_seconds=4.0):
+            print("Previous Trade Hunter instance stopped cleanly.")
+            return
+
+    # If we get here, either it didn't acknowledge shutdown, it didn't exit in time,
+    # or it's hung and not responding to HTTP at all.
+    pid = _get_pid_holding_port(settings.port)
+    if pid:
+        print(f"Process {pid} is blocking the port. Forcing termination...")
+        _force_kill_pid(pid)
+        # Wait a moment for it to exit
+        deadline = time.time() + 3.0
+        while time.time() < deadline:
+            if not _get_pid_holding_port(settings.port):
+                print(f"Process {pid} terminated successfully.")
+                return
+            time.sleep(0.2)
+
         raise RuntimeError(
-            "Trade Hunter is already running, but the existing instance did not accept a scoped shutdown request. "
+            f"Process {pid} is stubbornly holding the port. "
             "Stop the old instance manually before retrying."
         )
-
-    if not _wait_for_existing_instance_to_exit(settings):
+    else:
+        # Check if the port freed up magically
+        if not _existing_trade_hunter_running(settings) and not _get_pid_holding_port(settings.port):
+            return
         raise RuntimeError(
-            "Trade Hunter shutdown was requested, but the existing instance did not release the port in time. "
+            "The port is blocked but the owning process cannot be identified. "
             "Stop the old instance manually before retrying."
         )
-
-    print(f"Previous Trade Hunter instance at {location} stopped cleanly.")
 
 
 def main() -> int:

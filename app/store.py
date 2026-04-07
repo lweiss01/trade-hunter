@@ -174,6 +174,71 @@ class MarketStore:
             rows = cursor.fetchall()
         return [self._row_to_market_event(row) for row in rows]
 
+
+    def update_statistical_baselines(self) -> dict[str, dict[str, float]]:
+        from datetime import timedelta
+        with self._lock:
+            cursor = self._get_connection().cursor()
+            
+            seven_days_ago = (datetime.now(UTC) - timedelta(days=7)).isoformat()
+            cursor.execute('''
+                SELECT DISTINCT market_id FROM events 
+                WHERE timestamp >= ? AND event_kind = 'trade' AND trade_size IS NOT NULL
+            ''', (seven_days_ago,))
+            active_markets = [r["market_id"] for r in cursor.fetchall()]
+
+            baselines = {}
+            for market_id in active_markets:
+                cursor.execute('''
+                    SELECT trade_size, yes_price FROM events
+                    WHERE market_id = ? AND timestamp >= ? AND event_kind = 'trade' 
+                      AND trade_size IS NOT NULL
+                ''', (market_id, seven_days_ago))
+                
+                notionals = []
+                for row in cursor.fetchall():
+                    sz = row["trade_size"]
+                    pr = row["yes_price"]
+                    if sz is not None:
+                        pr = pr if pr is not None else 1.0
+                        notionals.append(sz * pr)
+                
+                if not notionals:
+                    continue
+                    
+                notionals.sort()
+                idx = int(len(notionals) * 0.99)
+                idx = min(idx, len(notionals) - 1)
+                p99 = max(notionals[idx], 200.0)
+
+                one_day_ago = (datetime.now(UTC) - timedelta(days=1)).isoformat()
+                cursor.execute('''
+                    SELECT timestamp, trade_size, yes_price FROM events
+                    WHERE market_id = ? AND timestamp >= ? AND event_kind = 'trade'
+                      AND trade_size IS NOT NULL
+                ''', (market_id, one_day_ago))
+                
+                whales = []
+                for row in cursor.fetchall():
+                    sz = row["trade_size"]
+                    pr = row["yes_price"]
+                    if sz is not None:
+                        pr = pr if pr is not None else 1.0
+                        notional = sz * pr
+                        if notional >= p99:
+                            from datetime import datetime as dt
+                            ts = dt.fromisoformat(row["timestamp"])
+                            whales.append(ts.timestamp())
+                
+                total_windows = 720
+                lam = len(whales) / total_windows
+                
+                baselines[market_id] = {
+                    "percentile_99": p99,
+                    "lambda_120s": lam
+                }
+            return baselines
+
     def dashboard_state(self) -> dict[str, Any]:
         """Return dashboard data from SQLite."""
         with self._lock:

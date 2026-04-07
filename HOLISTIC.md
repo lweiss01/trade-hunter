@@ -28,13 +28,13 @@ That is the intended end state for this project. Prefer changes that reduce cere
 
 ## Current Objective
 
-**Milestone Audit & Whale Detection Planning**
+**Cross-Platform Flow Planning**
 
-Audit existing GSD milestones (M002-M008) to align the stale state with recent progress and determine the remaining work. Begin planning for Whale Detection (R002) to identify large-size position entries.
+Execute the M010 Polymarket integration to map and compare institutional flow across Prediction Market venues.
 
 ## Latest Work Status
 
-Dashboard parity work complete. Analyst rationale and threshold notes restored to signal cards. Project docs updated to reflect completion of UI work and new Whale Detection requirement (R002).
+M008 (Local Runtime Hardening) and M009 (Whale Detection with Poisson math) completed successfully.
 
 ## What Was Tried
 

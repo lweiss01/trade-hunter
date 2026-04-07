@@ -19,3 +19,9 @@ This archive is the durable memory of what agents changed, why they changed it, 
 - References:
 - No references recorded.
 
+
+
+## 2026-04-07 - M008 & M009 Complete, M010-M012 Planned
+- Implemented single-instance robust startup for local port 8765.
+- Implemented Whale Detection via 99th-percentile caching and 120s rolling window Poisson probability.
+- Stubbed roadmaps for M010 (Polymarket Integration), M011 (AI Whale Tuning), and M012 (Tuning Conflict Resolution Layer).

@@ -354,3 +354,7 @@ Since you have started small on Kalshi and want an edge without overcomplicating
 - opinionated about filtering out low-quality, low-liquidity noise
 
 That gives you a workflow that is realistic for a solo trader with a small account: fewer alerts, clearer explanations, faster review.
+
+- ⬜ **M010:** Cross-Platform Whale Flow (Polymarket)
+- ⬜ **M011:** AI Whale Tuning & Analysis
+- ⬜ **M012:** Tuning Conflict Resolution Layer

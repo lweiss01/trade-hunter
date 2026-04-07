@@ -42,6 +42,7 @@ class TradeHunterService:
         self._kalshi_lock = threading.Lock()
         self._analyst_followups_sent: set[str] = set()
         self._analyst_followups_lock = threading.Lock()
+        self._whale_baselines: dict[str, dict[str, float]] = {}
 
         # Optional signal analyst (Anthropic primary, Perplexity fallback)
         from .config import _load_env_file, ROOT
@@ -118,19 +119,29 @@ class TradeHunterService:
             self._cleanup_thread.join(timeout=2.0)
     
     def _cleanup_loop(self) -> None:
-        """Background thread that runs retention cleanup every 24 hours."""
+        """Background thread that updates baselines hourly and runs retention daily."""
+        loops = 0
         while not self._cleanup_stop.is_set():
+            # Hourly: update statistical baselines
             try:
-                result = cleanup_old_events(None, self.settings.retention_days)
-                self._last_cleanup = result
-                if not self.settings.quiet_mode:
-                    print(f"[retention] Deleted {result['events_deleted']} events, {result['signals_deleted']} signals (retention: {result['retention_days']} days)")
+                self._whale_baselines = self.store.update_statistical_baselines()
             except Exception as e:
-                if not self.settings.quiet_mode:
-                    print(f"[retention] Cleanup failed: {e}")
+                log.error(f"[baselines] Update failed: {e}")
+
+            # Daily (every 24 hours): retention cleanup
+            if loops % 24 == 0:
+                try:
+                    result = cleanup_old_events(None, self.settings.retention_days)
+                    self._last_cleanup = result
+                    if not self.settings.quiet_mode:
+                        print(f"[retention] Deleted {result['events_deleted']} events, {result['signals_deleted']} signals (retention: {result['retention_days']} days)")
+                except Exception as e:
+                    if not self.settings.quiet_mode:
+                        print(f"[retention] Cleanup failed: {e}")
             
-            # Wait 24 hours (or until stop signal)
-            self._cleanup_stop.wait(timeout=86400)
+            loops += 1
+            # Wait 1 hour (or until stop signal)
+            self._cleanup_stop.wait(timeout=3600)
     
     def get_cleanup_status(self) -> dict[str, Any] | None:
         """Get last cleanup execution result."""
@@ -138,7 +149,8 @@ class TradeHunterService:
 
     def ingest_event(self, event: MarketEvent) -> bool:
         self.store.upsert_event(event)
-        signal = self.detector.process(event)
+        market_baselines = self._whale_baselines.get(event.market_id)
+        signal = self.detector.process(event, market_baselines)
         if not signal:
             return False
         self.store.record_signal(signal)

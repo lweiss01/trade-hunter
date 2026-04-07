@@ -36,3 +36,15 @@ This file is the explicit capability and coverage contract for the project.
 - Mapped to slices: 2
 - Validated: 0
 - Unmapped active requirements: 0
+
+## R003: Cross-Platform Whale Flow (Polymarket)
+- **Status:** Active
+- **Description:** Integrate Polymarket feed to correlate large orders hitting both platforms within 10 minutes.
+
+## R004: AI Whale Tuning & Analysis
+- **Status:** Active
+- **Description:** Expose dynamic whale parameters to the AI Advisor to autonomously suggest changes to Poisson models.
+
+## R005: Tuning Conflict Resolution Layer
+- **Status:** Active
+- **Description:** AI Analyst must cross-reference new threshold suggestions against historical `TUNING-BACKLOG.md` to prevent regressions.

@@ -212,8 +212,21 @@ If Anthropic fails or is unavailable, the app automatically tries Perplexity so 
 | `watch` | ≥ 3.0 | Noticeable activity, worth monitoring |
 | `notable` | ≥ 4.0 | Significant move, worth investigating |
 | `high conviction flow` | ≥ 6.0 | Strong signal with multiple confirmations |
+| `whale-cluster` | (Override) | Highly improbable cluster of 99th-percentile trades (Poisson p < 0.01) |
 
 **Score formula:** `(volume_multiple × 0.75) + (price_score × 1.25)`
+
+### Whale Detection
+Trade Hunter actively tracks statistically improbable "Whale Clusters". 
+A single large trade might just be noise, but a coordinated cluster of massive trades is signal.
+
+The math:
+1. **The Baseline:** The app caches the 99th percentile trade size (minimum $200 notional) and the average rate of whales (λ) over the last 24 hours.
+2. **The Cluster:** It tracks a rolling 120-second window per market.
+3. **The Alert:** If 3 or more 99th-percentile trades occur in that 120s window, and the Poisson probability of that happening is less than 1% (p < 0.01), it overrides normal scoring and fires a `whale-cluster` alert.
+
+These alerts appear in vivid purple on the dashboard.
+
 
 ---
 

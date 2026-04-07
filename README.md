@@ -1,6 +1,8 @@
 # Trade Hunter
 
-A real-time prediction market monitoring dashboard. Subscribes to live Kalshi WebSocket feeds, detects unusual price and volume activity, and surfaces high-conviction signals for review.
+A real-time prediction market monitoring dashboard built to catch institutional flow before the news breaks.
+
+By subscribing to live Kalshi WebSocket feeds, Trade Hunter detects unusual price action, massive volume spikes, and statistically improbable "whale clusters", surfacing high-conviction signals directly to your dashboard or Discord.
 
 **This app is informational only. It does not place trades.**
 
@@ -12,6 +14,7 @@ A real-time prediction market monitoring dashboard. Subscribes to live Kalshi We
 - Custom spike detector with per-market rolling baselines and cooldown
 - **Per-signal AI analyst** that labels spikes as `signal`, `noise`, or `uncertain`
 - **Tuning advisor** that looks across analysed signals and suggests threshold changes
+- **Whale Detection** using 99th-percentile trade caching and Poisson probability modeling (p < 0.01)
 - Discord webhook notifications on confirmed signals
 - PolyAlertHub relay endpoint for third-party alert ingestion
 - SQLite persistence — data survives restarts
@@ -209,6 +212,7 @@ Fires when a market shows unusual volume or price movement relative to its recen
 | `watch` | Score ≥ 3.0 |
 | `notable` | Score ≥ 4.0 |
 | `high conviction flow` | Score ≥ 6.0, price ≥ 1.75× threshold, volume ≥ 3× baseline |
+| `whale-cluster` | ≥3 99th-percentile trades in 120s (Poisson p < 0.01) |
 
 Tuning knobs in `.env`:
 
