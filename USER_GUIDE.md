@@ -1,6 +1,6 @@
 # Trade Hunter — User Guide
 
-**Last updated:** 2026-04-06
+**Last updated:** 2026-04-07
 
 ---
 
@@ -245,9 +245,12 @@ These alerts appear in vivid purple on the dashboard.
 
 ---
 
-## Tuning Advisor
+## Tuning Advisor & Governor
 
-The tuning advisor is the second AI pass. Instead of reading one signal in isolation, it looks across recent **analyst-labelled** signals and suggests concrete detector changes to reduce false positives.
+The autonomous tuning system uses a two-part AI architecture to continuously improve the spike detector.
+
+### The Advisor (Data Scientist)
+Instead of reading one signal in isolation, it looks across recent **analyst-labelled** signals and suggests concrete detector changes to reduce false positives.
 
 It returns:
 - a short summary of the current false-positive pattern
@@ -259,15 +262,19 @@ Examples:
 - tighten rules for ultra-low-price or illiquid markets
 - add directional coherence checks between trade flow and price movement
 
+### The Governor (Safety Layer)
+You wouldn't blindly apply every AI recommendation to a live trading system. The **Tuning Governor** acts as the strict safety layer. 
+Before any new Advisor recommendation is added to the backlog, the Governor reviews it against historical constraints (rules you've previously marked as `applied` or `rejected`). If the new tweak conflicts with established logic (e.g. lowering a floor you explicitly raised), the Governor instantly intercepts it and marks it as `rejected` with an audit trail, keeping the Advisor from looping back into old mistakes.
+
 ### Durable backlog
 Advisor suggestions are not just ephemeral UI text. They are tracked in:
 
 - `docs/TUNING-BACKLOG.md`
 
 Use that file as the durable source of truth for:
-- applied recommendations
+- applied recommendations (these become the Governor's constraint rules)
 - planned next tweaks
-- rejected ideas
+- rejected ideas (with Governor notes)
 - superseded rules
 
 ---
@@ -282,7 +289,7 @@ Use that file as the durable source of truth for:
 | `SPIKE_BASELINE_POINTS` | 24 | Events used for rolling baseline |
 | `SPIKE_COOLDOWN_SECONDS` | 300 | Minimum time between repeat alerts per market |
 
-Current planned tuning work is tracked in the roadmap milestone **M005** and in `docs/TUNING-BACKLOG.md`.
+Current planned tuning work is tracked in `docs/TUNING-BACKLOG.md`.
 
 **Too many false positives:** raise `SPIKE_SCORE_THRESHOLD`, raise `SPIKE_MIN_PRICE_MOVE`, or implement one of the backlog heuristics for thin/flat-price markets  
 **Missing moves:** lower `SPIKE_MIN_VOLUME_DELTA` (carefully) or lower `SPIKE_SCORE_THRESHOLD`  

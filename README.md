@@ -17,7 +17,7 @@ Instead of staring at a dozen tabs, Trade Hunter silently monitors every active 
 ### The Feature Mix
 * **🐋 Whale Cluster Detection:** Uses dynamic 99th-percentile trade caching and Poisson probability modeling (p < 0.01) to detect when massive, coordinated orders sweep the book within a 120-second rolling window.
 * **🧠 Dual AI Analysts (Claude + Perplexity):** Every major spike is immediately analyzed by an integrated AI agent. It reads the order flow context and labels the move as `signal`, `noise`, or `uncertain`, attaching a plain-English rationale.
-* **⚙️ Autonomous Tuning Advisor:** An AI feedback loop that actively reads the historical database of false positives and autonomously suggests threshold corrections, ensuring the detector gets smarter over time.
+* **⚙️ Autonomous Tuning System (Advisor & Governor):** A dual-AI architecture. The **Advisor** reads the historical database of false positives to suggest new algorithmic threshold corrections. The **Governor** acts as a strict safety layer, intercepting and rejecting any AI suggestions that conflict with established baseline rules—ensuring the system gets smarter over time without looping back into past mistakes.
 * **📈 Dynamic Baseline Detector:** Flags `notable` or `high conviction flow` based on dynamic volume delta multiples and price-action thresholds, rather than static numbers.
 * **🔔 Smart Discord Integration:** Routes specific market topics (e.g., Crypto, Elections, Geopolitics) to different Discord channels, optionally filtering out alerts until the AI Analyst confirms they are genuine signals.
 * **🔌 PolyAlertHub Relay:** Built-in endpoint for ingesting third-party or external scraper alerts directly into your flow.
