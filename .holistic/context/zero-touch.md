@@ -37,4 +37,4 @@ Zero-touch architecture exists to close the gap between the current protocol and
 - Prefer workflow-disappearance improvements over adding more visible user ceremony.
 
 Project: trade-hunter
-Updated: 2026-04-05T20:23:59.949Z
+Updated: 2026-04-05T22:08:05.323Z

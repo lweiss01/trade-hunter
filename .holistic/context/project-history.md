@@ -7,9 +7,9 @@ This archive is the durable memory of what agents changed, why they changed it, 
 - Session: session-2026-04-04T00-43-40-475Z
 - Agent: unknown
 - Status: active
-- When: 2026-04-05T22:08:05.265Z
+- When: 2026-04-09T00:37:26.328Z
 - Goal: Continue work around .bg-shell/manifest.json, .gitattributes, .pytest_cache/v/cache/nodeids
-- Summary: Session started.
+- Summary: Detected branch switch; review the new branch context.
 - Work done:
 - No completed work recorded.
 - Why it mattered:
@@ -19,9 +19,3 @@ This archive is the durable memory of what agents changed, why they changed it, 
 - References:
 - No references recorded.
 
-
-
-## 2026-04-07 - M008 & M009 Complete, M010-M012 Planned
-- Implemented single-instance robust startup for local port 8765.
-- Implemented Whale Detection via 99th-percentile caching and 120s rolling window Poisson probability.
-- Stubbed roadmaps for M010 (Polymarket Integration), M011 (AI Whale Tuning), and M012 (Tuning Conflict Resolution Layer).

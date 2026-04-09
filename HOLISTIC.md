@@ -28,26 +28,21 @@ That is the intended end state for this project. Prefer changes that reduce cere
 
 ## Current Objective
 
-**Cross-Platform Flow Planning**
+**Continue recent repo work**
 
-Execute the M010 Polymarket integration to map and compare institutional flow across Prediction Market venues.
+Continue work around .bg-shell/manifest.json, .gitattributes, .pytest_cache/v/cache/nodeids
 
 ## Latest Work Status
 
-M008 (Local Runtime Hardening) and M009 (Whale Detection with Poisson math) completed successfully.
+Detected branch switch; review the new branch context.
 
 ## What Was Tried
 
-- Restored analyst rationale and threshold notes to dashboard signal cards.
-- Verified dashboard automatic refresh picks up analyst updates.
-- Recorded new Whale Detection requirement (R002) in REQUIREMENTS.md.
-- Updated PROJECT.md to reflect UI parity completion and set next focus.
+- Nothing recorded yet.
 
 ## What To Try Next
 
-- **Milestone Audit**: Review ROADMAP.md and slice plans for M002-M008. Many tasks in these milestones have already been implemented (e.g., tuning advisor, settings persistence) but are not marked as complete in GSD artifacts.
-- **Whale Detection Design**: Define the logic for "whale" detection—should it be a fixed notional floor ($5k+), a standard deviation from market mean, or a percentage of open interest?
-- **CSS cleanup**: Prune unused/duplicate styles in `dashboard.css`.
+- Ask the user what they'd like to work on.
 
 ## Active Plan
 
@@ -72,13 +67,251 @@ M008 (Local Runtime Hardening) and M009 (Whale Detection with Poisson math) comp
 
 ## Changed Files In Current Session
 
+- .antigravity_session/implementation.md
+- .antigravity_session/planning/trade-hunter-ui-revision-checklist.md
+- .antigravity_session/task.md
+- .antigravity_session/walkthrough.md
+- .beads/beads.db
+- .beads/beads.db-shm
+- .beads/beads.db-wal
+- .beads/daemon-error
+- .beads/daemon.lock
+- .beads/daemon.log
 - .bg-shell/manifest.json
+- .cursorrules
 - .env
+- .github/copilot-instructions.md
+- .gitignore
+- .gsd-id
+- .gsd/PROJECT.md
+- .gsd/REQUIREMENTS.md
+- .gsd/STATE.md
+- .gsd/activity/003-execute-task-M008-S01-T01.jsonl
+- .gsd/activity/004-execute-task-M008-S01-T01.jsonl
+- .gsd/activity/005-execute-task-M008-S01-T01.jsonl
+- .gsd/activity/006-execute-task-M008-S01-T01.jsonl
+- .gsd/activity/007-execute-task-M008-S01-T01.jsonl
+- .gsd/doctor-history.jsonl
+- .gsd/event-log.jsonl
+- .gsd/gsd.db
+- .gsd/gsd.db-shm
+- .gsd/gsd.db-wal
+- .gsd/journal/2026-04-07.jsonl
+- .gsd/metrics.json
+- .gsd/milestones/M002/M002-ROADMAP.md
+- .gsd/milestones/M002/M002-SUMMARY.md
+- .gsd/milestones/M002/slices/S01/S01-PLAN.md
+- .gsd/milestones/M002/slices/S01/S01-SUMMARY.md
+- .gsd/milestones/M002/slices/S01/S01-UAT.md
+- .gsd/milestones/M002/slices/S01/tasks/T01-SUMMARY.md
+- .gsd/milestones/M002/slices/S01/tasks/T02-SUMMARY.md
+- .gsd/milestones/M002/slices/S01/tasks/T03-SUMMARY.md
+- .gsd/milestones/M002/slices/S01/tasks/T04-SUMMARY.md
+- .gsd/milestones/M002/slices/S02/S02-PLAN.md
+- .gsd/milestones/M002/slices/S02/S02-SUMMARY.md
+- .gsd/milestones/M002/slices/S02/S02-UAT.md
+- .gsd/milestones/M002/slices/S02/tasks/T01-SUMMARY.md
+- .gsd/milestones/M002/slices/S02/tasks/T02-SUMMARY.md
+- .gsd/milestones/M002/slices/S02/tasks/T03-SUMMARY.md
+- .gsd/milestones/M002/slices/S02/tasks/T04-SUMMARY.md
+- .gsd/milestones/M002/slices/S03/S03-PLAN.md
+- .gsd/milestones/M002/slices/S03/S03-SUMMARY.md
+- .gsd/milestones/M002/slices/S03/S03-UAT.md
+- .gsd/milestones/M002/slices/S03/tasks/T01-SUMMARY.md
+- .gsd/milestones/M002/slices/S03/tasks/T02-SUMMARY.md
+- .gsd/milestones/M002/slices/S03/tasks/T03-SUMMARY.md
+- .gsd/milestones/M002/slices/S03/tasks/T04-SUMMARY.md
+- .gsd/milestones/M002/slices/S03/tasks/T05-SUMMARY.md
+- .gsd/milestones/M003/M003-ROADMAP.md
+- .gsd/milestones/M003/M003-SUMMARY.md
+- .gsd/milestones/M003/slices/S01/S01-PLAN.md
+- .gsd/milestones/M003/slices/S01/S01-SUMMARY.md
+- .gsd/milestones/M003/slices/S01/S01-UAT.md
+- .gsd/milestones/M003/slices/S01/tasks/T01-SUMMARY.md
+- .gsd/milestones/M003/slices/S01/tasks/T02-SUMMARY.md
+- .gsd/milestones/M003/slices/S01/tasks/T03-SUMMARY.md
+- .gsd/milestones/M003/slices/S01/tasks/T04-SUMMARY.md
+- .gsd/milestones/M003/slices/S01/tasks/T05-SUMMARY.md
+- .gsd/milestones/M003/slices/S02/S02-PLAN.md
+- .gsd/milestones/M003/slices/S02/S02-SUMMARY.md
+- .gsd/milestones/M003/slices/S02/S02-UAT.md
+- .gsd/milestones/M003/slices/S02/tasks/T01-SUMMARY.md
+- .gsd/milestones/M003/slices/S02/tasks/T02-SUMMARY.md
+- .gsd/milestones/M003/slices/S02/tasks/T03-SUMMARY.md
+- .gsd/milestones/M003/slices/S02/tasks/T04-SUMMARY.md
+- .gsd/milestones/M003/slices/S02/tasks/T05-SUMMARY.md
+- .gsd/milestones/M003/slices/S03/S03-PLAN.md
+- .gsd/milestones/M003/slices/S03/S03-SUMMARY.md
+- .gsd/milestones/M003/slices/S03/S03-UAT.md
+- .gsd/milestones/M003/slices/S03/tasks/T01-SUMMARY.md
+- .gsd/milestones/M003/slices/S03/tasks/T02-SUMMARY.md
+- .gsd/milestones/M003/slices/S03/tasks/T03-SUMMARY.md
+- .gsd/milestones/M003/slices/S03/tasks/T04-SUMMARY.md
+- .gsd/milestones/M003/slices/S03/tasks/T05-SUMMARY.md
+- .gsd/milestones/M004/M004-ROADMAP.md
+- .gsd/milestones/M004/M004-SUMMARY.md
+- .gsd/milestones/M004/slices/S01/S01-PLAN.md
+- .gsd/milestones/M004/slices/S01/S01-SUMMARY.md
+- .gsd/milestones/M004/slices/S01/S01-UAT.md
+- .gsd/milestones/M004/slices/S01/tasks/T01-SUMMARY.md
+- .gsd/milestones/M004/slices/S01/tasks/T02-SUMMARY.md
+- .gsd/milestones/M004/slices/S01/tasks/T03-SUMMARY.md
+- .gsd/milestones/M004/slices/S01/tasks/T04-SUMMARY.md
+- .gsd/milestones/M004/slices/S01/tasks/T05-SUMMARY.md
+- .gsd/milestones/M004/slices/S02/S02-PLAN.md
+- .gsd/milestones/M004/slices/S02/S02-SUMMARY.md
+- .gsd/milestones/M004/slices/S02/S02-UAT.md
+- .gsd/milestones/M004/slices/S02/tasks/T01-SUMMARY.md
+- .gsd/milestones/M004/slices/S02/tasks/T02-SUMMARY.md
+- .gsd/milestones/M004/slices/S02/tasks/T03-SUMMARY.md
+- .gsd/milestones/M004/slices/S02/tasks/T04-SUMMARY.md
+- .gsd/milestones/M004/slices/S02/tasks/T05-SUMMARY.md
+- .gsd/milestones/M004/slices/S03/S03-PLAN.md
+- .gsd/milestones/M004/slices/S04/S04-PLAN.md
+- .gsd/milestones/M004/slices/S04/S04-SUMMARY.md
+- .gsd/milestones/M004/slices/S04/S04-UAT.md
+- .gsd/milestones/M004/slices/S04/tasks/T01-SUMMARY.md
+- .gsd/milestones/M004/slices/S04/tasks/T02-SUMMARY.md
+- .gsd/milestones/M004/slices/S04/tasks/T03-SUMMARY.md
+- .gsd/milestones/M004/slices/S04/tasks/T04-SUMMARY.md
+- .gsd/milestones/M004/slices/S04/tasks/T05-SUMMARY.md
+- .gsd/milestones/M005/M005-ROADMAP.md
+- .gsd/milestones/M005/M005-SUMMARY.md
+- .gsd/milestones/M005/slices/S01/S01-PLAN.md
+- .gsd/milestones/M005/slices/S02/S02-PLAN.md
+- .gsd/milestones/M005/slices/S03/S03-PLAN.md
+- .gsd/milestones/M005/slices/S04/S04-PLAN.md
+- .gsd/milestones/M006/M006-ROADMAP.md
+- .gsd/milestones/M006/M006-SUMMARY.md
+- .gsd/milestones/M006/slices/S01/S01-PLAN.md
+- .gsd/milestones/M006/slices/S01/tasks/T01-SUMMARY.md
+- .gsd/milestones/M006/slices/S01/tasks/T02-SUMMARY.md
+- .gsd/milestones/M006/slices/S01/tasks/T03-SUMMARY.md
+- .gsd/milestones/M006/slices/S01/tasks/T04-SUMMARY.md
+- .gsd/milestones/M006/slices/S02/S02-PLAN.md
+- .gsd/milestones/M006/slices/S02/tasks/T01-SUMMARY.md
+- .gsd/milestones/M006/slices/S02/tasks/T02-SUMMARY.md
+- .gsd/milestones/M006/slices/S02/tasks/T03-SUMMARY.md
+- .gsd/milestones/M006/slices/S02/tasks/T04-SUMMARY.md
+- .gsd/milestones/M006/slices/S03/S03-PLAN.md
+- .gsd/milestones/M006/slices/S03/tasks/T01-SUMMARY.md
+- .gsd/milestones/M006/slices/S03/tasks/T02-SUMMARY.md
+- .gsd/milestones/M006/slices/S03/tasks/T03-SUMMARY.md
+- .gsd/milestones/M006/slices/S04/S04-PLAN.md
+- .gsd/milestones/M006/slices/S04/tasks/T01-SUMMARY.md
+- .gsd/milestones/M006/slices/S04/tasks/T02-SUMMARY.md
+- .gsd/milestones/M006/slices/S04/tasks/T03-SUMMARY.md
+- .gsd/milestones/M006/slices/S04/tasks/T04-SUMMARY.md
+- .gsd/milestones/M006/slices/S05/S05-PLAN.md
+- .gsd/milestones/M007/M007-ROADMAP.md
+- .gsd/milestones/M007/M007-SUMMARY.md
+- .gsd/milestones/M007/slices/S01/S01-PLAN.md
+- .gsd/milestones/M007/slices/S02/S02-PLAN.md
+- .gsd/milestones/M007/slices/S03/S03-PLAN.md
+- .gsd/milestones/M007/slices/S03/tasks/T01-SUMMARY.md
+- .gsd/milestones/M007/slices/S03/tasks/T02-SUMMARY.md
+- .gsd/milestones/M007/slices/S03/tasks/T03-SUMMARY.md
+- .gsd/milestones/M007/slices/S03/tasks/T04-SUMMARY.md
+- .gsd/milestones/M007/slices/S04/S04-PLAN.md
+- .gsd/milestones/M007/slices/S04/tasks/T01-SUMMARY.md
+- .gsd/milestones/M007/slices/S04/tasks/T02-SUMMARY.md
+- .gsd/milestones/M007/slices/S04/tasks/T03-SUMMARY.md
+- .gsd/milestones/M007/slices/S04/tasks/T04-SUMMARY.md
+- .gsd/milestones/M007/slices/S05/S05-PLAN.md
+- .gsd/milestones/M007/slices/S05/tasks/T01-SUMMARY.md
+- .gsd/milestones/M007/slices/S05/tasks/T02-SUMMARY.md
+- .gsd/milestones/M007/slices/S05/tasks/T03-SUMMARY.md
+- .gsd/milestones/M007/slices/S05/tasks/T04-SUMMARY.md
+- .gsd/milestones/M007/slices/S06/S06-PLAN.md
+- .gsd/milestones/M007/slices/S07/S07-PLAN.md
+- .gsd/milestones/M007/slices/S08/S08-PLAN.md
+- .gsd/milestones/M007/slices/S08/tasks/T01-SUMMARY.md
+- .gsd/milestones/M007/slices/S08/tasks/T02-SUMMARY.md
+- .gsd/milestones/M007/slices/S08/tasks/T03-SUMMARY.md
+- .gsd/milestones/M007/slices/S08/tasks/T04-SUMMARY.md
+- .gsd/milestones/M007/slices/S09/S09-PLAN.md
+- .gsd/milestones/M007/slices/S09/tasks/T01-SUMMARY.md
+- .gsd/milestones/M007/slices/S09/tasks/T02-SUMMARY.md
+- .gsd/milestones/M007/slices/S09/tasks/T03-SUMMARY.md
+- .gsd/milestones/M007/slices/S09/tasks/T04-SUMMARY.md
+- .gsd/milestones/M007/slices/S10/S10-PLAN.md
+- .gsd/milestones/M007/slices/S10/tasks/T01-SUMMARY.md
+- .gsd/milestones/M007/slices/S10/tasks/T02-SUMMARY.md
+- .gsd/milestones/M007/slices/S10/tasks/T03-SUMMARY.md
+- .gsd/milestones/M007/slices/S10/tasks/T04-SUMMARY.md
+- .gsd/milestones/M007/slices/S11/S11-PLAN.md
+- .gsd/milestones/M007/slices/S12/S12-PLAN.md
+- .gsd/milestones/M007/slices/S13/S13-PLAN.md
+- .gsd/milestones/M007/slices/S14/S14-PLAN.md
+- .gsd/milestones/M007/slices/S14/tasks/T01-SUMMARY.md
+- .gsd/milestones/M007/slices/S14/tasks/T02-SUMMARY.md
+- .gsd/milestones/M007/slices/S14/tasks/T03-SUMMARY.md
+- .gsd/milestones/M007/slices/S14/tasks/T04-SUMMARY.md
+- .gsd/milestones/M007/slices/S15/S15-PLAN.md
+- .gsd/milestones/M007/slices/S16/S16-PLAN.md
+- .gsd/milestones/M007/slices/S17/S17-PLAN.md
+- .gsd/milestones/M007/slices/S18/S18-PLAN.md
+- .gsd/milestones/M007/slices/S19/S19-PLAN.md
+- .gsd/milestones/M007/slices/S20/S20-PLAN.md
+- .gsd/milestones/M007/slices/S21/S21-PLAN.md
+- .gsd/milestones/M007/slices/S21/tasks/T01-SUMMARY.md
+- .gsd/milestones/M007/slices/S21/tasks/T02-SUMMARY.md
+- .gsd/milestones/M007/slices/S21/tasks/T03-SUMMARY.md
+- .gsd/milestones/M007/slices/S21/tasks/T04-SUMMARY.md
+- .gsd/milestones/M008/M008-ROADMAP.md
+- .gsd/milestones/M008/slices/S01/S01-PLAN.md
+- .gsd/milestones/M008/slices/S02/S02-PLAN.md
+- .gsd/milestones/M009/M009-ROADMAP.md
+- .gsd/milestones/M009/slices/S01/S01-PLAN.md
+- .gsd/milestones/M009/slices/S01/tasks/T01-PLAN.md
+- .gsd/milestones/M009/slices/S01/tasks/T02-PLAN.md
+- .gsd/milestones/M009/slices/S02/S02-PLAN.md
+- .gsd/milestones/M009/slices/S03/S03-PLAN.md
+- .gsd/milestones/M010/M010-CONTEXT.md
+- .gsd/milestones/M010/M010-ROADMAP.md
+- .gsd/milestones/M011/M011-CONTEXT.md
+- .gsd/milestones/M011/M011-ROADMAP.md
+- .gsd/milestones/M012/M012-CONTEXT.md
+- .gsd/milestones/M012/M012-ROADMAP.md
+- .gsd/milestones/M013/M013-CONTEXT.md
+- .gsd/milestones/M013/M013-ROADMAP.md
+- .gsd/notifications.jsonl
+- .gsd/runtime/paused-session.json
+- .gsd/runtime/units/execute-task-M001-S01-T01.json
+- .gsd/runtime/units/execute-task-M001-S01-T02.json
+- .gsd/runtime/units/execute-task-M001-S01-T03.json
+- .gsd/runtime/units/execute-task-M008-S01-T01.json
+- .gsd/state-manifest.json
+- .pytest_cache/v/cache/nodeids
+- .windsurfrules
+- FINAL_SESSION_SUMMARY.md
+- README.md
+- ROADMAP.md
+- SESSION_SUMMARY.md
+- USER_GUIDE.md
+- app/__main__.py
+- app/analyst.py
+- app/config.py
+- app/detector.py
 - app/server.py
+- app/service.py
+- app/static/dashboard.css
 - app/static/dashboard.js
+- app/static/index.html
+- app/store.py
+- docs/TUNING-BACKLOG.md
+- fix_detector.py
+- main.py
+- test_defensive_logging.py
+- test_kalshi_connection.py
+- trade-hunter
+- trade-hunter-ui-revision-checklist.md
+- trade-hunter.cmd
 - trade_hunter.db
 - trade_hunter.db-shm
 - trade_hunter.db-wal
+- update_readme.py
+- update_user_guide.py
 
 ## Pending Work Queue
 
@@ -110,6 +343,6 @@ M008 (Local Runtime Hardening) and M009 (Whale Detection with Poisson math) comp
 
 ## Historical Memory
 
-- Last updated: 2026-04-05T20:23:59.949Z
+- Last updated: 2026-04-05T22:08:05.323Z
 - Last handoff: None yet.
 - Pending sessions remembered: 0
