@@ -2,16 +2,15 @@
 
 ## Goal
 
-M010: Cross-Platform Whale Flow (Polymarket & Kalshi)
+Initiate M017 (Distribution & Licensing) to automate the build-time separation of Public (Simulation) and Commercial (Live) editions using scripts/distribute.py.
 
 ## Latest Status
 
-Detected branch switch; review the new branch context.
+Hardened terminology and UI across the entire stack. Standardized the 4-tier signal hierarchy (WHALE CLUSTER, SIGNAL, NOTABLE, WATCH). Purged 'ghost' features and legacy 'Winston' references. Deployed official commercial landing page to GitHub Pages.
 
 ## Planned Next Steps
 
-- Read HOLISTIC.md
-- M010: Cross-Platform Whale Flow (Polymarket & Kalshi)
+- Initiate M017 (Distribution & Licensing) to automate the build-time separation of Public (Simulation) and Commercial (Live) editions using scripts/distribute.py.
 
 ## Project Impact
 

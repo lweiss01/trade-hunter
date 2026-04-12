@@ -12,4 +12,4 @@ This folder holds repo-visible memory that any agent can reuse.
 - [Antigravity Adapter](./adapters/antigravity.md)
 
 Project: trade-hunter
-Updated: 2026-04-12T19:03:31.476Z
+Updated: 2026-04-12T22:47:47.970Z

@@ -38,12 +38,29 @@ STRIP_FILES = [
     "app/feeds/kalshi_pykalshi.py",
 ]
 
+def handle_remove_readonly(func, path, excinfo):
+    """Handler for shutil.rmtree to remove read-only attribute on Windows."""
+    import stat
+    if not os.access(path, os.W_OK):
+        os.chmod(path, stat.S_IWUSR)
+        func(path)
+    else:
+        raise
+
 def main():
     print("--- Trade Hunter Distribution Tool ---")
     
     if os.path.exists(PUBLIC_DIR):
         print(f"Cleaning existing dist folder: {PUBLIC_DIR}")
-        shutil.rmtree(PUBLIC_DIR)
+        try:
+            # For Python 3.12+, onexc is preferred; fallback to onerror for older versions
+            if sys.version_info >= (3, 12):
+                shutil.rmtree(PUBLIC_DIR, onexc=handle_remove_readonly)
+            else:
+                shutil.rmtree(PUBLIC_DIR, onerror=handle_remove_readonly)
+        except Exception as e:
+            print(f"[WARN] Error during cleanup: {e}")
+            print("Trying to proceed anyway...")
     
     os.makedirs(DIST_ROOT, exist_ok=True)
     

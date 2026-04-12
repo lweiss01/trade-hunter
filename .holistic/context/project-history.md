@@ -6,18 +6,31 @@ This archive is the durable memory of what agents changed, why they changed it, 
 
 - Session: session-2026-04-12T18-16-52-040Z
 - Agent: unknown
-- Status: active
-- When: 2026-04-12T21:06:08.319Z
+- Status: handed_off
+- When: 2026-04-12T22:48:33.365Z
 - Goal: M010: Cross-Platform Whale Flow (Polymarket & Kalshi)
 - Summary: Detected branch switch; review the new branch context.
 - Work done:
-- No completed work recorded.
+- Unified terminology to WHALE/SIGNAL/NOTABLE/WATCH
+- Hardened landing page hero card
+- Styled all tiers in dashboard.css
+- Synchronized app settings table
+- Deployed to GitHub Pages
 - Why it mattered:
-- No impact notes recorded.
+- Truth-first transparency achieved
+- Institutional-grade UI established
+- Terminology consistency across all layers
+- Hardened marketing page for commercial launch
 - Regression risks:
-- No specific regression risks recorded.
+- High flow/Conviction legacy terms
+- Top signal strip (wmn-strip) hallucinations
+- Mismatched tier names between detector and UI
+- Non-commercial terminology leaking into commercial builds
 - References:
-- No references recorded.
+- .holistic/context/regression-watch.md
+- docs/index.html
+- app/static/index.html
+- app/detector.py
 
 ## Continue recent repo work
 

@@ -11,11 +11,11 @@ At the start of every session, before doing anything else:
 
 ## Current Objective
 
-Initiate M017 (Distribution & Licensing) to automate the build-time separation of Public (Simulation) and Commercial (Live) editions using scripts/distribute.py.
+M010: Cross-Platform Whale Flow (Polymarket & Kalshi)
 
 ## Latest Status
 
-Hardened terminology and UI across the entire stack. Standardized the 4-tier signal hierarchy (WHALE CLUSTER, SIGNAL, NOTABLE, WATCH). Purged 'ghost' features and legacy 'Winston' references. Deployed official commercial landing page to GitHub Pages.
+Detected branch switch; review the new branch context.
 
 ## Before ending this session
 

@@ -561,54 +561,6 @@ function formatThresholdValue(key, value) {
   return Number(value).toFixed(0);
 }
 
-function renderWhatMattersNow(signal) {
-  if (!whatMattersNowEl) return;
-
-  if (!signal) {
-    whatMattersNowEl.innerHTML = "";
-    whatMattersNowEl.hidden = true;
-    return;
-  }
-
-  const freshness = signalFreshness(signal.detected_at);
-  const title = signal?.event?.title || signal?.event?.market_id || "Signal";
-  const tier = String(signal.tier || "watch");
-  const topic = normalizeTopic(signal?.event?.topic || signal?.topic);
-  const whyThisMatters = summarizeReason(signal.reason);
-  const nextSteps = [];
-
-  if (signal?.event?.volume != null) nextSteps.push(`Check liquidity (${formatVolume(signal.event.volume)} vol)`);
-  if (signal?.event?.yes_price != null) nextSteps.push(`Confirm price context (${formatPrice(signal.event.yes_price)})`);
-  nextSteps.push(`Review ${topic} context`);
-
-  whatMattersNowEl.hidden = false;
-  whatMattersNowEl.innerHTML = `
-    <div class="wmn-strip">
-      <div class="wmn-head">
-        <div class="wmn-eyebrow">
-          <span class="wmn-label">Top signal right now</span>
-          <div class="wmn-tags">
-            <span class="sig-tag tier-${escapeHtml(tier)}">${escapeHtml(tier)}</span>
-            <span class="sig-tag score">score ${Number(signal.score || 0).toFixed(2)}</span>
-            <span class="sig-tag ${freshness.className}">${escapeHtml(freshness.label)}</span>
-          </div>
-        </div>
-        <strong class="wmn-title">${escapeHtml(title)}</strong>
-        <div class="wmn-meta">${escapeHtml(signal?.event?.platform || "unknown")} · ${escapeHtml(signal?.event?.market_id || "unknown-market")} · ${escapeHtml(topic)} · ${formatTimestamp(signal.detected_at)}</div>
-      </div>
-      <div class="wmn-body">
-        <div class="wmn-why">
-          <span class="wmn-section-label">Why this matters</span>
-          <p class="wmn-reason">${escapeHtml(whyThisMatters)}</p>
-        </div>
-        <div class="wmn-steps">
-          <span class="wmn-section-label">Your next steps</span>
-          <div class="wmn-step-chips">${nextSteps.map((item) => `<span class="wmn-step-chip">${escapeHtml(item)}</span>`).join("")}</div>
-        </div>
-      </div>
-    </div>
-  `;
-}
 
 async function applyRecommendedTuning() {
   if (tuningApplyInFlight) return;

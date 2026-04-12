@@ -169,7 +169,7 @@ class SpikeDetector:
             and price_move >= (self.settings.spike_min_price_move * 1.75)
             and volume_multiple >= 3.0
         ):
-            return "high conviction flow"
+            return "signal"
         if price_move >= notable_min_price_move and (
             score >= 4.0 or (
                 price_move >= (self.settings.spike_min_price_move * 1.2)

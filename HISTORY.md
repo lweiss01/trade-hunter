@@ -34,41 +34,21 @@ _Append-only log of every Holistic session. Newest entries at the bottom._
 
 ---
 
-## Session `session-2026-04-12T18-16-52-040Z` | 2026-04-12T21:06:08.319Z | unknown
+## Session `session-2026-04-12T18-16-52-040Z` | 2026-04-12T22:48:33.365Z | unknown
 
 **Branch:** `main`  
-**Status:** active  
+**Status:** handed_off  
 **Goal:** M010: Cross-Platform Whale Flow (Polymarket & Kalshi)  
-**Checkpoints:** 2
+**Checkpoints:** 3
+
+**Work done:**
+✅ Unified terminology to WHALE/SIGNAL/NOTABLE/WATCH
+✅ Hardened landing page hero card
+✅ Styled all tiers in dashboard.css
+✅ Synchronized app settings table
+✅ Deployed to GitHub Pages
 
 **Recommended next steps:**
+- Initiate M017 (Distribution & Licensing) to automate the build-time separation of Public (Simulation) and Commercial (Live) editions using scripts/distribute.py.
 - M010: Cross-Platform Whale Flow (Polymarket & Kalshi)
-
-**Files changed:**
-- `.cursorrules`
-- `.github/copilot-instructions.md`
-- `.windsurfrules`
-- `README.md`
-- `ROADMAP.md`
-- `USER_GUIDE.md`
-- `app/__main__.py`
-- `app/analyst.py`
-- `app/config.py`
-- `app/edition.py`
-- `app/feeds/kalshi_pykalshi.py`
-- `app/server.py`
-- `app/service.py`
-- `app/static/dashboard.css`
-- `app/static/dashboard.js`
-- `app/static/index.html`
-- `docs/TUNING-BACKLOG.md`
-- `scratch/patch_dashboard.py`
-- `scratch/recover_tickers.py`
-- `scratch/test_rotation.py`
-- `scripts/distribute.py`
-- `scripts/run_checks.py`
-- `tests/test_security_hardening.py`
-- `trade-hunter.cmd`
-- `update_readme.py`
-- `update_user_guide.py`
 

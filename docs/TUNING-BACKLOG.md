@@ -3751,3 +3751,79 @@ Require priceΔ ≥ 0.01 alongside volume delta for all watch and whale-cluster 
   - **Governor rejection**: The proposed tweak violates the historical constraint 'No spike_min_price_move increases' (TB-210,213,216-219,248-251,265-273,274-295,296,303-305,316-322,337-339,341,343-345,346-348,349-351,352-355,358-360,364-366,370-372,377-379,386-397,401-406,407-412,416-418,419-421,431-439,443-445,476-479,490-492,511-536,540-548,549-552,553-555 rejected; for BTC 15m/high-freq/whale-cluster/low-liq markets). It introduces a new min_price_move ≥ 0.01 requirement alongside volume delta specifically for 15-minute BTC markets (including low-liquidity ones), which directly conflicts with the explicit rejection of any such price move thresholds.
 
 ---
+
+## 2026-04-12 — Advisor snapshot 184
+
+### Summary
+False positives are driven by single-trade noise in short timeframe BTC markets and intra-round quote repositioning in golf markets, despite high volume deltas, while genuine signals show substantial volume and price moves.
+
+### Next step
+Introduce market-type specific volume multipliers to filter noise in high-frequency or low-conviction markets.
+
+### Recommendations
+
+- [ ] **TB-565** `rejected` — Raise volume delta threshold to 10x baseline for 15-minute BTC markets
+  - **Governor rejection**: The proposed tweak introduces market-type specific **volume multipliers** to filter noise in high-frequency or low-conviction markets, which directly conflicts with **TB-199,204,206,265-267,276-283,286,289,294,297,280,358-360,364-366,370-372,378,412,422,449-451,467-469,480-482,508-510 rejected** constraints explicitly prohibiting any minimum notional trade size, USD equivalent, abs volume, trade count filters, or similar volume-based filters (including multipliers that effectively impose volume scaling thresholds) for crypto 15m/low-volume/low-liquidity/thin markets.
+- [ ] **TB-566** `rejected` — Increase volume delta multiplier from 1.1x to 1.3x for golf round-score markets
+  - **Governor rejection**: The proposed tweak introduces market-type specific **volume multipliers** to filter noise in high-frequency or low-conviction markets, which directly conflicts with **TB-199,204,206,265-267,276-283,286,289,294,297,280,358-360,364-366,370-372,378,412,422,449-451,467-469,480-482,508-510 rejected** constraints explicitly prohibiting any minimum notional trade size, USD equivalent, abs volume, trade count filters, or similar volume-based filters (including multipliers that effectively impose volume scaling thresholds) for crypto 15m/low-volume/low-liquidity/thin markets.
+- [ ] **TB-567** `rejected` — Consider raising min_price_move to 0.03 for watch-tier signals with low yes probabilities
+  - **Governor rejection**: The proposed tweak introduces market-type specific **volume multipliers** to filter noise in high-frequency or low-conviction markets, which directly conflicts with **TB-199,204,206,265-267,276-283,286,289,294,297,280,358-360,364-366,370-372,378,412,422,449-451,467-469,480-482,508-510 rejected** constraints explicitly prohibiting any minimum notional trade size, USD equivalent, abs volume, trade count filters, or similar volume-based filters (including multipliers that effectively impose volume scaling thresholds) for crypto 15m/low-volume/low-liquidity/thin markets.
+
+---
+
+## 2026-04-12 — Advisor snapshot 185
+
+### Summary
+False positives occur in short-term BTC markets from single-trade noise and in golf round-score markets from low-conviction intra-round quote repositioning, despite high scores or volume in some cases.
+
+### Next step
+Introduce market-type-specific volume delta thresholds to filter noise without broadly raising global limits.
+
+### Recommendations
+
+- [ ] **TB-568** `planned` — Raise volume delta threshold to 10x baseline for 15-minute BTC markets
+- [ ] **TB-569** `planned` — Increase volume delta multiplier from 1.1x to 1.3x for golf round-score markets
+- [ ] **TB-570** `planned` — Consider raising score_threshold to ~10 to filter low-score watch-tier false positives
+
+---
+
+## 2026-04-12 — Advisor snapshot 186
+
+### Summary
+False positives are driven by single-trade noise in high-frequency BTC markets and intra-round quote repositioning in golf markets, despite varying price moves and scores.
+
+### Next step
+Introduce market-type specific volume delta multipliers to filter noise while preserving multi-trade signals.
+
+### Suggested thresholds
+`min_price_move` → `0.01`
+
+### Recommendations
+
+- [ ] **TB-571** `rejected` — Raise volume delta threshold to 10x baseline for 15-minute BTC markets
+  - **Governor rejection**: The proposed tweak conflicts with TB-002 (applied). TB-002 explicitly raised spike_score_threshold to 8.5 to reduce low-confidence triggers and eliminate single-trade noise. Your proposal sets score_threshold to None, which would remove this constraint entirely and revert to accepting all score levels. This directly contradicts the historical fix for noise reduction. Additionally, setting min_volume_delta to None conflicts with TB-001 (applied), which raised the whale-cluster volume delta threshold to 1000 for 15m BTC specifically to filter noise. Removing this threshold undoes that constraint.
+- [ ] **TB-572** `rejected` — Increase volume delta multiplier from 1.1x to 1.3x for golf round-score markets
+  - **Governor rejection**: The proposed tweak conflicts with TB-002 (applied). TB-002 explicitly raised spike_score_threshold to 8.5 to reduce low-confidence triggers and eliminate single-trade noise. Your proposal sets score_threshold to None, which would remove this constraint entirely and revert to accepting all score levels. This directly contradicts the historical fix for noise reduction. Additionally, setting min_volume_delta to None conflicts with TB-001 (applied), which raised the whale-cluster volume delta threshold to 1000 for 15m BTC specifically to filter noise. Removing this threshold undoes that constraint.
+- [ ] **TB-573** `rejected` — Require price move >0.01 alongside volume for watch-tier signals
+  - **Governor rejection**: The proposed tweak conflicts with TB-002 (applied). TB-002 explicitly raised spike_score_threshold to 8.5 to reduce low-confidence triggers and eliminate single-trade noise. Your proposal sets score_threshold to None, which would remove this constraint entirely and revert to accepting all score levels. This directly contradicts the historical fix for noise reduction. Additionally, setting min_volume_delta to None conflicts with TB-001 (applied), which raised the whale-cluster volume delta threshold to 1000 for 15m BTC specifically to filter noise. Removing this threshold undoes that constraint.
+
+---
+
+## 2026-04-12 — Advisor snapshot 187
+
+### Summary
+False positives occur in low-volume or single-trade scenarios like 15-minute BTC markets and small price moves without sustained volume, while genuine signals show high volume with multi-trade activity. Analyst feedback highlights needing higher volume thresholds for specific markets to filter noise without missing informative spikes.
+
+### Next step
+Raise volume delta threshold 10x baseline for 15-minute BTC markets to eliminate single-trade noise.
+
+### Suggested thresholds
+`min_price_move` → `0.05`
+
+### Recommendations
+
+- [ ] **TB-574** `planned` — Raise the volume delta threshold to 10x baseline for 15-minute BTC markets to filter out single-trade noise while capturing multi-trade informed activity.
+- [ ] **TB-575** `planned` — Increase min_price_move to 0.05 to require more sustained price changes beyond minor 0.002 deltas.
+- [ ] **TB-576** `planned` — Require volume delta >50k alongside score_threshold to confirm sharp moves with liquidity.
+
+---

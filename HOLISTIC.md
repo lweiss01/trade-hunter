@@ -28,13 +28,13 @@ That is the intended end state for this project. Prefer changes that reduce cere
 
 ## Current Objective
 
-**Continue recent repo work**
+**Resume from last handoff**
 
-M010: Cross-Platform Whale Flow (Polymarket & Kalshi)
+Initiate M017 (Distribution & Licensing) to automate the build-time separation of Public (Simulation) and Commercial (Live) editions using scripts/distribute.py.
 
 ## Latest Work Status
 
-Detected branch switch; review the new branch context.
+Hardened terminology and UI across the entire stack. Standardized the 4-tier signal hierarchy (WHALE CLUSTER, SIGNAL, NOTABLE, WATCH). Purged 'ghost' features and legacy 'Winston' references. Deployed official commercial landing page to GitHub Pages.
 
 ## What Was Tried
 
@@ -42,12 +42,11 @@ Detected branch switch; review the new branch context.
 
 ## What To Try Next
 
-- M010: Cross-Platform Whale Flow (Polymarket & Kalshi)
+- Initiate M017 (Distribution & Licensing) to automate the build-time separation of Public (Simulation) and Commercial (Live) editions using scripts/distribute.py.
 
 ## Active Plan
 
-- Read HOLISTIC.md
-- M010: Cross-Platform Whale Flow (Polymarket & Kalshi)
+- None yet - will be set once work begins.
 
 ## Overall Impact So Far
 
@@ -63,40 +62,16 @@ Detected branch switch; review the new branch context.
 
 ## Blockers
 
-- None.
+- Manual separation of Public vs Commercial source code (targeted by M017)
+- None for current phase
 
 ## Changed Files In Current Session
 
-- .cursorrules
-- .github/copilot-instructions.md
-- .windsurfrules
-- README.md
-- ROADMAP.md
-- USER_GUIDE.md
-- app/__main__.py
-- app/analyst.py
-- app/config.py
-- app/edition.py
-- app/feeds/kalshi_pykalshi.py
-- app/server.py
-- app/service.py
-- app/static/dashboard.css
-- app/static/dashboard.js
-- app/static/index.html
-- docs/TUNING-BACKLOG.md
-- scratch/patch_dashboard.py
-- scratch/recover_tickers.py
-- scratch/test_rotation.py
-- scripts/distribute.py
-- scripts/run_checks.py
-- tests/test_security_hardening.py
-- trade-hunter.cmd
-- update_readme.py
-- update_user_guide.py
+- No repo changes detected for the active session.
 
 ## Pending Work Queue
 
-- None.
+- Continue recent repo work: Initiate M017 (Distribution & Licensing) to automate the build-time separation of Public (Simulation) and Commercial (Live) editions using scripts/distribute.py.
 
 ## Long-Term Memory
 
@@ -124,6 +99,6 @@ Detected branch switch; review the new branch context.
 
 ## Historical Memory
 
-- Last updated: 2026-04-12T19:03:31.476Z
-- Last handoff: Completed comprehensive security hardening pass (M014-M016). Implemented Admin and Ingest token auth, CSRF protection, .env injection prevention, safe port-kill, and automated security regression tests (97/97 passing).
-- Pending sessions remembered: 0
+- Last updated: 2026-04-12T22:47:47.970Z
+- Last handoff: Hardened terminology and UI across the entire stack. Standardized the 4-tier signal hierarchy (WHALE CLUSTER, SIGNAL, NOTABLE, WATCH). Purged 'ghost' features and legacy 'Winston' references. Deployed official commercial landing page to GitHub Pages.
+- Pending sessions remembered: 1
