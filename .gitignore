@@ -1,0 +1,73 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+
+# ── GSD baseline (auto-generated) ──
+.gsd
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.code-workspace
+.env.*
+!.env.example
+node_modules/
+.next/
+dist/
+build/
+venv/
+target/
+.env
+.venv/
+__pycache__/
+*.pyc
+
+# ── GSD baseline (auto-generated) ──
+.gsd
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.code-workspace
+.env.*
+!.env.example
+node_modules/
+.next/
+dist/
+build/
+venv/
+target/
+vendor/
+*.log
+coverage/
+.cache/
+tmp/
+
+# Local runtime / secrets / generated state
+.bg-shell/
+.kalshi-keys/
+trade_hunter.db
+trade_hunter.db-shm
+trade_hunter.db-wal
+trade_hunter.db.bak-*
+
+# ── GSD baseline (auto-generated) ──
+.gsd-id
+
+# Ignoring local mockups, summaries, and checklists
+trade-hunter_dashboard_mockup.html
+design-proposal.html
+trade-hunter-ui-revision-checklist.md
+SESSION_SUMMARY.md
+FINAL_SESSION_SUMMARY.md
+.beads/
+.gsd.migrating/
+# Antigravity session state
+.antigravity_session/

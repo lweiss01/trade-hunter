@@ -1,0 +1,2 @@
+[console_scripts]
+trade-hunter = app.__main__:main

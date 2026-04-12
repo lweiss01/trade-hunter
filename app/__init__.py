@@ -1,0 +1,1 @@
+﻿"""Trade Hunter application package."""
