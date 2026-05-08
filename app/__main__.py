@@ -36,9 +36,12 @@ def run_smoke_test() -> int:
             platform="kalshi",
             market_id="smoke-btc",
             title="BTC above 110k by year end",
+            event_kind="trade",
             yes_price=0.43,
             volume=100,
             volume_kind="cumulative",
+            trade_size=100,
+            trade_side="buy",
             timestamp=base,
         ),
         MarketEvent(
@@ -46,9 +49,12 @@ def run_smoke_test() -> int:
             platform="kalshi",
             market_id="smoke-btc",
             title="BTC above 110k by year end",
+            event_kind="trade",
             yes_price=0.45,
             volume=170,
             volume_kind="cumulative",
+            trade_size=70,
+            trade_side="buy",
             timestamp=base,
         ),
         MarketEvent(
@@ -56,9 +62,12 @@ def run_smoke_test() -> int:
             platform="kalshi",
             market_id="smoke-btc",
             title="BTC above 110k by year end",
+            event_kind="trade",
             yes_price=0.53,
             volume=420,
             volume_kind="cumulative",
+            trade_size=250,
+            trade_side="buy",
             timestamp=base,
         ),
     ]
@@ -126,14 +135,16 @@ def _wait_for_existing_instance_to_exit(settings: Settings, *, timeout_seconds: 
 
 def _get_pid_holding_port(port: int) -> int | None:
     if sys.platform == "win32" or sys.platform == "cygwin" or sys.platform == "msys":
+        # Windows-specific: Suppress terminal window flicker
+        CREATE_NO_WINDOW = 0x08000000
         cmd = "netstat"
         try:
-            subprocess.run(["where", "netstat"], capture_output=True, check=True)
+            subprocess.run(["where", "netstat"], capture_output=True, check=True, creationflags=CREATE_NO_WINDOW)
         except (subprocess.CalledProcessError, FileNotFoundError):
             cmd = os.path.join(os.environ.get("windir", r"C:\Windows"), "System32", "netstat.exe")
         
         try:
-            output = subprocess.check_output([cmd, "-ano"]).decode()
+            output = subprocess.check_output([cmd, "-ano"], creationflags=CREATE_NO_WINDOW).decode()
             for line in output.splitlines():
                 if f":{port}" in line and "LISTEN" in line:
                     parts = line.strip().split()

@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import json
+import os
 import threading
+import time
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
-from .config import ROOT, Settings, load_settings, persist_runtime_settings
+from .config import ROOT, TUNING_BACKLOG_PATH, Settings, load_settings, persist_runtime_settings
 from .service import TradeHunterService
 
 
@@ -90,7 +92,7 @@ def run_server(settings: Settings) -> None:
                 category = (qs.get("q") or qs.get("category") or [""])[0].strip()
                 limit = int((qs.get("limit") or ["20"])[0])
                 return self._json_response({"results": service.search_kalshi_by_category(category, limit=limit)})
-            if path == "/api/health":
+            if path in {"/api/health", "/api/status"}:
                 # Return feed health status and retention cleanup status
                 state = service.dashboard_state()
                 cleanup_status = service.get_cleanup_status()
@@ -102,8 +104,7 @@ def run_server(settings: Settings) -> None:
             if path == "/api/tuning/backlog":
                 return self._json_response(service.get_tuning_backlog())
             if path == "/docs/TUNING-BACKLOG.md":
-                import pathlib
-                md_path = pathlib.Path(__file__).parent.parent / "docs" / "TUNING-BACKLOG.md"
+                md_path = TUNING_BACKLOG_PATH
                 body = md_path.read_bytes() if md_path.exists() else b"# Not found"
                 self.send_response(HTTPStatus.OK)
                 self.send_header("Content-Type", "text/plain; charset=utf-8")
@@ -124,8 +125,17 @@ def run_server(settings: Settings) -> None:
                 "/api/tuning/mark-applied",
                 "/api/settings",
                 "/api/admin/shutdown",
-            } and not self.path.startswith("/api/tuning/"):
+            } and not self.path.startswith("/api/tuning/") and not self.path.startswith("/api/heartbeat"):
                 return self._json_response({"error": "not found"}, status=HTTPStatus.NOT_FOUND)
+
+            if self.path.startswith("/api/heartbeat"):
+                if not _is_loopback_client(self.client_address[0]):
+                    return self._json_response({"error": "forbidden"}, status=HTTPStatus.FORBIDDEN)
+
+                # Browser refresh/navigation also emits page lifecycle events. Treat
+                # legacy close beacons as heartbeats so refresh cannot kill the app.
+                self.server.last_heartbeat = time.time()
+                return self._json_response({"ok": True, "pulse": "steady"})
 
             if self.path == "/api/admin/shutdown":
                 if not _is_loopback_client(self.client_address[0]):
@@ -364,7 +374,7 @@ def run_server(settings: Settings) -> None:
             return False
 
         def _require_same_origin(self) -> bool:
-            """CSRF protection: verify Origin matches Host."""
+            """CSRF protection: verify Origin matches Host (lenient for localhost)."""
             origin = self.headers.get("Origin")
             if not origin:
                 referer = self.headers.get("Referer")
@@ -372,22 +382,56 @@ def run_server(settings: Settings) -> None:
                     self._json_response({"error": "missing origin/referer"}, status=HTTPStatus.BAD_REQUEST)
                     return False
                 origin = referer
+            
             host = self.headers.get("Host")
             if not host:
                 self._json_response({"error": "missing host header"}, status=HTTPStatus.BAD_REQUEST)
                 return False
+
+            # M017-UX: Lenient check for local development/bundles
+            # If both are localhost-like, allow it
+            is_host_local = any(h in host for h in {"127.0.0.1", "localhost", "::1"})
+            is_origin_local = any(o in origin for o in {"127.0.0.1", "localhost", "::1"})
+            
+            if is_host_local and is_origin_local:
+                return True
+
             if host not in origin:
                 self._json_response({"error": "csrf origin mismatch"}, status=HTTPStatus.FORBIDDEN)
                 return False
             return True
 
     server = ThreadingHTTPServer((settings.host, settings.port), Handler)
-    requested_restart = False
+    server.last_heartbeat = time.time()
+    server.start_time = time.time()
+    server.restart_requested = False
+
+    def heartbeat_monitor():
+        """Background thread to monitor for 'No Pulse' (browser closed)."""
+        time.sleep(10) # Initial soak time
+        while not getattr(server, "_is_shutting_down", False):
+            # Grace period: allow 60s at startup before enforcing shutdown
+            uptime = time.time() - server.start_time
+            timeout = 15.0 if uptime > 60 else 60.0
+            
+            idle_time = time.time() - server.last_heartbeat
+            if idle_time > timeout:
+                if not settings.quiet_mode:
+                    print(f"--- No heartbeat detected for {idle_time:.1f}s. Entering Smart Shutdown. ---")
+                server.shutdown()
+                break
+            time.sleep(5)
+
+    if os.getenv("TRADE_HUNTER_ENABLE_SMART_SHUTDOWN", "").strip().lower() in {"1", "true", "yes", "on"}:
+        monitor_thread = threading.Thread(target=heartbeat_monitor, daemon=True)
+        monitor_thread.start()
+
     try:
         server.serve_forever()
     except KeyboardInterrupt:
         pass
     finally:
+        server._is_shutting_down = True
         requested_restart = getattr(server, "restart_requested", False)
         server.server_close()
         service.stop()

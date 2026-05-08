@@ -3,13 +3,14 @@ from __future__ import annotations
 
 import os
 import sqlite3
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from .config import DATA_ROOT, ASSET_ROOT
 
-ROOT = Path(__file__).resolve().parent.parent
-SCHEMA_PATH = ROOT / "app" / "schema.sql"
-DEFAULT_DB_PATH = ROOT / "trade_hunter.db"
+SCHEMA_PATH = ASSET_ROOT / "app" / "schema.sql"
+DEFAULT_DB_PATH = DATA_ROOT / "trade_hunter.db"
 
 _SIGNAL_COLUMN_MIGRATIONS: dict[str, str] = {
     "baseline_1h": "ALTER TABLE signals ADD COLUMN baseline_1h REAL",
@@ -19,6 +20,20 @@ _SIGNAL_COLUMN_MIGRATIONS: dict[str, str] = {
     "price_move_30m": "ALTER TABLE signals ADD COLUMN price_move_30m REAL",
     "leading_events_json": "ALTER TABLE signals ADD COLUMN leading_events_json TEXT",
 }
+
+
+def _quarantine_corrupt_database(path: Path) -> None:
+    if not path.exists() or str(path) == ":memory:":
+        return
+
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    quarantine_path = path.with_name(f"{path.stem}.corrupt-{stamp}{path.suffix}")
+    path.replace(quarantine_path)
+
+    for suffix in ("-wal", "-shm"):
+        sidecar = Path(f"{path}{suffix}")
+        if sidecar.exists():
+            sidecar.replace(path.with_name(f"{sidecar.name}.corrupt-{stamp}"))
 
 
 def _ensure_signal_columns(conn: sqlite3.Connection) -> None:
@@ -32,12 +47,19 @@ def _ensure_signal_columns(conn: sqlite3.Connection) -> None:
             conn.execute(statement)
 
 
+def _ensure_database_integrity(conn: sqlite3.Connection) -> None:
+    row = conn.execute("PRAGMA quick_check").fetchone()
+    result = row[0] if row else "missing quick_check result"
+    if result != "ok":
+        raise sqlite3.DatabaseError(f"database integrity check failed: {result}")
+
+
 def connect(db_path: str | Path | None = None, *, in_memory: bool = False) -> sqlite3.Connection:
     """
     Connect to SQLite database and initialize schema.
     
     Args:
-        db_path: Path to database file. Defaults to trade_hunter.db in project root.
+        db_path: Path to database file. Defaults to trade_hunter.db in user data dir.
         in_memory: Use ":memory:" database for testing.
     
     Returns:
@@ -51,21 +73,37 @@ def connect(db_path: str | Path | None = None, *, in_memory: bool = False) -> sq
         path = ":memory:"
     else:
         path = str(DEFAULT_DB_PATH)
-    
-    conn = sqlite3.connect(path, check_same_thread=False, timeout=30.0)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
-    conn.execute("PRAGMA busy_timeout = 30000")
-    conn.execute("PRAGMA journal_mode = WAL")
-    conn.execute("PRAGMA synchronous = NORMAL")
-    
-    # Initialize schema
+
+    if path != ":memory:":
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+
     schema_sql = SCHEMA_PATH.read_text(encoding="utf-8")
-    conn.executescript(schema_sql)
-    _ensure_signal_columns(conn)
-    conn.commit()
-    
-    return conn
+
+    def open_and_initialize() -> sqlite3.Connection:
+        conn: sqlite3.Connection | None = None
+        conn = sqlite3.connect(path, check_same_thread=False, timeout=30.0)
+        try:
+            conn.row_factory = sqlite3.Row
+            conn.execute("PRAGMA foreign_keys = ON")
+            conn.execute("PRAGMA busy_timeout = 30000")
+            conn.execute("PRAGMA journal_mode = WAL")
+            conn.execute("PRAGMA synchronous = NORMAL")
+            conn.executescript(schema_sql)
+            _ensure_signal_columns(conn)
+            _ensure_database_integrity(conn)
+            conn.commit()
+            return conn
+        except sqlite3.DatabaseError:
+            conn.close()
+            raise
+
+    try:
+        return open_and_initialize()
+    except sqlite3.DatabaseError:
+        if path == ":memory:" or db_path or os.getenv("PYTEST_CURRENT_TEST"):
+            raise
+        _quarantine_corrupt_database(Path(path))
+        return open_and_initialize()
 
 
 def dict_from_row(row: sqlite3.Row) -> dict[str, Any]:

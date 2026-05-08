@@ -17,6 +17,7 @@ class MarketStore:
         self._lock = Lock()
         self._db_path = db_path
         self._thread_local = local()
+        self._connections: list[sqlite3.Connection] = []
     
     def _get_connection(self) -> sqlite3.Connection:
         """Get connection, preferring injected test connection when present."""
@@ -26,7 +27,20 @@ class MarketStore:
 
         if not hasattr(self._thread_local, "conn"):
             self._thread_local.conn = db.connect(self._db_path) if self._db_path else db.connect()
+            self._connections.append(self._thread_local.conn)
         return self._thread_local.conn
+
+    def close(self) -> None:
+        """Close all SQLite connections opened by this store instance."""
+        with self._lock:
+            for conn in self._connections:
+                try:
+                    conn.close()
+                except sqlite3.Error:
+                    pass
+            self._connections.clear()
+            if hasattr(self._thread_local, "conn"):
+                delattr(self._thread_local, "conn")
     
     def upsert_event(self, event: MarketEvent) -> None:
         """Insert event and update market metadata."""

@@ -1,3 +1,0 @@
-
-[integrations]
-pykalshi>=1.0.1

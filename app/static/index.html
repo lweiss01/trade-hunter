@@ -153,10 +153,11 @@
         <!-- Save status + restart strip -->
         <div class="settings-header-strip">
           <div class="settings-header-left">
-            <span id="settings-load-status" class="badge">read-only</span>
+            <span id="settings-load-status" class="badge">authorized</span>
             <span id="settings-save-status" class="settings-save-status"></span>
           </div>
           <div class="settings-header-right">
+            <button id="settings-exit-btn" class="btn-danger" type="button">Exit Trade Hunter</button>
             <button id="settings-restart-btn" class="btn-amber" type="button">Restart server</button>
           </div>
         </div>
@@ -208,16 +209,24 @@
             <div class="settings-row">
               <div>
                 <div class="settings-label">Ingest API token</div>
-                <div class="settings-desc">Bearer token for <code>/api/events</code> and PolyAlertHub endpoint.</div>
-                <code class="settings-code">INGEST_API_TOKEN / POLYALERTHUB_TOKEN</code>
+                <div class="settings-desc">Bearer token for generic <code>/api/events</code> ingestion.</div>
+                <code class="settings-code">INGEST_API_TOKEN</code>
               </div>
-              <input id="setting-ingest-api-token" class="settings-input wide" type="password" placeholder="not set" disabled>
+              <input id="setting-ingest-api-token" class="settings-input wide" type="text" inputmode="none" autocomplete="off" readonly placeholder="not set">
+            </div>
+            <div class="settings-row">
+              <div>
+                <div class="settings-label">PolyAlertHub token</div>
+                <div class="settings-desc">Bearer token for the PolyAlertHub relay endpoint.</div>
+                <code class="settings-code">POLYALERTHUB_TOKEN</code>
+              </div>
+              <input id="setting-polyalerthub-token" class="settings-input wide" type="text" inputmode="none" autocomplete="off" readonly placeholder="not set">
             </div>
             <div class="settings-save-bar">
               <span class="settings-save-note">Changes require feed restart.</span>
               <div style="display:flex;gap:8px;">
                 <button class="btn-ghost" type="button" onclick="refreshSettings(true)">Reset</button>
-                <button class="btn-primary" id="settings-save-btn" type="button">Save Feeds</button>
+                <button class="btn-primary" type="button" data-settings-save-trigger>Save Feeds</button>
               </div>
             </div>
           </section>
@@ -303,7 +312,7 @@
               <span class="settings-save-note">Applied immediately — no restart needed.</span>
               <div style="display:flex;gap:8px;">
                 <button class="btn-ghost" type="button" onclick="refreshSettings(true)">Reset to defaults</button>
-                <button class="btn-primary" type="button" onclick="document.getElementById('settings-save-btn').click()">Save Thresholds</button>
+                <button class="btn-primary" type="button" data-settings-save-trigger>Save Thresholds</button>
               </div>
             </div>
           </section>
@@ -364,7 +373,7 @@
               <span class="settings-save-note">Changes take effect on next alert.</span>
               <div style="display:flex;gap:8px;">
                 <button class="btn-ghost" type="button" onclick="refreshSettings(true)">Reset</button>
-                <button class="btn-primary" type="button" onclick="document.getElementById('settings-save-btn').click()">Save Discord</button>
+                <button class="btn-primary" type="button" data-settings-save-trigger>Save Discord</button>
               </div>
             </div>
           </section>
@@ -412,7 +421,7 @@
               <span class="settings-save-note">Host/port changes require server restart.</span>
               <div style="display:flex;gap:8px;">
                 <button class="btn-ghost" type="button" onclick="refreshSettings(true)">Reset</button>
-                <button class="btn-primary" type="button" onclick="document.getElementById('settings-save-btn').click()">Save</button>
+                <button class="btn-primary" type="button" data-settings-save-trigger>Save</button>
               </div>
             </div>
           </section>
@@ -428,14 +437,14 @@
                 <div class="settings-label">Admin Access Token</div>
                 <div id="admin-token-status-desc" class="settings-desc">Required for all settings edits and market tracking. <br><strong>Setup Note:</strong> If this is your first time, copy the <code>ADMIN_TOKEN</code> from your <code>.env</code> file (it was generated on startup) and paste it here.</div>
               </div>
-              <input id="admin-token-input" class="settings-input wide pulse-on-empty" type="password" placeholder="Paste ADMIN_TOKEN here">
+              <input id="admin-token-input" class="settings-input wide pulse-on-empty" type="text" inputmode="none" autocomplete="off" readonly placeholder="Local Access">
             </div>
           </section>
 
         </div>
 
         <!-- Hidden master save trigger wired to JS save handler -->
-        <button id="settings-save-btn" style="display:none;" type="button"></button>
+        <button id="settings-save-master" style="display:none;" type="button"></button>
 
         <!-- Tuning Backlog — full width -->
         <section class="panel" id="tuning-backlog-panel">
@@ -467,7 +476,7 @@
 
       <footer class="site-footer" aria-label="Site footer">
         <div class="site-footer-left">
-          <span class="site-footer-version">v0.2.0</span>
+          <span class="site-footer-version">v0.2.7</span>
           <span id="commercial-badge" class="commercial-badge-footer" style="display: none;">Commercial Edition</span>
           <span class="site-footer-copy">Trade Hunter · Prediction Market Signal Desk</span>
         </div>
@@ -478,6 +487,49 @@
         </div>
       </footer>
     </main>
+
+    <!-- Institutional Onboarding Splash -->
+    <div id="onboarding-overlay" class="modal-overlay" aria-modal="true" role="dialog">
+      <div class="onboarding-card">
+        <div class="onboarding-head">
+          <div class="onboarding-logo-wrap">
+            <img src="/static/trade-hunter-logo4.png" alt="TH Shield" class="onboarding-logo">
+            <div class="onboarding-shield-ripple"></div>
+          </div>
+          <h1>Welcome to Trade Hunter</h1>
+          <span class="badge commercial-badge-onboard">Commercial Edition</span>
+        </div>
+        
+        <div class="onboarding-body">
+          <div class="onboarding-status-chip">
+            <div class="status-shield">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 1.5L2 4v4.5c0 3.5 2.5 6.7 6 7.5 3.5-.8 6-4 6-7.5V4l-6-2.5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M5.5 8l1.5 1.5 3.5-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <span>Admin Authority Verified via Loopback</span>
+          </div>
+
+          <p class="onboarding-desc">Your institutional signal desk is synchronized and ready. Select your starting environment to begin hunting whale clusters.</p>
+          
+          <div class="onboarding-choices">
+            <button id="onboard-sim" class="onboard-btn onboard-btn-sim" type="button">
+              <div class="onboard-btn-label">Simulation Mode</div>
+              <div class="onboard-btn-sub">Safe environment with synthetic events</div>
+            </button>
+            <button id="onboard-live" class="onboard-btn onboard-btn-live" type="button">
+              <div class="onboard-btn-label">Live Configuration</div>
+              <div class="onboard-btn-sub">Connect Kalshi API for real-time edge</div>
+            </button>
+          </div>
+        </div>
+
+        <div class="onboarding-footer">
+          <span>Trade Hunter | Prediction Market Analysis Engine v0.2.7</span>
+        </div>
+      </div>
+    </div>
 
     <script src="/static/dashboard.js"></script>
   </body>

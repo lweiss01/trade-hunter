@@ -526,8 +526,8 @@ def _persist_tuning_snapshot(payload: dict[str, Any]) -> tuple[str | None, dict[
     """Append a new advisor snapshot to docs/TUNING-BACKLOG.md with real TB ids.
     Returns (first_tb_id, updated_payload_with_tb_ids)."""
     try:
-        backlog_path = pathlib.Path(__file__).parent.parent / "docs" / "TUNING-BACKLOG.md"
-        existing = backlog_path.read_text(encoding="utf-8") if backlog_path.exists() else ""
+        from .config import TUNING_BACKLOG_PATH
+        existing = TUNING_BACKLOG_PATH.read_text(encoding="utf-8") if TUNING_BACKLOG_PATH.exists() else ""
 
         # Find current highest TB number so we assign the next ones sequentially.
         existing_ids = [int(m) for m in re.findall(r"TB-(\d+)", existing)]
@@ -592,8 +592,9 @@ def _persist_tuning_snapshot(payload: dict[str, Any]) -> tuple[str | None, dict[
         else:
             updated = updated + block
 
-        backlog_path.write_text(updated, encoding="utf-8")
-        log.info("tuning advisor: persisted snapshot to %s (first=%s)", backlog_path, first_tb)
+        TUNING_BACKLOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        TUNING_BACKLOG_PATH.write_text(updated, encoding="utf-8")
+        log.info("tuning advisor: persisted snapshot to %s (first=%s)", TUNING_BACKLOG_PATH, first_tb)
         return first_tb, {**payload, "tb_id": first_tb, "tb_ids": tb_ids}
     except Exception as exc:
         log.warning("tuning advisor: failed to persist snapshot: %s", exc)
@@ -621,11 +622,11 @@ class TuningGovernor:
         self._cached_condensed = "No historical constraints."
 
     def _extract_and_condense(self) -> str:
-        backlog_path = pathlib.Path(__file__).parent.parent / "docs" / "TUNING-BACKLOG.md"
-        if not backlog_path.exists():
+        from .config import TUNING_BACKLOG_PATH
+        if not TUNING_BACKLOG_PATH.exists():
             return "No historical constraints."
 
-        text = backlog_path.read_text(encoding="utf-8")
+        text = TUNING_BACKLOG_PATH.read_text(encoding="utf-8")
         import hashlib
         current_hash = hashlib.md5(text.encode("utf-8")).hexdigest()
 

@@ -5,9 +5,11 @@ Generates a "Public Edition" of the codebase by stripping commercial-only featur
 Usage: python scripts/distribute.py
 """
 
+from __future__ import annotations
+
+import fnmatch
 import os
 import shutil
-import sys
 from pathlib import Path
 
 # Configuration
@@ -15,62 +17,108 @@ ROOT = Path(__file__).parent.parent.resolve()
 DIST_ROOT = ROOT / "dist"
 PUBLIC_DIR = DIST_ROOT / "trade-hunter-public"
 
-# Files/Folders to completely ignore during copy
-IGNORE_PATTERNS = [
+# ── IGNORE_PATTERNS (public Edition export) ───────────────────────────────
+# shutil.copytree `ignore=` only inspects entry *names* in each directory walk.
+#
+# IGNORE_NAMES — exact basename (file or folder) skipped everywhere.
+IGNORE_NAMES = frozenset({
+    # VCS / tool / env hygiene
     ".git",
-    ".github",
+    ".github",  # commercial CI and copilot configs; omit from public tarball
     ".home",
     ".pytest_cache",
     ".venv",
     ".vscode",
     "__pycache__",
     ".env",
-    ".env.example",  # Keep private env examples out if needed
+    # Output / ephemeral / workspace cruft from local runs
     "dist",
     "scratch",
-    "tests",         # Optional: keep public repo light
-    ".gsd",          # Private milestone tracking
+    "tests",  # keep public checkout light (no bundled pytest fixtures)
+    "build",
+    "tmp",
+    ".tmp",
+    ".artifacts",
+    # Private agent + milestone metadata (commercial repo continuity)
+    ".gsd",
+    ".gsd-id",
+    ".gsd.migrating",
     ".antigravity_session",
-]
+    ".holistic",
+    ".planning",
+    ".cursor",
+    ".beads",
+    # IDE / toolchain rules wired to authors' setups
+    ".cursorrules",
+    ".windsurfrules",
+    # Repo-local secrets or integration scratch (never distribute)
+    ".bg-shell",
+    ".kalshi-keys",
+    # Ephemeral notebooks / probes (not docs)
+    "current_feeds.txt",
+    "proposal_feeds.txt",
+    "HANDOFF.md",
+    # Generated / leaked local artefacts (explicit names often present at repo root)
+    "trade_hunter.egg-info",
+    "integration_test_results.md",
+    "integration_test_results_sqlite.md",
+    "output.log",
+    "trade-hunter-boot.log",
+    "design-proposal.html",
+    "trade-hunter_dashboard_mockup.html",
+    # Agent protocol copies at repo root (keep README/DEPLOYMENT/USER_GUIDE)
+    "AGENTS.md",
+    "CLAUDE.md",
+    "GEMINI.md",
+    "HOLISTIC.md",
+})
 
-# Sensitive files to physically DELETE from the public copy
+# IGNORE_NAME_GLOBS — fnmatch on basename (per-directory entry names).
+IGNORE_NAME_GLOBS: tuple[str, ...] = (
+    "trade-hunter*.exe",
+    "trade_hunter.corrupt*.db",
+    "*.pyc",
+    # Local SQLite WAL / SHM / backups from dev machines
+    "trade_hunter.db-shm",
+    "trade_hunter.db-wal",
+    "trade_hunter.db.bak-*",
+    "trade_hunter.db",
+    # PyInstaller / frozen-build spec files (commercial packaging)
+    "trade-hunter*.spec",
+)
+
+# Basenames that are always ignored *except* we still allow .env.example for OSS.
+def _ignore_basename(name: str) -> bool:
+    if name in IGNORE_NAMES:
+        return True
+    for pattern in IGNORE_NAME_GLOBS:
+        if fnmatch.fnmatch(name, pattern):
+            return True
+    return False
+
+
+# Commercial-only source files removed after copy (replaced with .py.restricted stub)
 STRIP_FILES = [
     "app/feeds/kalshi_pykalshi.py",
 ]
 
-def handle_remove_readonly(func, path, excinfo):
-    """Handler for shutil.rmtree to remove read-only attribute on Windows."""
-    import stat
-    if not os.access(path, os.W_OK):
-        os.chmod(path, stat.S_IWUSR)
-        func(path)
-    else:
-        raise
 
 def main():
     print("--- Trade Hunter Distribution Tool ---")
-    
+
     if os.path.exists(PUBLIC_DIR):
         print(f"Cleaning existing dist folder: {PUBLIC_DIR}")
-        try:
-            # For Python 3.12+, onexc is preferred; fallback to onerror for older versions
-            if sys.version_info >= (3, 12):
-                shutil.rmtree(PUBLIC_DIR, onexc=handle_remove_readonly)
-            else:
-                shutil.rmtree(PUBLIC_DIR, onerror=handle_remove_readonly)
-        except Exception as e:
-            print(f"[WARN] Error during cleanup: {e}")
-            print("Trying to proceed anyway...")
-    
+        shutil.rmtree(PUBLIC_DIR)
+
     os.makedirs(DIST_ROOT, exist_ok=True)
-    
+
     print(f"Syncing master -> {PUBLIC_DIR}...")
-    
+
     def ignore_func(directory, contents):
-        return [c for c in contents if c in IGNORE_PATTERNS or c.endswith(".pyc")]
+        return [c for c in contents if _ignore_basename(c)]
 
     shutil.copytree(ROOT, PUBLIC_DIR, ignore=ignore_func)
-    
+
     print("Patching Edition Configuration...")
     edition_path = PUBLIC_DIR / "app" / "edition.py"
     if edition_path.exists():
@@ -88,15 +136,18 @@ def main():
         if target.exists():
             target.unlink()
             print(f"[OK] Stripped: {rel_path}")
-            # Create a placeholder if needed
             placeholder = target.with_suffix(".py.restricted")
-            placeholder.write_text("# This module is exclusive to the Commercial Edition.\n# Visit https://tradehunter.ai to upgrade.\n")
+            placeholder.write_text(
+                "# This module is exclusive to the Commercial Edition.\n"
+                "# Visit https://tradehunter.ai to upgrade.\n"
+            )
         else:
             print(f"[WARN] WARNING: Sensitive file not found: {rel_path}")
 
     print("\nSUCCESS!")
     print(f"Your Public Edition is ready at: {PUBLIC_DIR}")
     print("You can now push the contents of this folder to your public GitHub repository.")
+
 
 if __name__ == "__main__":
     main()

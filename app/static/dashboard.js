@@ -41,6 +41,8 @@ const settingDiscordAlertModeEl = document.querySelector("#setting-discord-alert
 const settingDiscordRouteCryptoEl = document.querySelector("#setting-discord-route-crypto");
 const settingDiscordRouteMacroEl = document.querySelector("#setting-discord-route-macro");
 const settingDiscordRouteElectionsEl = document.querySelector("#setting-discord-route-elections");
+const settingDiscordRouteSportsEl = document.querySelector("#setting-discord-route-sports");
+const settingDiscordRouteGeopoliticsEl = document.querySelector("#setting-discord-route-geopolitics");
 const settingIngestApiTokenEl = document.querySelector("#setting-ingest-api-token");
 const settingPolyalerthubTokenEl = document.querySelector("#setting-polyalerthub-token");
 const settingSpikeMinVolumeDeltaEl = document.querySelector("#setting-spike-min-volume-delta");
@@ -58,7 +60,8 @@ const settingsStatusDiscordEl = document.querySelector("#settings-status-discord
 const settingsStatusIngestEl = null; // removed — merged into Feeds panel
 const settingsStatusDetectorEl = document.querySelector("#settings-status-detector");
 const settingsStatusStorageEl = document.querySelector("#settings-status-storage");
-const settingsSaveButtonEl = document.querySelector("#settings-save-btn");
+const settingsSaveButtonEl = document.querySelector("#settings-save-master");
+const settingsSaveTriggerEls = Array.from(document.querySelectorAll("[data-settings-save-trigger]"));
 const settingsSaveStatusEl = document.querySelector("#settings-save-status");
 const adminTokenInputEl = document.querySelector("#admin-token-input");
 
@@ -87,6 +90,8 @@ const readOnlySettingsControls = [
   settingDiscordRouteCryptoEl,
   settingDiscordRouteMacroEl,
   settingDiscordRouteElectionsEl,
+  settingDiscordRouteSportsEl,
+  settingDiscordRouteGeopoliticsEl,
   settingIngestApiTokenEl,
   settingPolyalerthubTokenEl,
 ].filter(Boolean);
@@ -101,6 +106,9 @@ let lastSettingsState = null;
 let settingsSaveInFlight = false;
 let tickerMutationInFlight = false;
 let isCommercial = true;
+let restartInFlight = false;
+const ONBOARDED_KEY = "th-onboarded";
+const ONBOARDING_MODE_KEY = "th-onboarded-mode";
 
 // Per-market price history for sparklines (last 20 yes_price values)
 const priceHistory = new Map();
@@ -268,6 +276,59 @@ function normalizeTicker(value) {
   return String(value || "").trim().toUpperCase();
 }
 
+function rememberOnboardingMode(mode) {
+  localStorage.setItem(ONBOARDED_KEY, "true");
+  localStorage.setItem(ONBOARDING_MODE_KEY, mode);
+}
+
+function getRememberedOnboardingMode() {
+  return localStorage.getItem(ONBOARDING_MODE_KEY) || "";
+}
+
+function getBetSide(signal) {
+  const event = signal?.event || {};
+  const rawSide = String(event.trade_side || "").trim().toLowerCase();
+  const analystDirection = String(signal?.analyst?.direction || "").trim().toLowerCase();
+
+  if (rawSide === "yes" || rawSide === "y" || rawSide.includes("yes")) {
+    return { label: "YES", className: "yes", detail: "Yes bet" };
+  }
+  if (rawSide === "no" || rawSide === "n" || rawSide.includes("no")) {
+    return { label: "NO", className: "no", detail: "No bet" };
+  }
+  if (["buy", "bought", "bid"].includes(rawSide) && event.yes_price != null) {
+    return { label: "YES", className: "yes", detail: "Buy Yes" };
+  }
+  if (["sell", "sold", "ask"].includes(rawSide) && event.yes_price != null) {
+    return { label: "NO", className: "no", detail: "Sell Yes / Buy No" };
+  }
+  if (event.no_price != null && event.yes_price == null) {
+    return { label: "NO", className: "no", detail: "No price" };
+  }
+  if (analystDirection === "yes" || analystDirection.includes("yes")) {
+    return { label: "YES", className: "yes", detail: "Analyst direction: Yes" };
+  }
+  if (analystDirection === "no" || analystDirection.includes("no")) {
+    return { label: "NO", className: "no", detail: "Analyst direction: No" };
+  }
+
+  const currentYesPrice = Number(event.yes_price);
+  const leadingEvents = Array.isArray(signal?.leading_events) ? signal.leading_events : [];
+  const previousWithPrice = [...leadingEvents].reverse().find((item) => item?.yes_price != null);
+  const previousYesPrice = Number(previousWithPrice?.yes_price);
+  if (Number.isFinite(currentYesPrice) && Number.isFinite(previousYesPrice)) {
+    const delta = currentYesPrice - previousYesPrice;
+    if (delta > 0.0001) {
+      return { label: "YES", className: "yes", detail: "Yes price moved up" };
+    }
+    if (delta < -0.0001) {
+      return { label: "NO", className: "no", detail: "Yes price moved down" };
+    }
+  }
+
+  return { label: "SIDE ?", className: "unknown", detail: "Side unknown" };
+}
+
 function isValidTickerFormat(ticker) {
   return /^[A-Z0-9](?:[A-Z0-9-]{1,62}[A-Z0-9])?$/.test(ticker);
 }
@@ -353,6 +414,8 @@ function renderSettings(settingsPayload) {
   if (settingDiscordRouteCryptoEl) settingDiscordRouteCryptoEl.value = presence.discord_webhook_routes?.includes("crypto") ? "configured" : "not set";
   if (settingDiscordRouteMacroEl) settingDiscordRouteMacroEl.value = presence.discord_webhook_routes?.includes("macro") ? "configured" : "not set";
   if (settingDiscordRouteElectionsEl) settingDiscordRouteElectionsEl.value = presence.discord_webhook_routes?.includes("elections") ? "configured" : "not set";
+  if (settingDiscordRouteSportsEl) settingDiscordRouteSportsEl.value = presence.discord_webhook_routes?.includes("sports") ? "configured" : "not set";
+  if (settingDiscordRouteGeopoliticsEl) settingDiscordRouteGeopoliticsEl.value = presence.discord_webhook_routes?.includes("geopolitics") ? "configured" : "not set";
   if (settingIngestApiTokenEl) settingIngestApiTokenEl.value = formatPresenceLabel(presence.ingest_api_token);
   if (settingPolyalerthubTokenEl) settingPolyalerthubTokenEl.value = formatPresenceLabel(presence.polyalerthub_token);
   if (settingSpikeMinVolumeDeltaEl) settingSpikeMinVolumeDeltaEl.value = settings.spike_min_volume_delta ?? "";
@@ -670,6 +733,7 @@ function renderSignals(signals) {
     const scoreRaw = Number(signal.score || 0);
     // cap score at 10 for bar width; normalise to percentage
     const scoreBarPct = Math.min(100, Math.round((scoreRaw / 10) * 100));
+    const betSide = getBetSide(signal);
 
     let analystTagHtml = "";
     if (analyst?.pending) {
@@ -690,6 +754,7 @@ function renderSignals(signals) {
       <div class="sig-row1">
         <strong class="sig-title">${escapeHtml(signal.event.title)}</strong>
         <div class="sig-tags">
+          <span class="sig-tag bet-side ${escapeHtml(betSide.className)}" title="${escapeHtml(betSide.detail)}">${escapeHtml(betSide.label)}</span>
           <span class="sig-tag tier-${escapeHtml(tier)}">${escapeHtml(tier)}</span>
           <span class="sig-tag ${freshness.className}">${escapeHtml(freshness.label)}</span>
           ${analystTagHtml}
@@ -1277,6 +1342,7 @@ async function refresh() {
   try {
     const state = await fetchState();
     lastDashboardState = state;
+    window.tradeHunterState = state;
     
     // Update commercial state
     isCommercial = Boolean(state.config?.is_commercial ?? true);
@@ -1296,12 +1362,19 @@ async function refresh() {
     renderTickerList(state.config?.kalshi_markets || []);
     
     // Pass is_admin through if it's in the state (from /api/state)
-    const settingsPayload = { 
-        settings: lastSettingsState?.settings || (state.config || {}), 
-        is_admin: state.config?.is_admin || lastSettingsState?.is_admin,
+    const settingsPayload = {
+        settings: lastSettingsState?.settings || (state.config || {}),
+        is_admin: Boolean(state.config?.is_admin || lastSettingsState?.is_admin),
         is_commercial: isCommercial
     };
     renderSettings(settingsPayload);
+
+    // Anti-Limbo: If no feeds are enabled, force the onboarding splash
+    const config = state.config || {};
+    const noFeeds = !config.enable_simulation && !config.enable_kalshi;
+    if (noFeeds && !getRememberedOnboardingMode()) {
+      checkOnboarding(true); 
+    }
   } catch (error) {
     signalsEl.innerHTML = `<div class="empty">${escapeHtml(error.message)}</div>`;
   }
@@ -1511,12 +1584,44 @@ if (settingsSaveButtonEl) {
   });
 }
 
+settingsSaveTriggerEls.forEach((button) => {
+  button.addEventListener("click", () => {
+    settingsSaveButtonEl?.click();
+  });
+});
+
+const settingsExitBtnEl = document.querySelector("#settings-exit-btn");
 const settingsRestartBtnEl = document.querySelector("#settings-restart-btn");
+function setServerActionButtonsDisabled(isDisabled) {
+  if (settingsExitBtnEl) settingsExitBtnEl.disabled = isDisabled;
+  if (settingsRestartBtnEl) settingsRestartBtnEl.disabled = isDisabled;
+}
+
+if (settingsExitBtnEl) {
+  settingsExitBtnEl.addEventListener("click", async () => {
+    if (!confirm("Exit Trade Hunter now? This will stop the local server.")) return;
+    setServerActionButtonsDisabled(true);
+    settingsExitBtnEl.textContent = "Exiting...";
+    setSettingsSaveStatus("Stopping Trade Hunter...", "pending");
+    try {
+      await fetch("/api/admin/shutdown", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: "shutdown" })
+      });
+      setSettingsSaveStatus("Trade Hunter is shutting down. You can close this browser tab.", "success");
+    } catch {
+      setSettingsSaveStatus("Trade Hunter is shutting down. You can close this browser tab.", "success");
+    }
+  });
+}
+
 if (settingsRestartBtnEl) {
   settingsRestartBtnEl.addEventListener("click", async () => {
     if (!confirm("Restart the server now? The page will reload automatically.")) return;
-    settingsRestartBtnEl.disabled = true;
+    setServerActionButtonsDisabled(true);
     settingsRestartBtnEl.textContent = "Restarting…";
+    restartInFlight = true;
     try {
       await fetch("/api/admin/shutdown", { 
         method: "POST", 
@@ -1539,12 +1644,16 @@ if (adminTokenInputEl) {
   const tokenDesc = document.querySelector(".settings-panel:first-child .settings-desc");
   
   if (isLoopback) {
+    adminTokenInputEl.readOnly = true;
+    adminTokenInputEl.type = "text";
     adminTokenInputEl.placeholder = "Local Access (No Token Required)";
     adminTokenInputEl.classList.remove("pulse-on-empty");
     if (tokenDesc) {
       tokenDesc.innerHTML = `<span style="color:var(--live);font-weight:600;">✓ Local Access Granted</span><br>You are accessing Trade Hunter from the same machine. Mutations are automatically allowed "behind the scenes".`;
     }
   } else {
+    adminTokenInputEl.readOnly = false;
+    adminTokenInputEl.type = "password";
     adminTokenInputEl.value = localStorage.getItem("th_admin_token") || "";
     adminTokenInputEl.addEventListener("input", () => {
       localStorage.setItem("th_admin_token", adminTokenInputEl.value.trim());
@@ -1552,6 +1661,96 @@ if (adminTokenInputEl) {
   }
 }
 
-setActivePage(currentPage);
-refresh();
+
+// ── Heartbeat Loop (Smart Shutdown) ──────────────────────────────
+async function sendHeartbeat() {
+  try {
+    await fetch("/api/heartbeat", { method: "POST" });
+  } catch (err) {
+    /* server might be shutting down */
+  }
+}
+setInterval(sendHeartbeat, 5000);
+
+// ── Onboarding Logic ────────────────────────────────────────────────
+const onboardingOverlay = document.querySelector("#onboarding-overlay");
+const onboardSimBtn = document.querySelector("#onboard-sim");
+const onboardLiveBtn = document.querySelector("#onboard-live");
+
+// The splash is visible by default in the HTML.
+// This guard ensures it stays visible until a valid state is found.
+let onboardingGateActive = true; 
+
+function checkOnboarding(forceLimbo = false) {
+  if (!onboardingOverlay) return;
+  
+  const state = window.tradeHunterState || {};
+  const onboarded = localStorage.getItem(ONBOARDED_KEY);
+  const rememberedMode = getRememberedOnboardingMode();
+  const config = state.config || {};
+  const hasFeeds = config.enable_simulation || config.enable_kalshi;
+
+  // We only DOCK (hide splash) if:
+  // 1. We have clicked either Sim or Live before (onboarded == true)
+  // 2. AND the server reports that at least one feed is active
+  // 3. AND we are not forcing the limbo splash
+  
+  const shouldDock = onboarded && (hasFeeds || rememberedMode === "live") && !forceLimbo;
+  
+  if (shouldDock) {
+    onboardingOverlay.style.display = "none";
+    onboardingOverlay.setAttribute("hidden", "true");
+    onboardingGateActive = false;
+    document.body.classList.remove("is-loading");
+  } else {
+    // Keep or Restore the gate
+    onboardingOverlay.style.display = "flex";
+    onboardingOverlay.removeAttribute("hidden");
+    onboardingGateActive = true;
+    document.body.classList.add("is-loading");
+  }
+}
+
+if (onboardSimBtn) {
+  onboardSimBtn.addEventListener("click", async () => {
+    rememberOnboardingMode("simulation");
+    onboardingOverlay.style.display = "none";
+    onboardingOverlay.setAttribute("hidden", "true");
+    document.body.classList.remove("is-loading");
+    try {
+      await saveSettings({ enable_simulation: true, enable_kalshi: false });
+      await refresh();
+    } catch (error) {
+      setSettingsSaveStatus(error.message || "Mode saved locally. Server settings were not updated.", "error");
+    }
+  });
+}
+
+if (onboardLiveBtn) {
+  onboardLiveBtn.addEventListener("click", async () => {
+    rememberOnboardingMode("live");
+    onboardingOverlay.style.display = "none";
+    onboardingOverlay.setAttribute("hidden", "true");
+    document.body.classList.remove("is-loading");
+    try {
+      await saveSettings({ enable_simulation: false, enable_kalshi: true });
+    } catch (error) {
+      setSettingsSaveStatus(error.message || "Mode saved locally. Configure live mode in Settings.", "error");
+    }
+    
+    // Explicitly transition to settings with a slight delay to allow modal dismissal
+    setTimeout(() => {
+      setActivePage("settings");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }, 50);
+  });
+}
+
+// Initial start-up sequence with a slight delay to ensure stable state
+setTimeout(() => {
+  checkOnboarding();
+  setActivePage(currentPage);
+  refresh();
+}, 300);
+
 setInterval(refresh, 3000);

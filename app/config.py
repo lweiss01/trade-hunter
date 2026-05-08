@@ -1,11 +1,80 @@
 from __future__ import annotations
 
 import os
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[1]
+APP_DATA_DIR_NAME = "Trade Hunter"
+STATE_FILE_NAMES = (".env", "trade_hunter.db")
+
+
+def _path_has_existing_state(path: Path) -> bool:
+    return any((path / name).exists() for name in STATE_FILE_NAMES)
+
+
+def _platform_data_root() -> Path | None:
+    if sys.platform == "win32":
+        base = os.getenv("LOCALAPPDATA") or os.getenv("APPDATA")
+        return Path(base) / APP_DATA_DIR_NAME if base else None
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Application Support" / APP_DATA_DIR_NAME
+
+    base = os.getenv("XDG_DATA_HOME")
+    if base:
+        return Path(base) / "trade-hunter"
+    return Path.home() / ".local" / "share" / "trade-hunter"
+
+
+def _resolve_data_root(exe_dir: Path) -> Path:
+    override = os.getenv("TRADE_HUNTER_DATA_ROOT")
+    if override:
+        return Path(override).expanduser().resolve()
+
+    if exe_dir.name.lower() == "dist" and (exe_dir.parent / "app").exists():
+        return exe_dir.parent
+
+    if _path_has_existing_state(exe_dir):
+        return exe_dir
+
+    return _platform_data_root() or exe_dir
+
+
+# Root paths for asset management and persistence
+if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+    # Running in a PyInstaller bundle
+    ASSET_ROOT = Path(sys._MEIPASS)
+    # Persist data in a stable app-data location for installed bundles, but keep
+    # existing beside-exe data and dev dist runs working.
+    exe_dir = Path(sys.executable).resolve().parent
+    DATA_ROOT = _resolve_data_root(exe_dir)
+else:
+    # Running in a normal Python environment
+    ASSET_ROOT = Path(__file__).resolve().parents[1]
+    DATA_ROOT = ASSET_ROOT
+
+ROOT = ASSET_ROOT  # Back-compat for internal asset lookups
+TUNING_BACKLOG_PATH = DATA_ROOT / "docs" / "TUNING-BACKLOG.md"
+ENV_PATH = DATA_ROOT / ".env"
+
+
+
+def _is_frozen() -> bool:
+    return getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
+
+
+def _get_user_data_dir() -> Path:
+    """Return a writable directory for app data (env file, database)."""
+    if _is_frozen():
+        if sys.platform == "win32":
+            base = Path(os.getenv('APPDATA', '~')).expanduser()
+        elif sys.platform == "darwin":
+            base = Path.home() / "Library" / "Application Support"
+        else:
+            base = Path(os.getenv('XDG_DATA_HOME', '~/.local/share')).expanduser()
+        return base / "trade-hunter"
+    return ROOT
 
 
 def _load_env_file(path: Path) -> None:
@@ -68,7 +137,8 @@ def _kv_pairs(name: str) -> dict[str, str]:
 
 
 def _persist_env_updates(updates: dict[str, str], env_path: Path | None = None) -> None:
-    path = env_path or (ROOT / ".env")
+    path = env_path or ENV_PATH
+    path.parent.mkdir(parents=True, exist_ok=True)
 
     if not path.exists():
         content = "\n".join(f"{key}={value}" for key, value in updates.items()) + "\n"
@@ -278,7 +348,7 @@ class Settings:
 
 
 def load_settings() -> Settings:
-    _load_env_file(ROOT / ".env")
+    _load_env_file(ENV_PATH)
     settings = Settings(
         host=os.getenv("APP_HOST", "127.0.0.1"),
         port=_int("APP_PORT", 8765),
@@ -327,6 +397,6 @@ def load_settings() -> Settings:
         print("--- Use this token for external alert webhooks (Bearer auth)! ---")
 
     if env_updates:
-        _persist_env_updates(env_updates)
-    
+        _persist_env_updates(env_updates, env_path=env_path)
+
     return settings

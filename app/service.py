@@ -9,9 +9,9 @@ from typing import Any
 
 log = logging.getLogger(__name__)
 
-from .config import Settings, persist_detector_thresholds, persist_kalshi_markets
+from .config import Settings, persist_detector_thresholds, persist_kalshi_markets, _get_user_data_dir
 from .detector import SpikeDetector
-from .feeds.kalshi_pykalshi import KalshiPykalshiFeed
+
 from .feeds.simulated import SimulatedFeed
 from .models import MarketEvent
 from .notifiers import DiscordWebhookNotifier
@@ -45,8 +45,8 @@ class TradeHunterService:
         self._whale_baselines: dict[str, dict[str, float]] = {}
 
         # Optional signal analyst (Anthropic primary, Perplexity fallback)
-        from .config import _load_env_file, ROOT
-        _load_env_file(ROOT / ".env")
+        from .config import _load_env_file, ENV_PATH
+        _load_env_file(ENV_PATH)
         anthropic_key = os.environ.get("ANTHROPIC_API_KEY") or ""
         perplexity_key = os.environ.get("PERPLEXITY_API_KEY") or ""
         if anthropic_key or perplexity_key:
@@ -76,6 +76,7 @@ class TradeHunterService:
 
         self._active_mode = "none"
         if self.settings.enable_kalshi:
+            from .feeds.kalshi_pykalshi import KalshiPykalshiFeed
             self._active_mode = "live"
             self.feeds.append(
                 KalshiPykalshiFeed(self.settings, self.ingest_event, self.store.update_feed_status)
@@ -127,6 +128,7 @@ class TradeHunterService:
         if self._cleanup_thread:
             self._cleanup_stop.set()
             self._cleanup_thread.join(timeout=2.0)
+        self.store.close()
     
     def _cleanup_loop(self) -> None:
         """Background thread that updates baselines hourly and runs retention daily."""
@@ -237,6 +239,10 @@ class TradeHunterService:
         return list(self.settings.kalshi_markets)
 
     def get_dead_kalshi_markets(self) -> list[str]:
+        try:
+            from .feeds.kalshi_pykalshi import KalshiPykalshiFeed
+        except ImportError:
+            return []
         for feed in self.feeds:
             if isinstance(feed, KalshiPykalshiFeed):
                 return feed.dead_tickers()
@@ -339,7 +345,7 @@ class TradeHunterService:
                 return list(self.settings.kalshi_markets)
 
             self.settings.kalshi_markets.append(normalized)
-            persist_kalshi_markets(self.settings.kalshi_markets)
+            persist_kalshi_markets(self.settings.kalshi_markets, env_path=_get_user_data_dir() / ".env")
             self._restart_kalshi_feed_locked()
             return list(self.settings.kalshi_markets)
 
@@ -352,7 +358,7 @@ class TradeHunterService:
             self.settings.kalshi_markets[:] = [
                 item for item in self.settings.kalshi_markets if item != normalized
             ]
-            persist_kalshi_markets(self.settings.kalshi_markets)
+            persist_kalshi_markets(self.settings.kalshi_markets, env_path=_get_user_data_dir() / ".env")
             self._restart_kalshi_feed_locked()
             return list(self.settings.kalshi_markets)
 
@@ -360,6 +366,10 @@ class TradeHunterService:
         if not self.settings.enable_kalshi:
             return
 
+        try:
+            from .feeds.kalshi_pykalshi import KalshiPykalshiFeed
+        except ImportError:
+            return
         for feed in self.feeds:
             if isinstance(feed, KalshiPykalshiFeed):
                 # If the feed has a live refresher, trigger it for a zero-downtime update.
@@ -375,13 +385,13 @@ class TradeHunterService:
                 break
 
     def get_tuning_backlog(self) -> dict:
-        """Parse docs/TUNING-BACKLOG.md into structured data for the Settings panel."""
-        import pathlib, re
-        backlog_path = pathlib.Path(__file__).parent.parent / "docs" / "TUNING-BACKLOG.md"
-        if not backlog_path.exists():
+        """Parse TUNING-BACKLOG.md into structured data for the Settings panel."""
+        import re
+        from .config import TUNING_BACKLOG_PATH
+        if not TUNING_BACKLOG_PATH.exists():
             return {"snapshots": [], "applied_count": 0, "planned_count": 0}
 
-        text = backlog_path.read_text(encoding="utf-8")
+        text = TUNING_BACKLOG_PATH.read_text(encoding="utf-8")
         snapshots: list[dict] = []
         current_snapshot: dict | None = None
         current_items: list[dict] = []
@@ -472,11 +482,11 @@ class TradeHunterService:
 
     def mark_tuning_item_applied(self, tb_id: str) -> None:
         """Flip the checkbox for a planned TB item in TUNING-BACKLOG.md to applied."""
-        import pathlib, re
-        backlog_path = pathlib.Path(__file__).parent.parent / "docs" / "TUNING-BACKLOG.md"
-        if not backlog_path.exists():
+        import re
+        from .config import TUNING_BACKLOG_PATH
+        if not TUNING_BACKLOG_PATH.exists():
             raise ValueError("TUNING-BACKLOG.md not found")
-        text = backlog_path.read_text(encoding="utf-8")
+        text = TUNING_BACKLOG_PATH.read_text(encoding="utf-8")
         # Match: - [ ] **TB-042** `planned` — ...
         pattern = re.compile(
             r'^(\s*-\s+)\[ \](\s+\*\*' + re.escape(tb_id) + r'\*\*\s+)`planned`',
@@ -485,7 +495,8 @@ class TradeHunterService:
         if not pattern.search(text):
             raise ValueError(f"{tb_id} not found as a planned item")
         updated = pattern.sub(r'\1[x]\2`applied`', text)
-        backlog_path.write_text(updated, encoding="utf-8")
+        TUNING_BACKLOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+        TUNING_BACKLOG_PATH.write_text(updated, encoding="utf-8")
         log.info("tuning backlog: marked %s as applied", tb_id)
 
     def apply_tuning_suggestions(self) -> dict[str, float]:
@@ -523,6 +534,7 @@ class TradeHunterService:
             min_volume_delta=applied.get("min_volume_delta"),
             min_price_move=applied.get("min_price_move"),
             score_threshold=applied.get("score_threshold"),
+            env_path=_get_user_data_dir() / ".env",
         )
         return applied
 
@@ -618,6 +630,8 @@ class TradeHunterService:
         state["config"] = {
             "host": self.settings.host,
             "port": self.settings.port,
+            "enable_simulation": self.settings.enable_simulation,
+            "enable_kalshi": self.settings.enable_kalshi,
             "simulation": self.settings.enable_simulation,
             "kalshi": self.settings.enable_kalshi,
             "active_mode": self._active_mode,
