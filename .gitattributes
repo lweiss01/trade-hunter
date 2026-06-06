@@ -1,0 +1,15 @@
+# BEGIN HOLISTIC MANAGED ATTRIBUTES
+HOLISTIC.md text eol=lf
+AGENTS.md text eol=lf
+HISTORY.md text eol=lf
+CLAUDE.md text eol=lf
+GEMINI.md text eol=lf
+.cursorrules text eol=lf
+.windsurfrules text eol=lf
+.github/copilot-instructions.md text eol=lf
+.holistic/**/*.md text eol=lf
+.holistic/**/*.json text eol=lf
+.holistic/**/*.sh text eol=lf
+.holistic/**/*.ps1 text eol=crlf
+.holistic/**/*.cmd text eol=crlf
+# END HOLISTIC MANAGED ATTRIBUTES
