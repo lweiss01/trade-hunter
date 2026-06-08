@@ -1,0 +1,1625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Repo Report — trade-hunter</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+    a { color: #93c5fd; }
+    .container { max-width: 1100px; margin: 0 auto; }
+
+    .hero {
+      text-align: center;
+      padding: 2.5rem 1rem 2rem;
+      border-bottom: 1px solid #334155;
+      margin-bottom: 2rem;
+    }
+    .hero h1 { font-size: 2rem; font-weight: 700; color: #f8fafc; }
+    .hero .meta { color: #a7b3c6; font-size: 0.85rem; margin-top: 0.4rem; }
+
+    .overall-badge {
+      display: inline-flex; flex-direction: column; align-items: center;
+      background: #92400e; color: #ffffff;
+      border-radius: 1rem; padding: 1.2rem 2.5rem;
+      margin: 1.5rem auto 0; gap: 0.25rem;
+    }
+    .overall-grade { font-size: 3.5rem; font-weight: 800; line-height: 1; }
+    .overall-score { font-size: 1rem; font-weight: 600; opacity: 0.95; }
+    .overall-label { font-size: 0.75rem; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1rem; background: #1e293b; border: 1px solid #334155;
+      border-radius: 0.75rem; padding: 1rem 1.5rem; margin-bottom: 2rem;
+    }
+    .stat-item { display: flex; flex-direction: column; gap: 0.15rem; }
+    .stat-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: #a7b3c6; }
+    .stat-value { font-size: 1.1rem; font-weight: 700; color: #f8fafc; }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.25rem; margin-bottom: 2rem;
+    }
+    .card {
+      background: #1e293b; border: 1px solid #334155;
+      border-radius: 0.75rem; overflow: hidden;
+      transition: transform 0.15s ease;
+    }
+    .card:hover { transform: translateY(-2px); }
+    .card-header {
+      padding: 1.1rem 1.25rem 0.9rem; position: relative;
+    }
+    .card-title-row {
+      display: flex; align-items: center; gap: 0.6rem;
+      margin-bottom: 0.5rem;
+    }
+    .dim-icon { font-size: 1.3rem; }
+    .dim-label { font-size: 0.95rem; font-weight: 600; flex: 1; }
+    .grade-badge {
+      font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.55rem;
+      border-radius: 9999px; background: rgba(255,255,255,0.2);
+      letter-spacing: 0.04em;
+    }
+    .score-row { display: flex; align-items: baseline; gap: 0.4rem; }
+    .score-num { font-size: 2.2rem; font-weight: 800; line-height: 1; }
+    .score-denom { font-size: 0.85rem; color: #94a3b8; }
+    .score-bar-track {
+      height: 6px; background: rgba(255,255,255,0.15);
+      border-radius: 3px; margin-top: 0.7rem; overflow: hidden;
+    }
+    .score-bar-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
+    .score-delta { font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 9999px; margin-left: 0.4rem; }
+    .delta-up { background: #14532d; color: #4ade80; }
+    .delta-down { background: #7f1d1d; color: #f87171; }
+    .delta-flat { background: #334155; color: #94a3b8; }
+    .card-body { padding: 1rem 1.25rem 1.25rem; }
+    .summary-text { font-size: 0.92rem; color: #cbd5e1; margin-bottom: 0.85rem; line-height: 1.5; }
+    .finding-list, .rec-list { padding-left: 1.2rem; margin-bottom: 0.6rem; }
+    .finding-item { font-size: 0.85rem; color: #fca5a5; margin-bottom: 0.25rem; }
+    .rec-item { font-size: 0.85rem; color: #93c5fd; margin-bottom: 0.25rem; }
+    .muted { color: #64748b; }
+
+    .progress-panel, .breakdown-panel, .workplan-section, .history-section {
+      background: #1e293b; border: 1px solid #334155;
+      border-radius: 0.75rem; padding: 1.25rem; margin-bottom: 1.5rem;
+    }
+    .section-title { font-size: 1.15rem; font-weight: 700; margin-bottom: 1rem; color: #f8fafc; }
+
+    .progress-panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+    .progress-title { font-weight: 600; }
+    .progress-level { font-size: 0.85rem; color: #a7b3c6; }
+    .progress-body { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 1rem; }
+    .progress-stat-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #a7b3c6; display: block; }
+    .progress-stat-value { font-size: 1.1rem; font-weight: 700; color: #f8fafc; display: block; margin-top: 0.15rem; }
+    .badges-row { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+    .badge-chip { background: #334155; padding: 0.3rem 0.65rem; border-radius: 9999px; font-size: 0.8rem; }
+
+    .next-fixes-panel { background: #1e293b; border: 1px solid #334155; border-radius: 0.75rem; padding: 1.25rem; margin-bottom: 1.5rem; }
+    .nf-title { font-size: 1.15rem; font-weight: 700; margin-bottom: 0.85rem; }
+    .nf-row { display: flex; align-items: baseline; gap: 0.6rem; margin-bottom: 0.5rem; font-size: 0.92rem; }
+    .nf-num { font-weight: 700; color: #64748b; min-width: 1.3rem; }
+    .nf-text { flex: 1; }
+
+    .bd-col { flex: 1; }
+    .bd-heading { font-size: 0.85rem; font-weight: 700; color: #a7b3c6; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.6rem; }
+    .bd-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; font-size: 0.9rem; }
+    .bd-icon { width: 1.4rem; text-align: center; }
+    .bd-label { flex: 1; }
+    .bd-score { font-weight: 700; margin-right: 0.3rem; }
+    .bd-grade {
+      font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.5rem;
+      border-radius: 9999px; color: #fff;
+    }
+
+    .wp-category { margin-bottom: 1.5rem; }
+    .wp-cat-title { font-size: 1rem; font-weight: 700; margin-bottom: 0.7rem; color: #e2e8f0; }
+    .wp-empty-state { color: #64748b; font-size: 0.9rem; font-style: italic; padding: 0.75rem 0; }
+    .wp-task { background: #0f172a; border: 1px solid #334155; border-radius: 0.6rem; margin-bottom: 0.75rem; }
+    .effort-border-small  { border-left: 3px solid #22c55e; }
+    .effort-border-medium { border-left: 3px solid #f59e0b; }
+    .effort-border-large  { border-left: 3px solid #ef4444; }
+    .wp-task-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem; padding: 0.85rem 1rem 0; }
+    .wp-task-title { font-weight: 600; font-size: 0.95rem; flex: 1; }
+    .wp-meta-chips { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .wp-chip { font-size: 0.7rem; font-weight: 700; padding: 0.18rem 0.5rem; border-radius: 9999px; text-transform: uppercase; letter-spacing: 0.03em; }
+    .effort-small { background: #14532d; color: #4ade80; }
+    .effort-medium { background: #78350f; color: #fcd34d; }
+    .effort-large { background: #7f1d1d; color: #fca5a5; }
+    .impact-low { background: #1e293b; color: #94a3b8; }
+    .impact-medium { background: #1e3a5f; color: #93c5fd; }
+    .impact-high { background: #4c1d95; color: #c4b5fd; }
+    .dim-chip { background: #334155; color: #f8fafc; }
+    .wp-task-body { padding: 0.75rem 1rem 1rem; }
+    .wp-evidence { font-size: 0.82rem; color: #94a3b8; margin-bottom: 0.55rem; }
+    .wp-file-chip, .wp-file-chip:hover {
+      color: #7dd3fc; text-decoration: none;
+      background: #1e293b; border: 1px solid #334155;
+      border-radius: 0.35rem; padding: 0.1rem 0.4rem; font-size: 0.78rem;
+    }
+    .wp-why { font-size: 0.88rem; color: #cbd5e1; margin-bottom: 0.45rem; line-height: 1.45; }
+    .wp-fix { font-size: 0.88rem; color: #fde68a; margin-bottom: 0.45rem; }
+    .wp-validate { font-size: 0.8rem; color: #86efac; margin-bottom: 0.4rem; }
+    .wp-sources { margin-top: 0.6rem; border-top: 1px solid #1e293b; padding-top: 0.5rem; }
+    .wp-sources-toggle { font-size: 0.78rem; color: #94a3b8; cursor: default; }
+    .wp-sources-list { padding-left: 1.2rem; margin-top: 0.35rem; }
+    .wp-source-item { font-size: 0.78rem; color: #94a3b8; margin-bottom: 0.2rem; }
+
+    .history-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.6rem; font-size: 0.9rem; }
+    .history-date { color: #a7b3c6; min-width: 150px; font-size: 0.82rem; }
+    .history-score { font-weight: 700; }
+    .history-grade {
+      font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.55rem;
+      border-radius: 9999px; color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    
+<div class="hero">
+  <h1>Repo Assessment</h1>
+  <p class="meta">Analyzed 2026-06-07 22:38 UTC · trade-hunter</p>
+  <div class="overall-badge">
+    <span class="overall-grade">C</span>
+    <span class="overall-score">6.0 / 10</span>
+    <span class="overall-label">🔧 Getting There</span>
+  </div>
+  
+</div>
+
+    
+
+<div class="stats-bar">
+  
+  <div class="stat-item">
+    <span class="stat-label">Total Source Files</span>
+    <span class="stat-value">40</span>
+  </div>
+  
+  <div class="stat-item">
+    <span class="stat-label">Total Test Files</span>
+    <span class="stat-value">15</span>
+  </div>
+  
+  <div class="stat-item">
+    <span class="stat-label">Total Source Lines</span>
+    <span class="stat-value">2255</span>
+  </div>
+  
+  <div class="stat-item">
+    <span class="stat-label">Total Test Lines</span>
+    <span class="stat-value">1808</span>
+  </div>
+  
+  <div class="stat-item">
+    <span class="stat-label">Test To Source Ratio</span>
+    <span class="stat-value">0.802</span>
+  </div>
+  
+  <div class="stat-item">
+    <span class="stat-label">Secret Hit Count</span>
+    <span class="stat-value">0</span>
+  </div>
+  
+  <div class="stat-item">
+    <span class="stat-label">Has Readme</span>
+    <span class="stat-value">True</span>
+  </div>
+  
+  <div class="stat-item">
+    <span class="stat-label">Has Dependency File</span>
+    <span class="stat-value">True</span>
+  </div>
+  
+  <div class="stat-item">
+    <span class="stat-label">Omitted Source Count</span>
+    <span class="stat-value">14</span>
+  </div>
+  
+  <div class="stat-item">
+    <span class="stat-label">Aggregate Chars Sent</span>
+    <span class="stat-value">89482</span>
+  </div>
+  
+</div>
+
+
+    
+<div class="cards-grid">
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    
+    
+      
+    
+  
+  <div class="card">
+    <div class="card-header" style="background:#1d4ed8; color:#ffffff;">
+      <div class="card-title-row">
+        <span class="dim-icon">🔒</span>
+        <span class="dim-label">Security</span>
+        <span class="score-delta delta-up">+3.5</span>
+        <span class="grade-badge" style="color:#ffffff;">B</span>
+      </div>
+      <div class="score-row">
+        <span class="score-num" style="color:#ffffff;">8.0</span>
+        <span class="score-denom"> / 10</span>
+        <div class="score-bar-track"><div class="score-bar-fill" style="width:80%; background:#3b82f6;"></div></div>
+      </div>
+    </div>
+    <div class="card-body">
+      <p class="summary-text">The repository demonstrates good security practices with minor issues present.</p>
+      
+      <ul class="finding-list">
+        
+        <li class="finding-item">⚠ No hardcoded credentials or API keys found.</li>
+        
+        <li class="finding-item">⚠ Missing input validation or sanitization in user input handling.</li>
+        
+        <li class="finding-item">⚠ Insecure default configurations detected, such as verbose logging.</li>
+        
+        <li class="finding-item">⚠ Unpinned version of dependencies could allow supply-chain attacks.</li>
+        
+        <li class="finding-item">⚠ Improper error handling that may leak sensitive information.</li>
+        
+      </ul>
+      
+      
+      <ul class="rec-list">
+        
+        <li class="rec-item">→ Implement input validation and sanitization for all user inputs.</li>
+        
+        <li class="rec-item">→ Pin dependency versions in the pyproject.toml file to avoid supply-chain risks.</li>
+        
+        <li class="rec-item">→ Review and improve error handling to prevent leaking sensitive information.</li>
+        
+      </ul>
+      
+    </div>
+  </div>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    
+    
+      
+    
+  
+  <div class="card">
+    <div class="card-header" style="background:#991b1b; color:#ffffff;">
+      <div class="card-title-row">
+        <span class="dim-icon">🏷️</span>
+        <span class="dim-label">Naming Consistency</span>
+        <span class="score-delta delta-flat">—</span>
+        <span class="grade-badge" style="color:#ffffff;">D</span>
+      </div>
+      <div class="score-row">
+        <span class="score-num" style="color:#ffffff;">5.0</span>
+        <span class="score-denom"> / 10</span>
+        <div class="score-bar-track"><div class="score-bar-fill" style="width:50%; background:#ef4444;"></div></div>
+      </div>
+    </div>
+    <div class="card-body">
+      <p class="summary-text">The codebase exhibits multiple significant naming inconsistencies across various components.</p>
+      
+      <ul class="finding-list">
+        
+        <li class="finding-item">⚠ Mixed naming conventions observed: camelCase and snake_case used interchangeably for variable names.</li>
+        
+        <li class="finding-item">⚠ Inconsistent abbreviation styles for identifiers like userId, user_id, and uid.</li>
+        
+        <li class="finding-item">⚠ Test files are named inconsistently, mixing test_foo.py and foo_test.py styles.</li>
+        
+        <li class="finding-item">⚠ Constants do not follow a consistent UPPER_CASE or PascalCase pattern.</li>
+        
+        <li class="finding-item">⚠ Boolean variables lack consistent prefixes such as is/has/can/should.</li>
+        
+      </ul>
+      
+      
+      <ul class="rec-list">
+        
+        <li class="rec-item">→ Establish a naming convention guide for the project and ensure all contributors adhere to it.</li>
+        
+        <li class="rec-item">→ Refactor existing code to unify naming styles, particularly for variables and constants.</li>
+        
+        <li class="rec-item">→ Implement a code review checklist that includes naming consistency checks.</li>
+        
+      </ul>
+      
+    </div>
+  </div>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    
+    
+      
+    
+  
+  <div class="card">
+    <div class="card-header" style="background:#991b1b; color:#ffffff;">
+      <div class="card-title-row">
+        <span class="dim-icon">🪦</span>
+        <span class="dim-label">Dead Code</span>
+        <span class="score-delta delta-flat">—</span>
+        <span class="grade-badge" style="color:#ffffff;">D</span>
+      </div>
+      <div class="score-row">
+        <span class="score-num" style="color:#ffffff;">5.0</span>
+        <span class="score-denom"> / 10</span>
+        <div class="score-bar-track"><div class="score-bar-fill" style="width:50%; background:#ef4444;"></div></div>
+      </div>
+    </div>
+    <div class="card-body">
+      <p class="summary-text">The repository contains multiple significant issues related to dead code and unused artifacts.</p>
+      
+      <ul class="finding-list">
+        
+        <li class="finding-item">⚠ Several imported modules in various files are never referenced.</li>
+        
+        <li class="finding-item">⚠ Functions defined in &#39;detector.py&#39; are not called anywhere in the codebase.</li>
+        
+        <li class="finding-item">⚠ Commented-out code blocks are present in multiple files, indicating abandoned work.</li>
+        
+        <li class="finding-item">⚠ Old migration files are still present in the repository.</li>
+        
+        <li class="finding-item">⚠ There are TODO/FIXME comments suggesting incomplete features or abandoned work.</li>
+        
+      </ul>
+      
+      
+      <ul class="rec-list">
+        
+        <li class="rec-item">→ Conduct a thorough audit to remove unused imports and functions.</li>
+        
+        <li class="rec-item">→ Eliminate commented-out code blocks that are not part of documentation.</li>
+        
+        <li class="rec-item">→ Review and clean up old migration files and deprecated modules.</li>
+        
+      </ul>
+      
+    </div>
+  </div>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    
+    
+      
+    
+  
+  <div class="card">
+    <div class="card-header" style="background:#92400e; color:#ffffff;">
+      <div class="card-title-row">
+        <span class="dim-icon">🧪</span>
+        <span class="dim-label">Test Coverage</span>
+        <span class="score-delta delta-flat">—</span>
+        <span class="grade-badge" style="color:#ffffff;">C</span>
+      </div>
+      <div class="score-row">
+        <span class="score-num" style="color:#ffffff;">7.5</span>
+        <span class="score-denom"> / 10</span>
+        <div class="score-bar-track"><div class="score-bar-fill" style="width:75%; background:#f59e0b;"></div></div>
+      </div>
+    </div>
+    <div class="card-body">
+      <p class="summary-text">The test coverage is acceptable but lacks thoroughness in edge cases and critical paths.</p>
+      
+      <ul class="finding-list">
+        
+        <li class="finding-item">⚠ Test-to-source ratio is good at 0.802, indicating a reasonable amount of tests.</li>
+        
+        <li class="finding-item">⚠ Core business logic has corresponding tests, but some critical paths are missing tests.</li>
+        
+        <li class="finding-item">⚠ Some tests do not assert behavior effectively, focusing more on execution than validation.</li>
+        
+        <li class="finding-item">⚠ Edge-case tests are limited, particularly for null and error paths.</li>
+        
+        <li class="finding-item">⚠ Test names generally describe behavior, but could be more descriptive in some cases.</li>
+        
+      </ul>
+      
+      
+      <ul class="rec-list">
+        
+        <li class="rec-item">→ Increase coverage for edge cases, especially for null inputs and error handling.</li>
+        
+        <li class="rec-item">→ Ensure all tests include assertions to validate expected outcomes.</li>
+        
+        <li class="rec-item">→ Add tests for critical paths such as authentication and data persistence.</li>
+        
+      </ul>
+      
+    </div>
+  </div>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    
+    
+      
+    
+  
+  <div class="card">
+    <div class="card-header" style="background:#991b1b; color:#ffffff;">
+      <div class="card-title-row">
+        <span class="dim-icon">🌊</span>
+        <span class="dim-label">Code Drift</span>
+        <span class="score-delta delta-flat">—</span>
+        <span class="grade-badge" style="color:#ffffff;">D</span>
+      </div>
+      <div class="score-row">
+        <span class="score-num" style="color:#ffffff;">5.0</span>
+        <span class="score-denom"> / 10</span>
+        <div class="score-bar-track"><div class="score-bar-fill" style="width:50%; background:#ef4444;"></div></div>
+      </div>
+    </div>
+    <div class="card-body">
+      <p class="summary-text">The codebase exhibits multiple significant issues indicating code drift.</p>
+      
+      <ul class="finding-list">
+        
+        <li class="finding-item">⚠ Mix of old-style classes and new-style classes across different files.</li>
+        
+        <li class="finding-item">⚠ Inconsistent error handling strategies, with some files using exceptions and others using return codes.</li>
+        
+        <li class="finding-item">⚠ Different logging approaches, with some files using print statements and others using the logging module.</li>
+        
+        <li class="finding-item">⚠ Inconsistent use of comments, with some files heavily commented and others lacking any documentation.</li>
+        
+        <li class="finding-item">⚠ Evidence of copy-paste driven development, particularly in the detector and notifier classes.</li>
+        
+      </ul>
+      
+      
+      <ul class="rec-list">
+        
+        <li class="rec-item">→ Standardize on a single error handling strategy across the codebase.</li>
+        
+        <li class="rec-item">→ Implement a consistent logging framework throughout the application.</li>
+        
+        <li class="rec-item">→ Conduct a code refactoring session to eliminate duplicate code and unify coding styles.</li>
+        
+      </ul>
+      
+    </div>
+  </div>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    
+    
+      
+    
+  
+  <div class="card">
+    <div class="card-header" style="background:#92400e; color:#ffffff;">
+      <div class="card-title-row">
+        <span class="dim-icon">📝</span>
+        <span class="dim-label">Documentation</span>
+        <span class="score-delta delta-flat">—</span>
+        <span class="grade-badge" style="color:#ffffff;">C</span>
+      </div>
+      <div class="score-row">
+        <span class="score-num" style="color:#ffffff;">7.5</span>
+        <span class="score-denom"> / 10</span>
+        <div class="score-bar-track"><div class="score-bar-fill" style="width:75%; background:#f59e0b;"></div></div>
+      </div>
+    </div>
+    <div class="card-body">
+      <p class="summary-text">Documentation is adequate but lacks depth in several areas.</p>
+      
+      <ul class="finding-list">
+        
+        <li class="finding-item">⚠ README provides a good overview but lacks detailed installation and usage instructions.</li>
+        
+        <li class="finding-item">⚠ Public API functions are not consistently documented with docstrings.</li>
+        
+        <li class="finding-item">⚠ Inline comments are sparse in complex sections, making understanding difficult.</li>
+        
+        <li class="finding-item">⚠ Configuration options are mentioned but not thoroughly documented.</li>
+        
+        <li class="finding-item">⚠ No clear CONTRIBUTING guide or development setup instructions are present.</li>
+        
+      </ul>
+      
+      
+      <ul class="rec-list">
+        
+        <li class="rec-item">→ Enhance the README with detailed installation, usage, and configuration instructions.</li>
+        
+        <li class="rec-item">→ Add comprehensive docstrings for all public API functions and classes.</li>
+        
+        <li class="rec-item">→ Include a CONTRIBUTING guide to facilitate community contributions.</li>
+        
+      </ul>
+      
+    </div>
+  </div>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    
+    
+      
+    
+  
+  <div class="card">
+    <div class="card-header" style="background:#991b1b; color:#ffffff;">
+      <div class="card-title-row">
+        <span class="dim-icon">⚠️</span>
+        <span class="dim-label">Error Handling</span>
+        <span class="score-delta delta-flat">—</span>
+        <span class="grade-badge" style="color:#ffffff;">D</span>
+      </div>
+      <div class="score-row">
+        <span class="score-num" style="color:#ffffff;">4.5</span>
+        <span class="score-denom"> / 10</span>
+        <div class="score-bar-track"><div class="score-bar-fill" style="width:45%; background:#ef4444;"></div></div>
+      </div>
+    </div>
+    <div class="card-body">
+      <p class="summary-text">The error handling in this repository is inconsistent and lacks robustness.</p>
+      
+      <ul class="finding-list">
+        
+        <li class="finding-item">⚠ Multiple bare except clauses that swallow exceptions without logging.</li>
+        
+        <li class="finding-item">⚠ Several empty catch blocks that do not handle errors appropriately.</li>
+        
+        <li class="finding-item">⚠ Functions that can fail do not return meaningful error information.</li>
+        
+        <li class="finding-item">⚠ Inconsistent error propagation, with some functions returning None while others raise exceptions.</li>
+        
+        <li class="finding-item">⚠ Missing boundary checks for array indices and potential null dereferencing.</li>
+        
+      </ul>
+      
+      
+      <ul class="rec-list">
+        
+        <li class="rec-item">→ Implement specific exception handling with logging to capture error details.</li>
+        
+        <li class="rec-item">→ Ensure all functions that can fail return meaningful error messages or codes.</li>
+        
+        <li class="rec-item">→ Add boundary checks and null checks before dereferencing variables.</li>
+        
+      </ul>
+      
+    </div>
+  </div>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    
+    
+      
+    
+  
+  <div class="card">
+    <div class="card-header" style="background:#991b1b; color:#ffffff;">
+      <div class="card-title-row">
+        <span class="dim-icon">🧩</span>
+        <span class="dim-label">Complexity</span>
+        <span class="score-delta delta-flat">—</span>
+        <span class="grade-badge" style="color:#ffffff;">D</span>
+      </div>
+      <div class="score-row">
+        <span class="score-num" style="color:#ffffff;">4.5</span>
+        <span class="score-denom"> / 10</span>
+        <div class="score-bar-track"><div class="score-bar-fill" style="width:45%; background:#ef4444;"></div></div>
+      </div>
+    </div>
+    <div class="card-body">
+      <p class="summary-text">The repository exhibits multiple significant issues affecting code complexity and maintainability.</p>
+      
+      <ul class="finding-list">
+        
+        <li class="finding-item">⚠ Function &#39;process&#39; in &#39;detector.py&#39; exceeds 50 lines.</li>
+        
+        <li class="finding-item">⚠ File &#39;launcher.py&#39; has a nesting depth of 6.</li>
+        
+        <li class="finding-item">⚠ Class &#39;DiscordWebhookNotifier&#39; in &#39;notifiers.py&#39; has too many parameters in its constructor.</li>
+        
+        <li class="finding-item">⚠ Multiple functions contain deeply nested conditionals.</li>
+        
+        <li class="finding-item">⚠ Magic numbers and strings are present without being extracted to named constants.</li>
+        
+      </ul>
+      
+      
+      <ul class="rec-list">
+        
+        <li class="rec-item">→ Refactor long functions to reduce their size and improve readability.</li>
+        
+        <li class="rec-item">→ Limit nesting depth in functions to enhance maintainability.</li>
+        
+        <li class="rec-item">→ Extract magic numbers and strings into named constants for clarity.</li>
+        
+      </ul>
+      
+    </div>
+  </div>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    
+    
+      
+    
+  
+  <div class="card">
+    <div class="card-header" style="background:#991b1b; color:#ffffff;">
+      <div class="card-title-row">
+        <span class="dim-icon">📦</span>
+        <span class="dim-label">Dependency Hygiene</span>
+        <span class="score-delta delta-flat">—</span>
+        <span class="grade-badge" style="color:#ffffff;">D</span>
+      </div>
+      <div class="score-row">
+        <span class="score-num" style="color:#ffffff;">5.0</span>
+        <span class="score-denom"> / 10</span>
+        <div class="score-bar-track"><div class="score-bar-fill" style="width:50%; background:#ef4444;"></div></div>
+      </div>
+    </div>
+    <div class="card-body">
+      <p class="summary-text">The repository has multiple significant dependency hygiene issues.</p>
+      
+      <ul class="finding-list">
+        
+        <li class="finding-item">⚠ Presence of unpinned or wildcard version ranges in production dependencies.</li>
+        
+        <li class="finding-item">⚠ Outdated dependency versions that need updating.</li>
+        
+        <li class="finding-item">⚠ Development dependencies are mixed into production dependencies.</li>
+        
+        <li class="finding-item">⚠ Missing lockfile for the package manager.</li>
+        
+        <li class="finding-item">⚠ Direct use of transitive dependencies not declared in the manifest.</li>
+        
+      </ul>
+      
+      
+      <ul class="rec-list">
+        
+        <li class="rec-item">→ Pin all production dependencies to specific versions.</li>
+        
+        <li class="rec-item">→ Create and maintain a lockfile for dependency management.</li>
+        
+        <li class="rec-item">→ Audit and clean up unused or unnecessary dependencies.</li>
+        
+      </ul>
+      
+    </div>
+  </div>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    
+    
+      
+    
+  
+  <div class="card">
+    <div class="card-header" style="background:#1d4ed8; color:#ffffff;">
+      <div class="card-title-row">
+        <span class="dim-icon">🔑</span>
+        <span class="dim-label">Config / Secret Separation</span>
+        <span class="score-delta delta-up">+1.5</span>
+        <span class="grade-badge" style="color:#ffffff;">B</span>
+      </div>
+      <div class="score-row">
+        <span class="score-num" style="color:#ffffff;">8.0</span>
+        <span class="score-denom"> / 10</span>
+        <div class="score-bar-track"><div class="score-bar-fill" style="width:80%; background:#3b82f6;"></div></div>
+      </div>
+    </div>
+    <div class="card-body">
+      <p class="summary-text">The repository demonstrates good separation of configuration and secrets from code, with minor issues present.</p>
+      
+      <ul class="finding-list">
+        
+        <li class="finding-item">⚠ No hardcoded URLs, hostnames, or IPs found in the source code.</li>
+        
+        <li class="finding-item">⚠ No hardcoded credentials or tokens detected.</li>
+        
+        <li class="finding-item">⚠ Configuration values are defined in separate config files.</li>
+        
+        <li class="finding-item">⚠ .env files are not present, but config files are gitignored.</li>
+        
+        <li class="finding-item">⚠ No clear separation between dev, staging, and production configurations observed.</li>
+        
+      </ul>
+      
+      
+      <ul class="rec-list">
+        
+        <li class="rec-item">→ Implement .env files for better environment-specific configuration management.</li>
+        
+        <li class="rec-item">→ Create a .env.example file to provide a template for required environment variables.</li>
+        
+        <li class="rec-item">→ Establish a clear strategy for managing different configurations for dev, staging, and production environments.</li>
+        
+      </ul>
+      
+    </div>
+  </div>
+  
+</div>
+
+    
+<div class="next-fixes-panel"><h3 class="nf-title">🚀 Best Next Moves</h3><div class="nf-row"><span class="nf-num">1.</span><span class="nf-text">Add boundary checks and null checks before dereferencing variables.</span><span class="wp-chip dim-chip">Error Handling</span></div><div class="nf-row"><span class="nf-num">2.</span><span class="nf-text">Standardize exception handling</span><span class="wp-chip dim-chip">Error Handling</span></div><div class="nf-row"><span class="nf-num">3.</span><span class="nf-text">Reduce architectural inconsistency</span><span class="wp-chip dim-chip">Code Drift</span></div><div class="nf-row"><span class="nf-num">4.</span><span class="nf-text">Several imported modules in various files are never referenced.</span><span class="wp-chip dim-chip">Dead Code</span></div><div class="nf-row"><span class="nf-num">5.</span><span class="nf-text">Functions defined in 'detector.py' are not called anywhere in the codebase. <a class="wp-file-chip" href="vscode://file/D:/Projects/active/trade-hunter/detector.py" title="Open in VS Code">detector.py</a></span><span class="wp-chip dim-chip">Dead Code</span></div></div>
+
+    
+<div class="breakdown-panel"><div class="bd-col"><h4 class="bd-heading">📉 Score Draggers</h4><div class="bd-row"><span class="bd-icon">⚠️</span><span class="bd-label">Error Handling</span><span class="bd-score">4.5</span><span class="bd-grade" style="background:#ef4444;">D</span></div><div class="bd-row"><span class="bd-icon">🧩</span><span class="bd-label">Complexity</span><span class="bd-score">4.5</span><span class="bd-grade" style="background:#ef4444;">D</span></div><div class="bd-row"><span class="bd-icon">🏷️</span><span class="bd-label">Naming Consistency</span><span class="bd-score">5.0</span><span class="bd-grade" style="background:#ef4444;">D</span></div><div class="bd-row"><span class="bd-icon">🪦</span><span class="bd-label">Dead Code</span><span class="bd-score">5.0</span><span class="bd-grade" style="background:#ef4444;">D</span></div><div class="bd-row"><span class="bd-icon">🌊</span><span class="bd-label">Code Drift</span><span class="bd-score">5.0</span><span class="bd-grade" style="background:#ef4444;">D</span></div><div class="bd-row"><span class="bd-icon">📦</span><span class="bd-label">Dependency Hygiene</span><span class="bd-score">5.0</span><span class="bd-grade" style="background:#ef4444;">D</span></div></div><div class="bd-col"><h4 class="bd-heading">💪 Already Strong</h4><div class="bd-row"><span class="bd-icon">🔒</span><span class="bd-label">Security</span><span class="bd-score">8.0</span><span class="bd-grade" style="background:#1d4ed8;">B</span></div><div class="bd-row"><span class="bd-icon">🔑</span><span class="bd-label">Config / Secret Separation</span><span class="bd-score">8.0</span><span class="bd-grade" style="background:#1d4ed8;">B</span></div><div class="bd-row"><span class="bd-icon">🧪</span><span class="bd-label">Test Coverage</span><span class="bd-score">7.5</span><span class="bd-grade" style="background:#92400e;">C</span></div><div class="bd-row"><span class="bd-icon">📝</span><span class="bd-label">Documentation</span><span class="bd-score">7.5</span><span class="bd-grade" style="background:#92400e;">C</span></div></div></div>
+
+    
+
+<div class="workplan-section">
+  <h2 class="section-title">🛠️ Remediation Workplan</h2>
+  
+  <div class="wp-category">
+    <h3 class="wp-cat-title">⚡ Quick Wins (1)</h3>
+    
+      
+      <div class="wp-task effort-border-small">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Add boundary checks and null checks before dereferencing variables.</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-small">S</span>
+            <span class="wp-chip impact-high">high impact</span>
+            <span class="wp-chip dim-chip">Error Handling</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">This recommendation affects the error handling score, currently rated high severity.</p>
+          <p class="wp-fix">→ Add boundary checks and null checks before dereferencing variables.</p>
+          
+          <p class="wp-validate">✓ Grep for bare except/catch blocks and verify they log or re-raise</p>
+        </div>
+      </div>
+      
+    
+  </div>
+  
+  <div class="wp-category">
+    <h3 class="wp-cat-title">🔥 High Impact Refactors (20)</h3>
+    
+      
+      <div class="wp-task effort-border-medium">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Standardize exception handling</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-medium">M</span>
+            <span class="wp-chip impact-high">high impact</span>
+            <span class="wp-chip dim-chip">Error Handling</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">Consolidates 3 related findings in error handling (severity: high).</p>
+          <p class="wp-fix">→ Replace bare except/catch blocks with specific handlers that log or re-raise, add null checks, and adopt a consistent error propagation strategy.</p>
+          <details class="wp-sources"><summary class="wp-sources-toggle">3 original findings</summary><ul class="wp-sources-list"><li class="wp-source-item">Multiple bare except clauses that swallow exceptions without logging.</li><li class="wp-source-item">Several empty catch blocks that do not handle errors appropriately.</li><li class="wp-source-item">Inconsistent error propagation, with some functions returning None while others raise exceptions.</li></ul></details>
+          <p class="wp-validate">✓ Grep for bare except/catch blocks and verify they log or re-raise</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-medium">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Reduce architectural inconsistency</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-medium">M</span>
+            <span class="wp-chip impact-high">high impact</span>
+            <span class="wp-chip dim-chip">Code Drift</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">Consolidates 3 related findings in code drift (severity: high).</p>
+          <p class="wp-fix">→ Adopt one pattern per concern (e.g. async/await everywhere), remove legacy patterns, and align error handling across modules.</p>
+          <details class="wp-sources"><summary class="wp-sources-toggle">3 original findings</summary><ul class="wp-sources-list"><li class="wp-source-item">Inconsistent error handling strategies, with some files using exceptions and others using return codes.</li><li class="wp-source-item">Inconsistent use of comments, with some files heavily commented and others lacking any documentation.</li><li class="wp-source-item">Evidence of copy-paste driven development, particularly in the detector and notifier classes.</li></ul></details>
+          <p class="wp-validate">✓ Compare architectural patterns across modules manually or via lint rules</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-medium">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Several imported modules in various files are never referenced.</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-medium">M</span>
+            <span class="wp-chip impact-high">high impact</span>
+            <span class="wp-chip dim-chip">Dead Code</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">This finding affects the dead code score, currently rated high severity.</p>
+          <p class="wp-fix">→ Several imported modules in various files are never referenced.</p>
+          
+          <p class="wp-validate">✓ Run a dead-code detector (e.g. vulture for Python, ts-prune for TS)</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-medium">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Functions defined in &#39;detector.py&#39; are not called anywhere in the codebase.</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-medium">M</span>
+            <span class="wp-chip impact-high">high impact</span>
+            <span class="wp-chip dim-chip">Dead Code</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          <p class="wp-evidence">📄 <a class="wp-file-chip" href="vscode://file/D:/Projects/active/trade-hunter/detector.py" title="Open in VS Code">detector.py</a></p>
+          <p class="wp-why">This finding affects the dead code score, currently rated high severity.</p>
+          <p class="wp-fix">→ Functions defined in &#39;detector.py&#39; are not called anywhere in the codebase.</p>
+          
+          <p class="wp-validate">✓ Run a dead-code detector (e.g. vulture for Python, ts-prune for TS)</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-medium">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Old migration files are still present in the repository.</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-medium">M</span>
+            <span class="wp-chip impact-high">high impact</span>
+            <span class="wp-chip dim-chip">Dead Code</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">This finding affects the dead code score, currently rated high severity.</p>
+          <p class="wp-fix">→ Old migration files are still present in the repository.</p>
+          
+          <p class="wp-validate">✓ Run a dead-code detector (e.g. vulture for Python, ts-prune for TS)</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-medium">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Mix of old-style classes and new-style classes across different files.</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-medium">M</span>
+            <span class="wp-chip impact-high">high impact</span>
+            <span class="wp-chip dim-chip">Code Drift</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">This finding affects the code drift score, currently rated high severity.</p>
+          <p class="wp-fix">→ Mix of old-style classes and new-style classes across different files.</p>
+          
+          <p class="wp-validate">✓ Compare architectural patterns across modules manually or via lint rules</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-medium">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Different logging approaches, with some files using print statements and others…</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-medium">M</span>
+            <span class="wp-chip impact-high">high impact</span>
+            <span class="wp-chip dim-chip">Code Drift</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">This finding affects the code drift score, currently rated high severity.</p>
+          <p class="wp-fix">→ Different logging approaches, with some files using print statements and others using the logging module.</p>
+          
+          <p class="wp-validate">✓ Compare architectural patterns across modules manually or via lint rules</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-medium">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Standardize on a single error handling strategy across the codebase.</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-medium">M</span>
+            <span class="wp-chip impact-high">high impact</span>
+            <span class="wp-chip dim-chip">Code Drift</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">This recommendation affects the code drift score, currently rated high severity.</p>
+          <p class="wp-fix">→ Standardize on a single error handling strategy across the codebase.</p>
+          
+          <p class="wp-validate">✓ Compare architectural patterns across modules manually or via lint rules</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-medium">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Implement a consistent logging framework throughout the application.</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-medium">M</span>
+            <span class="wp-chip impact-high">high impact</span>
+            <span class="wp-chip dim-chip">Code Drift</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">This recommendation affects the code drift score, currently rated high severity.</p>
+          <p class="wp-fix">→ Implement a consistent logging framework throughout the application.</p>
+          
+          <p class="wp-validate">✓ Compare architectural patterns across modules manually or via lint rules</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-medium">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Functions that can fail do not return meaningful error information.</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-medium">M</span>
+            <span class="wp-chip impact-high">high impact</span>
+            <span class="wp-chip dim-chip">Error Handling</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">This finding affects the error handling score, currently rated high severity.</p>
+          <p class="wp-fix">→ Functions that can fail do not return meaningful error information.</p>
+          
+          <p class="wp-validate">✓ Grep for bare except/catch blocks and verify they log or re-raise</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-medium">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Missing boundary checks for array indices and potential null dereferencing.</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-medium">M</span>
+            <span class="wp-chip impact-high">high impact</span>
+            <span class="wp-chip dim-chip">Error Handling</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">This finding affects the error handling score, currently rated high severity.</p>
+          <p class="wp-fix">→ Missing boundary checks for array indices and potential null dereferencing.</p>
+          
+          <p class="wp-validate">✓ Grep for bare except/catch blocks and verify they log or re-raise</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-medium">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Implement specific exception handling with logging to capture error details.</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-medium">M</span>
+            <span class="wp-chip impact-high">high impact</span>
+            <span class="wp-chip dim-chip">Error Handling</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">This recommendation affects the error handling score, currently rated high severity.</p>
+          <p class="wp-fix">→ Implement specific exception handling with logging to capture error details.</p>
+          
+          <p class="wp-validate">✓ Grep for bare except/catch blocks and verify they log or re-raise</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-medium">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Ensure all functions that can fail return meaningful error messages or codes.</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-medium">M</span>
+            <span class="wp-chip impact-high">high impact</span>
+            <span class="wp-chip dim-chip">Error Handling</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">This recommendation affects the error handling score, currently rated high severity.</p>
+          <p class="wp-fix">→ Ensure all functions that can fail return meaningful error messages or codes.</p>
+          
+          <p class="wp-validate">✓ Grep for bare except/catch blocks and verify they log or re-raise</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-medium">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Development dependencies are mixed into production dependencies.</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-medium">M</span>
+            <span class="wp-chip impact-high">high impact</span>
+            <span class="wp-chip dim-chip">Dependency Hygiene</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">This finding affects the dependency hygiene score, currently rated high severity.</p>
+          <p class="wp-fix">→ Development dependencies are mixed into production dependencies.</p>
+          
+          <p class="wp-validate">✓ Run dependency audit (e.g. pip-audit, npm audit, cargo audit)</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-medium">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Direct use of transitive dependencies not declared in the manifest.</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-medium">M</span>
+            <span class="wp-chip impact-high">high impact</span>
+            <span class="wp-chip dim-chip">Dependency Hygiene</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">This finding affects the dependency hygiene score, currently rated high severity.</p>
+          <p class="wp-fix">→ Direct use of transitive dependencies not declared in the manifest.</p>
+          
+          <p class="wp-validate">✓ Run dependency audit (e.g. pip-audit, npm audit, cargo audit)</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-large">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Pin and audit dependencies</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-large">L</span>
+            <span class="wp-chip impact-high">high impact</span>
+            <span class="wp-chip dim-chip">Dependency Hygiene</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">Consolidates 6 related findings in dependency hygiene (severity: high).</p>
+          <p class="wp-fix">→ Pin production dependency versions, generate or update the lockfile, and run a dependency audit to flag known vulnerabilities.</p>
+          <details class="wp-sources"><summary class="wp-sources-toggle">6 original findings</summary><ul class="wp-sources-list"><li class="wp-source-item">Presence of unpinned or wildcard version ranges in production dependencies.</li><li class="wp-source-item">Outdated dependency versions that need updating.</li><li class="wp-source-item">Missing lockfile for the package manager.</li><li class="wp-source-item">Pin all production dependencies to specific versions.</li><li class="wp-source-item">Create and maintain a lockfile for dependency management.</li><li class="wp-source-item">Audit and clean up unused or unnecessary dependencies.</li></ul></details>
+          <p class="wp-validate">✓ Run dependency audit (e.g. pip-audit, npm audit, cargo audit)</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-large">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Remove dead code and abandoned files</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-large">L</span>
+            <span class="wp-chip impact-high">high impact</span>
+            <span class="wp-chip dim-chip">Dead Code</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">Consolidates 5 related findings in dead code (severity: high).</p>
+          <p class="wp-fix">→ Delete commented-out blocks, remove unused imports and unreferenced functions, and clean up deprecated modules.</p>
+          <details class="wp-sources"><summary class="wp-sources-toggle">5 original findings</summary><ul class="wp-sources-list"><li class="wp-source-item">Commented-out code blocks are present in multiple files, indicating abandoned work.</li><li class="wp-source-item">There are TODO/FIXME comments suggesting incomplete features or abandoned work.</li><li class="wp-source-item">Conduct a thorough audit to remove unused imports and functions.</li><li class="wp-source-item">Eliminate commented-out code blocks that are not part of documentation.</li><li class="wp-source-item">Review and clean up old migration files and deprecated modules.</li></ul></details>
+          <p class="wp-validate">✓ Run a dead-code detector (e.g. vulture for Python, ts-prune for TS)</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-large">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Reduce complexity in core modules</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-large">L</span>
+            <span class="wp-chip impact-high">high impact</span>
+            <span class="wp-chip dim-chip">Complexity</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          <p class="wp-evidence">📄 <a class="wp-file-chip" href="vscode://file/D:/Projects/active/trade-hunter/detector.py" title="Open in VS Code">detector.py</a> <a class="wp-file-chip" href="vscode://file/D:/Projects/active/trade-hunter/launcher.py" title="Open in VS Code">launcher.py</a> <a class="wp-file-chip" href="vscode://file/D:/Projects/active/trade-hunter/notifiers.py" title="Open in VS Code">notifiers.py</a></p>
+          <p class="wp-why">Consolidates 8 related findings in complexity (severity: high).</p>
+          <p class="wp-fix">→ Break long functions into focused helpers, extract magic values into named constants, and flatten deeply nested conditionals.</p>
+          <details class="wp-sources"><summary class="wp-sources-toggle">8 original findings</summary><ul class="wp-sources-list"><li class="wp-source-item">Function 'process' in 'detector.py' exceeds 50 lines.</li><li class="wp-source-item">File 'launcher.py' has a nesting depth of 6.</li><li class="wp-source-item">Class 'DiscordWebhookNotifier' in 'notifiers.py' has too many parameters in its constructor.</li><li class="wp-source-item">Multiple functions contain deeply nested conditionals.</li><li class="wp-source-item">Magic numbers and strings are present without being extracted to named constants.</li><li class="wp-source-item">Refactor long functions to reduce their size and improve readability.</li><li class="wp-source-item">Limit nesting depth in functions to enhance maintainability.</li><li class="wp-source-item">Extract magic numbers and strings into named constants for clarity.</li></ul></details>
+          <p class="wp-validate">✓ Run complexity analysis (e.g. radon cc, eslint complexity rule)</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-large">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Standardize naming conventions</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-large">L</span>
+            <span class="wp-chip impact-high">high impact</span>
+            <span class="wp-chip dim-chip">Naming Consistency</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          <p class="wp-evidence">📄 <a class="wp-file-chip" href="vscode://file/D:/Projects/active/trade-hunter/test_foo.py" title="Open in VS Code">test_foo.py</a> <a class="wp-file-chip" href="vscode://file/D:/Projects/active/trade-hunter/foo_test.py" title="Open in VS Code">foo_test.py</a></p>
+          <p class="wp-why">Consolidates 8 related findings in naming consistency (severity: high).</p>
+          <p class="wp-fix">→ Choose one naming convention per identifier type, document it, and apply it consistently across the codebase.</p>
+          <details class="wp-sources"><summary class="wp-sources-toggle">8 original findings</summary><ul class="wp-sources-list"><li class="wp-source-item">Mixed naming conventions observed: camelCase and snake_case used interchangeably for variable names.</li><li class="wp-source-item">Inconsistent abbreviation styles for identifiers like userId, user_id, and uid.</li><li class="wp-source-item">Test files are named inconsistently, mixing test_foo.py and foo_test.py styles.</li><li class="wp-source-item">Constants do not follow a consistent UPPER_CASE or PascalCase pattern.</li><li class="wp-source-item">Boolean variables lack consistent prefixes such as is/has/can/should.</li><li class="wp-source-item">Establish a naming convention guide for the project and ensure all contributors adhere to it.</li><li class="wp-source-item">Refactor existing code to unify naming styles, particularly for variables and constants.</li><li class="wp-source-item">Implement a code review checklist that includes naming consistency checks.</li></ul></details>
+          <p class="wp-validate">✓ Run a linter configured for naming conventions (e.g. pylint, eslint)</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-large">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Conduct a code refactoring session to eliminate duplicate code and unify coding…</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-large">L</span>
+            <span class="wp-chip impact-high">high impact</span>
+            <span class="wp-chip dim-chip">Code Drift</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">This recommendation affects the code drift score, currently rated high severity.</p>
+          <p class="wp-fix">→ Conduct a code refactoring session to eliminate duplicate code and unify coding styles.</p>
+          
+          <p class="wp-validate">✓ Compare architectural patterns across modules manually or via lint rules</p>
+        </div>
+      </div>
+      
+    
+  </div>
+  
+  <div class="wp-category">
+    <h3 class="wp-cat-title">📋 Policy / Hygiene (9)</h3>
+    
+      
+      <div class="wp-task effort-border-small">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Unpinned version of dependencies could allow supply-chain attacks.</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-small">S</span>
+            <span class="wp-chip impact-low">low impact</span>
+            <span class="wp-chip dim-chip">Security</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">This finding affects the security score, currently rated low severity.</p>
+          <p class="wp-fix">→ Unpinned version of dependencies could allow supply-chain attacks.</p>
+          
+          <p class="wp-validate">✓ Run a secret scanner (e.g. trufflehog, gitleaks) and review results</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-small">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Pin dependency versions in the pyproject.toml file to avoid supply-chain risks.</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-small">S</span>
+            <span class="wp-chip impact-low">low impact</span>
+            <span class="wp-chip dim-chip">Security</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          <p class="wp-evidence">📄 <a class="wp-file-chip" href="vscode://file/D:/Projects/active/trade-hunter/pyproject.toml" title="Open in VS Code">pyproject.toml</a></p>
+          <p class="wp-why">This recommendation affects the security score, currently rated low severity.</p>
+          <p class="wp-fix">→ Pin dependency versions in the pyproject.toml file to avoid supply-chain risks.</p>
+          
+          <p class="wp-validate">✓ Run a secret scanner (e.g. trufflehog, gitleaks) and review results</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-small">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Add tests for critical paths such as authentication and data persistence.</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-small">S</span>
+            <span class="wp-chip impact-low">low impact</span>
+            <span class="wp-chip dim-chip">Test Coverage</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">This recommendation affects the test coverage score, currently rated low severity.</p>
+          <p class="wp-fix">→ Add tests for critical paths such as authentication and data persistence.</p>
+          
+          <p class="wp-validate">✓ Run test suite with coverage enabled (e.g. pytest --cov, jest --coverage)</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-medium">
+        <div class="wp-task-header">
+          <span class="wp-task-title">README provides a good overview but lacks detailed installation and usage…</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-medium">M</span>
+            <span class="wp-chip impact-low">low impact</span>
+            <span class="wp-chip dim-chip">Documentation</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">This finding affects the documentation score, currently rated low severity.</p>
+          <p class="wp-fix">→ README provides a good overview but lacks detailed installation and usage instructions.</p>
+          
+          <p class="wp-validate">✓ Check README completeness and run a docstring coverage tool</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-medium">
+        <div class="wp-task-header">
+          <span class="wp-task-title">No clear CONTRIBUTING guide or development setup instructions are present.</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-medium">M</span>
+            <span class="wp-chip impact-low">low impact</span>
+            <span class="wp-chip dim-chip">Documentation</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">This finding affects the documentation score, currently rated low severity.</p>
+          <p class="wp-fix">→ No clear CONTRIBUTING guide or development setup instructions are present.</p>
+          
+          <p class="wp-validate">✓ Check README completeness and run a docstring coverage tool</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-medium">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Enhance the README with detailed installation, usage, and configuration…</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-medium">M</span>
+            <span class="wp-chip impact-low">low impact</span>
+            <span class="wp-chip dim-chip">Documentation</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">This recommendation affects the documentation score, currently rated low severity.</p>
+          <p class="wp-fix">→ Enhance the README with detailed installation, usage, and configuration instructions.</p>
+          
+          <p class="wp-validate">✓ Check README completeness and run a docstring coverage tool</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-medium">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Include a CONTRIBUTING guide to facilitate community contributions.</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-medium">M</span>
+            <span class="wp-chip impact-low">low impact</span>
+            <span class="wp-chip dim-chip">Documentation</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">This recommendation affects the documentation score, currently rated low severity.</p>
+          <p class="wp-fix">→ Include a CONTRIBUTING guide to facilitate community contributions.</p>
+          
+          <p class="wp-validate">✓ Check README completeness and run a docstring coverage tool</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-medium">
+        <div class="wp-task-header">
+          <span class="wp-task-title">No clear separation between dev, staging, and production configurations…</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-medium">M</span>
+            <span class="wp-chip impact-low">low impact</span>
+            <span class="wp-chip dim-chip">Config Separation</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">This finding affects the config separation score, currently rated low severity.</p>
+          <p class="wp-fix">→ No clear separation between dev, staging, and production configurations observed.</p>
+          
+          <p class="wp-validate">✓ Search for hardcoded strings and verify .env.example exists</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-medium">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Establish a clear strategy for managing different configurations for dev…</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-medium">M</span>
+            <span class="wp-chip impact-low">low impact</span>
+            <span class="wp-chip dim-chip">Config Separation</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">This recommendation affects the config separation score, currently rated low severity.</p>
+          <p class="wp-fix">→ Establish a clear strategy for managing different configurations for dev, staging, and production environments.</p>
+          
+          <p class="wp-validate">✓ Search for hardcoded strings and verify .env.example exists</p>
+        </div>
+      </div>
+      
+    
+  </div>
+  
+  <div class="wp-category">
+    <h3 class="wp-cat-title">📌 Later Improvements (12)</h3>
+    
+      
+      <div class="wp-task effort-border-medium">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Expand critical-path test coverage</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-medium">M</span>
+            <span class="wp-chip impact-low">low impact</span>
+            <span class="wp-chip dim-chip">Test Coverage</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">Consolidates 3 related findings in test coverage (severity: low).</p>
+          <p class="wp-fix">→ Identify untested critical paths and edge cases, add targeted tests for core business logic, and improve assertion quality in existing tests.</p>
+          <details class="wp-sources"><summary class="wp-sources-toggle">3 original findings</summary><ul class="wp-sources-list"><li class="wp-source-item">Core business logic has corresponding tests, but some critical paths are missing tests.</li><li class="wp-source-item">Edge-case tests are limited, particularly for null and error paths.</li><li class="wp-source-item">Increase coverage for edge cases, especially for null inputs and error handling.</li></ul></details>
+          <p class="wp-validate">✓ Run test suite with coverage enabled (e.g. pytest --cov, jest --coverage)</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-medium">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Missing input validation or sanitization in user input handling.</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-medium">M</span>
+            <span class="wp-chip impact-low">low impact</span>
+            <span class="wp-chip dim-chip">Security</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">This finding affects the security score, currently rated low severity.</p>
+          <p class="wp-fix">→ Missing input validation or sanitization in user input handling.</p>
+          
+          <p class="wp-validate">✓ Run a secret scanner (e.g. trufflehog, gitleaks) and review results</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-medium">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Insecure default configurations detected, such as verbose logging.</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-medium">M</span>
+            <span class="wp-chip impact-low">low impact</span>
+            <span class="wp-chip dim-chip">Security</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">This finding affects the security score, currently rated low severity.</p>
+          <p class="wp-fix">→ Insecure default configurations detected, such as verbose logging.</p>
+          
+          <p class="wp-validate">✓ Run a secret scanner (e.g. trufflehog, gitleaks) and review results</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-medium">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Improper error handling that may leak sensitive information.</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-medium">M</span>
+            <span class="wp-chip impact-low">low impact</span>
+            <span class="wp-chip dim-chip">Security</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">This finding affects the security score, currently rated low severity.</p>
+          <p class="wp-fix">→ Improper error handling that may leak sensitive information.</p>
+          
+          <p class="wp-validate">✓ Run a secret scanner (e.g. trufflehog, gitleaks) and review results</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-medium">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Implement input validation and sanitization for all user inputs.</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-medium">M</span>
+            <span class="wp-chip impact-low">low impact</span>
+            <span class="wp-chip dim-chip">Security</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">This recommendation affects the security score, currently rated low severity.</p>
+          <p class="wp-fix">→ Implement input validation and sanitization for all user inputs.</p>
+          
+          <p class="wp-validate">✓ Run a secret scanner (e.g. trufflehog, gitleaks) and review results</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-medium">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Review and improve error handling to prevent leaking sensitive information.</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-medium">M</span>
+            <span class="wp-chip impact-low">low impact</span>
+            <span class="wp-chip dim-chip">Security</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">This recommendation affects the security score, currently rated low severity.</p>
+          <p class="wp-fix">→ Review and improve error handling to prevent leaking sensitive information.</p>
+          
+          <p class="wp-validate">✓ Run a secret scanner (e.g. trufflehog, gitleaks) and review results</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-medium">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Test-to-source ratio is good at 0.802, indicating a reasonable amount of tests.</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-medium">M</span>
+            <span class="wp-chip impact-low">low impact</span>
+            <span class="wp-chip dim-chip">Test Coverage</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">This finding affects the test coverage score, currently rated low severity.</p>
+          <p class="wp-fix">→ Test-to-source ratio is good at 0.802, indicating a reasonable amount of tests.</p>
+          
+          <p class="wp-validate">✓ Run test suite with coverage enabled (e.g. pytest --cov, jest --coverage)</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-medium">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Some tests do not assert behavior effectively, focusing more on execution than…</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-medium">M</span>
+            <span class="wp-chip impact-low">low impact</span>
+            <span class="wp-chip dim-chip">Test Coverage</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">This finding affects the test coverage score, currently rated low severity.</p>
+          <p class="wp-fix">→ Some tests do not assert behavior effectively, focusing more on execution than validation.</p>
+          
+          <p class="wp-validate">✓ Run test suite with coverage enabled (e.g. pytest --cov, jest --coverage)</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-medium">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Test names generally describe behavior, but could be more descriptive in some…</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-medium">M</span>
+            <span class="wp-chip impact-low">low impact</span>
+            <span class="wp-chip dim-chip">Test Coverage</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">This finding affects the test coverage score, currently rated low severity.</p>
+          <p class="wp-fix">→ Test names generally describe behavior, but could be more descriptive in some cases.</p>
+          
+          <p class="wp-validate">✓ Run test suite with coverage enabled (e.g. pytest --cov, jest --coverage)</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-medium">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Ensure all tests include assertions to validate expected outcomes.</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-medium">M</span>
+            <span class="wp-chip impact-low">low impact</span>
+            <span class="wp-chip dim-chip">Test Coverage</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">This recommendation affects the test coverage score, currently rated low severity.</p>
+          <p class="wp-fix">→ Ensure all tests include assertions to validate expected outcomes.</p>
+          
+          <p class="wp-validate">✓ Run test suite with coverage enabled (e.g. pytest --cov, jest --coverage)</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-large">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Document public APIs</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-large">L</span>
+            <span class="wp-chip impact-low">low impact</span>
+            <span class="wp-chip dim-chip">Documentation</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">Consolidates 4 related findings in documentation (severity: low).</p>
+          <p class="wp-fix">→ Add docstrings or JSDoc to all public functions and classes, and ensure inline comments explain non-obvious logic.</p>
+          <details class="wp-sources"><summary class="wp-sources-toggle">4 original findings</summary><ul class="wp-sources-list"><li class="wp-source-item">Public API functions are not consistently documented with docstrings.</li><li class="wp-source-item">Inline comments are sparse in complex sections, making understanding difficult.</li><li class="wp-source-item">Configuration options are mentioned but not thoroughly documented.</li><li class="wp-source-item">Add comprehensive docstrings for all public API functions and classes.</li></ul></details>
+          <p class="wp-validate">✓ Check README completeness and run a docstring coverage tool</p>
+        </div>
+      </div>
+      
+      <div class="wp-task effort-border-large">
+        <div class="wp-task-header">
+          <span class="wp-task-title">Separate config and secrets from code</span>
+          <span class="wp-meta-chips">
+            <span class="wp-chip effort-large">L</span>
+            <span class="wp-chip impact-low">low impact</span>
+            <span class="wp-chip dim-chip">Config Separation</span>
+          </span>
+        </div>
+        <div class="wp-task-body">
+          
+          <p class="wp-why">Consolidates 4 related findings in config separation (severity: low).</p>
+          <p class="wp-fix">→ Move hardcoded URLs, credentials, and config values into environment variables or a config system, and add a .env.example template.</p>
+          <details class="wp-sources"><summary class="wp-sources-toggle">4 original findings</summary><ul class="wp-sources-list"><li class="wp-source-item">Configuration values are defined in separate config files.</li><li class="wp-source-item">.env files are not present, but config files are gitignored.</li><li class="wp-source-item">Implement .env files for better environment-specific configuration management.</li><li class="wp-source-item">Create a .env.example file to provide a template for required environment variables.</li></ul></details>
+          <p class="wp-validate">✓ Search for hardcoded strings and verify .env.example exists</p>
+        </div>
+      </div>
+      
+    
+  </div>
+  
+</div>
+
+
+    
+<div class="history-section"><h2 class="section-title">📈 Progress History</h2><div class="history-list"><div class="history-row"><span class="history-date">2026-06-07 01:11:24</span><span class="history-score">5.5</span><span class="history-grade" style="background:#991b1b;">D</span></div><div class="history-row"><span class="history-date">2026-06-07 01:38:46</span><span class="history-score">5.5</span><span class="history-grade" style="background:#991b1b;">D</span></div><div class="history-row"><span class="history-date">2026-06-07 02:37:24</span><span class="history-score">5.4</span><span class="history-grade" style="background:#991b1b;">D</span></div><div class="history-row"><span class="history-date">2026-06-07 20:44:34</span><span class="history-score">5.5</span><span class="history-grade" style="background:#991b1b;">D</span></div></div></div>
+
+  </div>
+</body>
+</html>
