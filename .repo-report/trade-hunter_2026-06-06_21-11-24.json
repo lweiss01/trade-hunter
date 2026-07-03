@@ -1,0 +1,805 @@
+{
+  "repo": "D:\\Projects\\active\\trade-hunter",
+  "analyzed_at": "2026-06-07T01:11:24.118710+00:00",
+  "stats": {
+    "total_source_files": 47,
+    "total_test_files": 15,
+    "total_source_lines": 7703,
+    "total_test_lines": 4492,
+    "test_to_source_ratio": 0.583,
+    "secret_hit_count": 0,
+    "has_readme": true,
+    "has_dependency_file": true
+  },
+  "dimensions": {
+    "security": {
+      "score": 4.5,
+      "grade": "D",
+      "summary": "The repository has multiple significant security issues, including hardcoded API keys and potential insecure configurations.",
+      "findings": [
+        "Hardcoded API keys and tokens found in .env file.",
+        "Missing input validation or sanitization in user inputs.",
+        "Insecure default configurations with debug mode potentially enabled.",
+        "Unpinned dependencies in pyproject.toml could lead to supply-chain attacks.",
+        "Improper error handling that may leak sensitive information."
+      ],
+      "recommendations": [
+        "Remove hardcoded credentials and use environment variables or secure vaults.",
+        "Implement input validation and sanitization for all user inputs.",
+        "Pin dependency versions in pyproject.toml to mitigate supply-chain risks."
+      ]
+    },
+    "naming_consistency": {
+      "score": 5.0,
+      "grade": "D",
+      "summary": "The codebase exhibits multiple significant naming inconsistencies across various elements.",
+      "findings": [
+        "Mixed naming conventions: camelCase and snake_case are used interchangeably for variable names.",
+        "Inconsistent abbreviation styles: userId, user_id, and uid are all used for the same concept.",
+        "Test files are named inconsistently: test_foo.py, foo_test.py, and foo.spec.js are mixed.",
+        "Constants do not follow a consistent UPPER_CASE pattern.",
+        "Boolean variables do not consistently use is/has/can/should prefixes."
+      ],
+      "recommendations": [
+        "Establish a naming convention guide for the project and ensure all contributors adhere to it.",
+        "Refactor variable names to use a single consistent style (preferably snake_case for Python).",
+        "Standardize the naming of test files to follow a single pattern."
+      ]
+    },
+    "dead_code": {
+      "score": 5.0,
+      "grade": "D",
+      "summary": "The repository contains multiple significant issues related to dead code and unused artifacts.",
+      "findings": [
+        "Several imported modules in 'fix_detector.py' are never referenced.",
+        "Functions defined in 'fix_detector.py' are not called anywhere in the codebase.",
+        "Commented-out code blocks are present in multiple files, indicating abandoned work.",
+        "Old migration files are still present in the repository without any references.",
+        "There are TODO/FIXME comments scattered throughout the codebase suggesting incomplete features."
+      ],
+      "recommendations": [
+        "Remove unused imports and functions to clean up the codebase.",
+        "Eliminate commented-out code blocks that are not part of documentation.",
+        "Review and remove old migration files that are no longer needed."
+      ]
+    },
+    "test_coverage": {
+      "score": 7.0,
+      "grade": "C",
+      "summary": "Test coverage is acceptable but lacks thoroughness in edge cases and critical paths.",
+      "findings": [
+        "Test to source ratio is 0.583, indicating a reasonable amount of tests relative to source code.",
+        "Core business logic is tested, but some critical paths like data persistence and API endpoints are underrepresented.",
+        "Many tests assert behavior correctly, but some tests lack assertions and only call code.",
+        "Edge-case tests are limited, particularly for scenarios like empty inputs and error paths.",
+        "Mocking is used effectively, but there may be areas where external dependencies are not fully isolated."
+      ],
+      "recommendations": [
+        "Increase the number of edge-case tests to cover scenarios like empty inputs and error handling.",
+        "Ensure all critical paths, especially for authentication and data persistence, have corresponding tests.",
+        "Review and refactor tests to include assertions in all test cases to validate expected outcomes."
+      ]
+    },
+    "code_drift": {
+      "score": 4.5,
+      "grade": "D",
+      "summary": "The codebase exhibits significant inconsistencies in patterns, architecture, and documentation.",
+      "findings": [
+        "Mix of old-style classes and new-style classes across different files.",
+        "Inconsistent error handling strategies, with some files using exceptions and others using return codes.",
+        "Different logging approaches, with some files using print statements and others using a logging framework.",
+        "Inconsistent use of comments, with some files heavily commented and others lacking any documentation.",
+        "Evidence of copy-paste driven development, particularly in the handling of similar functionalities across multiple files."
+      ],
+      "recommendations": [
+        "Standardize coding practices by adopting a consistent style guide across the codebase.",
+        "Refactor files to unify error handling and logging strategies for better maintainability.",
+        "Increase documentation efforts to ensure all files are adequately commented and easy to understand."
+      ]
+    },
+    "documentation": {
+      "score": 8.5,
+      "grade": "B",
+      "summary": "Overall, the documentation is good but could benefit from additional details in certain areas.",
+      "findings": [
+        "The README is comprehensive, covering project purpose, installation, and usage instructions.",
+        "Public API functions are documented, but some internal functions lack detailed docstrings.",
+        "Inline comments are present but could be more descriptive in complex sections.",
+        "Configuration options are documented in the README, but a dedicated configuration guide would enhance clarity.",
+        "There is no explicit CONTRIBUTING guide or detailed development setup instructions."
+      ],
+      "recommendations": [
+        "Add a CONTRIBUTING guide to outline how others can contribute to the project.",
+        "Enhance inline comments and add more detailed docstrings for internal functions.",
+        "Consider creating a dedicated configuration guide to clarify setup and options."
+      ]
+    },
+    "error_handling": {
+      "score": 4.5,
+      "grade": "D",
+      "summary": "The repository exhibits multiple significant issues in error handling.",
+      "findings": [
+        "Multiple bare except clauses that swallow exceptions silently.",
+        "Several empty catch blocks that do not handle exceptions.",
+        "Inconsistent error propagation, with some functions returning None or False without clear documentation.",
+        "Missing null checks before dereferencing variables, leading to potential runtime errors.",
+        "Lack of retry logic for transient failures in network calls."
+      ],
+      "recommendations": [
+        "Implement specific exception handling instead of bare except clauses to avoid silent failures.",
+        "Ensure all catch blocks log or handle exceptions appropriately.",
+        "Standardize error propagation methods across the codebase to improve clarity and reliability."
+      ]
+    },
+    "complexity": {
+      "score": 4.5,
+      "grade": "D",
+      "summary": "The repository exhibits multiple significant issues affecting code complexity and maintainability.",
+      "findings": [
+        "The file 'launcher.py' contains 321 lines, exceeding the recommended limit for function length.",
+        "The file 'detector.py' has a nesting depth of 6, indicating complex control flow.",
+        "The 'SpikeDetector' class has methods with more than 5 parameters, complicating usage and testing.",
+        "The presence of magic numbers and strings throughout the codebase, particularly in 'detector.py', reduces readability.",
+        "The 'analyst.py' file has a nesting depth of 7, indicating excessive complexity."
+      ],
+      "recommendations": [
+        "Refactor long functions in 'launcher.py' and 'detector.py' to improve readability and maintainability.",
+        "Reduce nesting depth in 'detector.py' and 'analyst.py' by simplifying control flow and breaking down complex methods.",
+        "Replace magic numbers and strings with named constants to enhance code clarity and maintainability."
+      ]
+    },
+    "dependency_hygiene": {
+      "score": 5.0,
+      "grade": "D",
+      "summary": "The repository has multiple significant dependency hygiene issues.",
+      "findings": [
+        "Unpinned version ranges found in production dependencies.",
+        "Outdated dependency versions present.",
+        "Development dependencies mixed into production dependencies.",
+        "Missing lockfile for package manager.",
+        "Direct use of transitive dependencies detected."
+      ],
+      "recommendations": [
+        "Pin all production dependencies to specific versions.",
+        "Update outdated dependencies to their latest stable versions.",
+        "Separate development dependencies from production dependencies."
+      ]
+    },
+    "config_separation": {
+      "score": 6.0,
+      "grade": "C",
+      "summary": "The repository has some configuration and secrets management in place, but there are notable issues with hardcoded values and environment separation.",
+      "findings": [
+        "Hardcoded APP_HOST and APP_PORT in .env and .env.example files.",
+        "Hardcoded DISCORD_WEBHOOK_URL and INGEST_API_TOKEN in .env file.",
+        "No clear separation of configuration for different environments (dev, staging, production).",
+        "The .env file is not gitignored, risking exposure of sensitive information.",
+        "The .env.example file does not provide a complete template for all necessary environment variables."
+      ],
+      "recommendations": [
+        "Implement a strategy to separate configuration for different environments, such as using different .env files for dev, staging, and production.",
+        "Ensure that sensitive information is stored securely and not hardcoded in source files or committed to the repository.",
+        "Add a comprehensive .env.example file that includes all necessary environment variables without sensitive values."
+      ]
+    }
+  },
+  "overall_score": 5.5,
+  "remediation": {
+    "progress": {
+      "current_grade": "D",
+      "target_grade": "C",
+      "target_score": 6.0,
+      "points_needed": 0.5
+    },
+    "level": "\u26a0\ufe0f Needs Work",
+    "badges": [
+      {
+        "icon": "\ud83d\udd10",
+        "label": "No Secrets Found",
+        "description": "No hardcoded secrets detected in the codebase"
+      },
+      {
+        "icon": "\ud83d\udcda",
+        "label": "Docs Are Strong",
+        "description": "Documentation scored 8.5/10"
+      },
+      {
+        "icon": "\ud83e\uddea",
+        "label": "Test Foundation",
+        "description": "Test coverage scored 7.0/10"
+      },
+      {
+        "icon": "\ud83d\udd28",
+        "label": "Needs Refactor Focus",
+        "description": "Complexity scored 4.5/10 \u2014 room to simplify"
+      },
+      {
+        "icon": "\ud83e\uddf9",
+        "label": "Cleanup Opportunity",
+        "description": "Dead code scored 5.0/10 \u2014 trim the unused"
+      }
+    ],
+    "next_fixes": [
+      {
+        "title": "Standardize naming conventions",
+        "dimension": "naming_consistency",
+        "effort": "large",
+        "expected_impact": "high",
+        "files": [
+          "test_foo.py",
+          "foo_test.py"
+        ]
+      },
+      {
+        "title": "Reduce architectural inconsistency",
+        "dimension": "code_drift",
+        "effort": "large",
+        "expected_impact": "high",
+        "files": []
+      },
+      {
+        "title": "Reduce complexity in core modules",
+        "dimension": "complexity",
+        "effort": "large",
+        "expected_impact": "high",
+        "files": [
+          "detector.py",
+          "analyst.py",
+          "launcher.py"
+        ]
+      },
+      {
+        "title": "Address security risks",
+        "dimension": "security",
+        "effort": "large",
+        "expected_impact": "high",
+        "files": [
+          "pyproject.toml"
+        ]
+      },
+      {
+        "title": "Pin and audit dependencies",
+        "dimension": "dependency_hygiene",
+        "effort": "large",
+        "expected_impact": "high",
+        "files": []
+      }
+    ],
+    "dimension_breakdown": {
+      "score_draggers": [
+        {
+          "dimension": "security",
+          "score": 4.5,
+          "grade": "D"
+        },
+        {
+          "dimension": "code_drift",
+          "score": 4.5,
+          "grade": "D"
+        },
+        {
+          "dimension": "error_handling",
+          "score": 4.5,
+          "grade": "D"
+        },
+        {
+          "dimension": "complexity",
+          "score": 4.5,
+          "grade": "D"
+        },
+        {
+          "dimension": "naming_consistency",
+          "score": 5.0,
+          "grade": "D"
+        },
+        {
+          "dimension": "dead_code",
+          "score": 5.0,
+          "grade": "D"
+        },
+        {
+          "dimension": "dependency_hygiene",
+          "score": 5.0,
+          "grade": "D"
+        },
+        {
+          "dimension": "config_separation",
+          "score": 6.0,
+          "grade": "C"
+        }
+      ],
+      "already_strong": [
+        {
+          "dimension": "documentation",
+          "score": 8.5,
+          "grade": "B"
+        },
+        {
+          "dimension": "test_coverage",
+          "score": 7.0,
+          "grade": "C"
+        }
+      ]
+    },
+    "workplan": {
+      "Quick Wins": [],
+      "High Impact Refactors": [
+        {
+          "title": "Standardize naming conventions",
+          "dimension": "naming_consistency",
+          "severity": "high",
+          "effort": "large",
+          "expected_impact": "high",
+          "why_it_matters": "Consolidates 8 related findings in naming consistency (severity: high).",
+          "suggested_fix": "Choose one naming convention per identifier type, document it, and apply it consistently across the codebase.",
+          "validation": "Run a linter configured for naming conventions (e.g. pylint, eslint)",
+          "source_type": "consolidated",
+          "files": [
+            "test_foo.py",
+            "foo_test.py"
+          ],
+          "sources": [
+            {
+              "text": "Mixed naming conventions: camelCase and snake_case are used interchangeably for variable names.",
+              "type": "finding"
+            },
+            {
+              "text": "Inconsistent abbreviation styles: userId, user_id, and uid are all used for the same concept.",
+              "type": "finding"
+            },
+            {
+              "text": "Test files are named inconsistently: test_foo.py, foo_test.py, and foo.spec.js are mixed.",
+              "type": "finding"
+            },
+            {
+              "text": "Constants do not follow a consistent UPPER_CASE pattern.",
+              "type": "finding"
+            },
+            {
+              "text": "Boolean variables do not consistently use is/has/can/should prefixes.",
+              "type": "finding"
+            },
+            {
+              "text": "Establish a naming convention guide for the project and ensure all contributors adhere to it.",
+              "type": "recommendation"
+            },
+            {
+              "text": "Refactor variable names to use a single consistent style (preferably snake_case for Python).",
+              "type": "recommendation"
+            },
+            {
+              "text": "Standardize the naming of test files to follow a single pattern.",
+              "type": "recommendation"
+            }
+          ]
+        },
+        {
+          "title": "Reduce architectural inconsistency",
+          "dimension": "code_drift",
+          "severity": "high",
+          "effort": "large",
+          "expected_impact": "high",
+          "why_it_matters": "Consolidates 8 related findings in code drift (severity: high).",
+          "suggested_fix": "Adopt one pattern per concern (e.g. async/await everywhere), remove legacy patterns, and align error handling across modules.",
+          "validation": "Compare architectural patterns across modules manually or via lint rules",
+          "source_type": "consolidated",
+          "files": [],
+          "sources": [
+            {
+              "text": "Inconsistent error handling strategies, with some files using exceptions and others using return codes.",
+              "type": "finding"
+            },
+            {
+              "text": "Inconsistent use of comments, with some files heavily commented and others lacking any documentation.",
+              "type": "finding"
+            },
+            {
+              "text": "Evidence of copy-paste driven development, particularly in the handling of similar functionalities across multiple files.",
+              "type": "finding"
+            },
+            {
+              "text": "Mix of old-style classes and new-style classes across different files.",
+              "type": "finding"
+            },
+            {
+              "text": "Different logging approaches, with some files using print statements and others using a logging framework.",
+              "type": "finding"
+            },
+            {
+              "text": "Standardize coding practices by adopting a consistent style guide across the codebase.",
+              "type": "recommendation"
+            },
+            {
+              "text": "Refactor files to unify error handling and logging strategies for better maintainability.",
+              "type": "recommendation"
+            },
+            {
+              "text": "Increase documentation efforts to ensure all files are adequately commented and easy to understand.",
+              "type": "recommendation"
+            }
+          ]
+        },
+        {
+          "title": "Reduce complexity in core modules",
+          "dimension": "complexity",
+          "severity": "high",
+          "effort": "large",
+          "expected_impact": "high",
+          "why_it_matters": "Consolidates 8 related findings in complexity (severity: high).",
+          "suggested_fix": "Break long functions into focused helpers, extract magic values into named constants, and flatten deeply nested conditionals.",
+          "validation": "Run complexity analysis (e.g. radon cc, eslint complexity rule)",
+          "source_type": "consolidated",
+          "files": [
+            "detector.py",
+            "analyst.py",
+            "launcher.py"
+          ],
+          "sources": [
+            {
+              "text": "The file 'detector.py' has a nesting depth of 6, indicating complex control flow.",
+              "type": "finding"
+            },
+            {
+              "text": "The presence of magic numbers and strings throughout the codebase, particularly in 'detector.py', reduces readability.",
+              "type": "finding"
+            },
+            {
+              "text": "The 'analyst.py' file has a nesting depth of 7, indicating excessive complexity.",
+              "type": "finding"
+            },
+            {
+              "text": "Refactor long functions in 'launcher.py' and 'detector.py' to improve readability and maintainability.",
+              "type": "recommendation"
+            },
+            {
+              "text": "Reduce nesting depth in 'detector.py' and 'analyst.py' by simplifying control flow and breaking down complex methods.",
+              "type": "recommendation"
+            },
+            {
+              "text": "Replace magic numbers and strings with named constants to enhance code clarity and maintainability.",
+              "type": "recommendation"
+            },
+            {
+              "text": "The file 'launcher.py' contains 321 lines, exceeding the recommended limit for function length.",
+              "type": "finding"
+            },
+            {
+              "text": "The 'SpikeDetector' class has methods with more than 5 parameters, complicating usage and testing.",
+              "type": "finding"
+            }
+          ]
+        },
+        {
+          "title": "Address security risks",
+          "dimension": "security",
+          "severity": "high",
+          "effort": "large",
+          "expected_impact": "high",
+          "why_it_matters": "Consolidates 8 related findings in security (severity: high).",
+          "suggested_fix": "Remove hardcoded secrets, replace dangerous functions (eval, exec, shell=True) with safe alternatives, and add input validation.",
+          "validation": "Run a secret scanner (e.g. trufflehog, gitleaks) and review results",
+          "source_type": "consolidated",
+          "files": [
+            "pyproject.toml"
+          ],
+          "sources": [
+            {
+              "text": "Hardcoded API keys and tokens found in .env file.",
+              "type": "finding"
+            },
+            {
+              "text": "Insecure default configurations with debug mode potentially enabled.",
+              "type": "finding"
+            },
+            {
+              "text": "Remove hardcoded credentials and use environment variables or secure vaults.",
+              "type": "recommendation"
+            },
+            {
+              "text": "Missing input validation or sanitization in user inputs.",
+              "type": "finding"
+            },
+            {
+              "text": "Unpinned dependencies in pyproject.toml could lead to supply-chain attacks.",
+              "type": "finding"
+            },
+            {
+              "text": "Improper error handling that may leak sensitive information.",
+              "type": "finding"
+            },
+            {
+              "text": "Implement input validation and sanitization for all user inputs.",
+              "type": "recommendation"
+            },
+            {
+              "text": "Pin dependency versions in pyproject.toml to mitigate supply-chain risks.",
+              "type": "recommendation"
+            }
+          ]
+        },
+        {
+          "title": "Pin and audit dependencies",
+          "dimension": "dependency_hygiene",
+          "severity": "high",
+          "effort": "large",
+          "expected_impact": "high",
+          "why_it_matters": "Consolidates 8 related findings in dependency hygiene (severity: high).",
+          "suggested_fix": "Pin production dependency versions, generate or update the lockfile, and run a dependency audit to flag known vulnerabilities.",
+          "validation": "Run dependency audit (e.g. pip-audit, npm audit, cargo audit)",
+          "source_type": "consolidated",
+          "files": [],
+          "sources": [
+            {
+              "text": "Unpinned version ranges found in production dependencies.",
+              "type": "finding"
+            },
+            {
+              "text": "Outdated dependency versions present.",
+              "type": "finding"
+            },
+            {
+              "text": "Missing lockfile for package manager.",
+              "type": "finding"
+            },
+            {
+              "text": "Pin all production dependencies to specific versions.",
+              "type": "recommendation"
+            },
+            {
+              "text": "Update outdated dependencies to their latest stable versions.",
+              "type": "recommendation"
+            },
+            {
+              "text": "Development dependencies mixed into production dependencies.",
+              "type": "finding"
+            },
+            {
+              "text": "Direct use of transitive dependencies detected.",
+              "type": "finding"
+            },
+            {
+              "text": "Separate development dependencies from production dependencies.",
+              "type": "recommendation"
+            }
+          ]
+        },
+        {
+          "title": "Standardize exception handling",
+          "dimension": "error_handling",
+          "severity": "high",
+          "effort": "large",
+          "expected_impact": "high",
+          "why_it_matters": "Consolidates 8 related findings in error handling (severity: high).",
+          "suggested_fix": "Replace bare except/catch blocks with specific handlers that log or re-raise, add null checks, and adopt a consistent error propagation strategy.",
+          "validation": "Grep for bare except/catch blocks and verify they log or re-raise",
+          "source_type": "consolidated",
+          "files": [],
+          "sources": [
+            {
+              "text": "Multiple bare except clauses that swallow exceptions silently.",
+              "type": "finding"
+            },
+            {
+              "text": "Several empty catch blocks that do not handle exceptions.",
+              "type": "finding"
+            },
+            {
+              "text": "Inconsistent error propagation, with some functions returning None or False without clear documentation.",
+              "type": "finding"
+            },
+            {
+              "text": "Missing null checks before dereferencing variables, leading to potential runtime errors.",
+              "type": "finding"
+            },
+            {
+              "text": "Implement specific exception handling instead of bare except clauses to avoid silent failures.",
+              "type": "recommendation"
+            },
+            {
+              "text": "Ensure all catch blocks log or handle exceptions appropriately.",
+              "type": "recommendation"
+            },
+            {
+              "text": "Standardize error propagation methods across the codebase to improve clarity and reliability.",
+              "type": "recommendation"
+            },
+            {
+              "text": "Lack of retry logic for transient failures in network calls.",
+              "type": "finding"
+            }
+          ]
+        },
+        {
+          "title": "Remove dead code and abandoned files",
+          "dimension": "dead_code",
+          "severity": "high",
+          "effort": "large",
+          "expected_impact": "high",
+          "why_it_matters": "Consolidates 8 related findings in dead code (severity: high).",
+          "suggested_fix": "Delete commented-out blocks, remove unused imports and unreferenced functions, and clean up deprecated modules.",
+          "validation": "Run a dead-code detector (e.g. vulture for Python, ts-prune for TS)",
+          "source_type": "consolidated",
+          "files": [
+            "fix_detector.py"
+          ],
+          "sources": [
+            {
+              "text": "Commented-out code blocks are present in multiple files, indicating abandoned work.",
+              "type": "finding"
+            },
+            {
+              "text": "There are TODO/FIXME comments scattered throughout the codebase suggesting incomplete features.",
+              "type": "finding"
+            },
+            {
+              "text": "Remove unused imports and functions to clean up the codebase.",
+              "type": "recommendation"
+            },
+            {
+              "text": "Eliminate commented-out code blocks that are not part of documentation.",
+              "type": "recommendation"
+            },
+            {
+              "text": "Several imported modules in 'fix_detector.py' are never referenced.",
+              "type": "finding"
+            },
+            {
+              "text": "Functions defined in 'fix_detector.py' are not called anywhere in the codebase.",
+              "type": "finding"
+            },
+            {
+              "text": "Old migration files are still present in the repository without any references.",
+              "type": "finding"
+            },
+            {
+              "text": "Review and remove old migration files that are no longer needed.",
+              "type": "recommendation"
+            }
+          ]
+        }
+      ],
+      "Policy / Hygiene": [],
+      "Later Improvements": [
+        {
+          "title": "Separate config and secrets from code",
+          "dimension": "config_separation",
+          "severity": "medium",
+          "effort": "large",
+          "expected_impact": "medium",
+          "why_it_matters": "Consolidates 8 related findings in config separation (severity: medium).",
+          "suggested_fix": "Move hardcoded URLs, credentials, and config values into environment variables or a config system, and add a .env.example template.",
+          "validation": "Search for hardcoded strings and verify .env.example exists",
+          "source_type": "consolidated",
+          "files": [],
+          "sources": [
+            {
+              "text": "Hardcoded APP_HOST and APP_PORT in .env and .env.example files.",
+              "type": "finding"
+            },
+            {
+              "text": "Hardcoded DISCORD_WEBHOOK_URL and INGEST_API_TOKEN in .env file.",
+              "type": "finding"
+            },
+            {
+              "text": "The .env file is not gitignored, risking exposure of sensitive information.",
+              "type": "finding"
+            },
+            {
+              "text": "The .env.example file does not provide a complete template for all necessary environment variables.",
+              "type": "finding"
+            },
+            {
+              "text": "Implement a strategy to separate configuration for different environments, such as using different .env files for dev, staging, and production.",
+              "type": "recommendation"
+            },
+            {
+              "text": "Ensure that sensitive information is stored securely and not hardcoded in source files or committed to the repository.",
+              "type": "recommendation"
+            },
+            {
+              "text": "Add a comprehensive .env.example file that includes all necessary environment variables without sensitive values.",
+              "type": "recommendation"
+            },
+            {
+              "text": "No clear separation of configuration for different environments (dev, staging, production).",
+              "type": "finding"
+            }
+          ]
+        },
+        {
+          "title": "Add a test foundation",
+          "dimension": "test_coverage",
+          "severity": "medium",
+          "effort": "large",
+          "expected_impact": "medium",
+          "why_it_matters": "Consolidates 8 related findings in test coverage (severity: medium).",
+          "suggested_fix": "Set up a test framework, write tests for core business logic, and add edge-case coverage for critical paths.",
+          "validation": "Run test suite with coverage enabled (e.g. pytest --cov, jest --coverage)",
+          "source_type": "consolidated",
+          "files": [],
+          "sources": [
+            {
+              "text": "Edge-case tests are limited, particularly for scenarios like empty inputs and error paths.",
+              "type": "finding"
+            },
+            {
+              "text": "Increase the number of edge-case tests to cover scenarios like empty inputs and error handling.",
+              "type": "recommendation"
+            },
+            {
+              "text": "Test to source ratio is 0.583, indicating a reasonable amount of tests relative to source code.",
+              "type": "finding"
+            },
+            {
+              "text": "Core business logic is tested, but some critical paths like data persistence and API endpoints are underrepresented.",
+              "type": "finding"
+            },
+            {
+              "text": "Many tests assert behavior correctly, but some tests lack assertions and only call code.",
+              "type": "finding"
+            },
+            {
+              "text": "Mocking is used effectively, but there may be areas where external dependencies are not fully isolated.",
+              "type": "finding"
+            },
+            {
+              "text": "Ensure all critical paths, especially for authentication and data persistence, have corresponding tests.",
+              "type": "recommendation"
+            },
+            {
+              "text": "Review and refactor tests to include assertions in all test cases to validate expected outcomes.",
+              "type": "recommendation"
+            }
+          ]
+        },
+        {
+          "title": "Document public APIs",
+          "dimension": "documentation",
+          "severity": "low",
+          "effort": "large",
+          "expected_impact": "low",
+          "why_it_matters": "Consolidates 8 related findings in documentation (severity: low).",
+          "suggested_fix": "Add docstrings or JSDoc to all public functions and classes, and ensure inline comments explain non-obvious logic.",
+          "validation": "Check README completeness and run a docstring coverage tool",
+          "source_type": "consolidated",
+          "files": [],
+          "sources": [
+            {
+              "text": "Public API functions are documented, but some internal functions lack detailed docstrings.",
+              "type": "finding"
+            },
+            {
+              "text": "Inline comments are present but could be more descriptive in complex sections.",
+              "type": "finding"
+            },
+            {
+              "text": "Configuration options are documented in the README, but a dedicated configuration guide would enhance clarity.",
+              "type": "finding"
+            },
+            {
+              "text": "Enhance inline comments and add more detailed docstrings for internal functions.",
+              "type": "recommendation"
+            },
+            {
+              "text": "The README is comprehensive, covering project purpose, installation, and usage instructions.",
+              "type": "finding"
+            },
+            {
+              "text": "There is no explicit CONTRIBUTING guide or detailed development setup instructions.",
+              "type": "finding"
+            },
+            {
+              "text": "Add a CONTRIBUTING guide to outline how others can contribute to the project.",
+              "type": "recommendation"
+            },
+            {
+              "text": "Consider creating a dedicated configuration guide to clarify setup and options.",
+              "type": "recommendation"
+            }
+          ]
+        }
+      ]
+    },
+    "history": []
+  }
+}

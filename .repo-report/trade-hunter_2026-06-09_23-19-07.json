@@ -1,0 +1,2100 @@
+{
+  "repo": "D:\\Projects\\active\\trade-hunter",
+  "analyzed_at": "2026-06-10T03:19:07.409436+00:00",
+  "overall_score": 5.8,
+  "overall_grade": "D",
+  "dimensions": {
+    "security": {
+      "score": 6.5,
+      "grade": "C",
+      "summary": "The repository has some notable security issues that need addressing.",
+      "findings": [
+        "Missing input validation or sanitization in user inputs.",
+        "Insecure default configurations with potential debug information exposure.",
+        "Use of subprocess with shell=True, which can lead to command injection vulnerabilities.",
+        "Insecure dependencies with unpinned versions that could allow supply-chain attacks.",
+        "Improper error handling that may leak sensitive information."
+      ],
+      "recommendations": [
+        "Implement input validation and sanitization for all user inputs.",
+        "Review and secure subprocess calls to avoid shell injection risks.",
+        "Pin dependency versions in the pyproject.toml to mitigate supply-chain risks."
+      ]
+    },
+    "test_coverage": {
+      "score": 7.5,
+      "grade": "C",
+      "summary": "The repository has a good amount of tests but lacks coverage for some critical paths and edge cases.",
+      "findings": [
+        "Test to source ratio is 0.805, indicating a reasonable amount of tests relative to source code.",
+        "Core business logic is generally covered, but some critical paths like data persistence and API endpoints lack sufficient tests.",
+        "Some tests do not assert behavior effectively, leading to potential false positives.",
+        "Edge-case tests are limited, particularly for scenarios like empty input and error handling.",
+        "Test names are descriptive but could be improved for clarity on specific behaviors being tested."
+      ],
+      "recommendations": [
+        "Increase coverage for critical paths, especially around authentication and data persistence.",
+        "Ensure all tests include assertions to validate expected outcomes.",
+        "Add more edge-case tests to cover scenarios like empty inputs and error paths."
+      ]
+    },
+    "naming_consistency": {
+      "score": 5.0,
+      "grade": "D",
+      "summary": "The codebase exhibits multiple significant naming inconsistencies across various elements.",
+      "findings": [
+        "Mixed naming conventions observed: camelCase and snake_case used interchangeably for variable names.",
+        "Inconsistent abbreviation styles for identifiers like userId, user_id, and uid.",
+        "Test files are named inconsistently, with variations like test_foo.py and foo_test.py present.",
+        "Constants do not follow a consistent UPPER_CASE or PascalCase pattern.",
+        "Boolean variables lack consistent prefixes such as is/has/can/should."
+      ],
+      "recommendations": [
+        "Standardize naming conventions across the codebase to either camelCase or snake_case.",
+        "Establish a naming guideline for abbreviations and ensure uniformity throughout the code.",
+        "Implement a consistent naming scheme for test files to enhance clarity and organization."
+      ]
+    },
+    "dead_code": {
+      "score": 5.0,
+      "grade": "D",
+      "summary": "The repository contains multiple significant issues related to dead code and unused artifacts.",
+      "findings": [
+        "Several imported modules in launcher.py are never referenced.",
+        "Functions defined in app/models.py are not called anywhere in the codebase.",
+        "Commented-out code blocks are present in multiple files, indicating abandoned work.",
+        "Old migration files are still present in the repository.",
+        "Feature flags in the codebase are never toggled or referenced."
+      ],
+      "recommendations": [
+        "Remove unused imports and functions to clean up the codebase.",
+        "Eliminate commented-out code blocks to improve readability.",
+        "Review and delete old migration files that are no longer needed."
+      ]
+    },
+    "documentation": {
+      "score": 8.5,
+      "grade": "B",
+      "summary": "The documentation is mostly complete but could benefit from additional detail in certain areas.",
+      "findings": [
+        "The README provides a clear overview of the project, installation instructions, and usage examples.",
+        "Public API functions and classes are documented with docstrings, but some internal functions lack comments.",
+        "Inline comments are present but not consistent throughout the codebase.",
+        "Configuration options are documented in the README, but a dedicated configuration guide would enhance clarity.",
+        "There is a CHANGELOG present, but it could be more detailed regarding version history."
+      ],
+      "recommendations": [
+        "Add more inline comments in complex sections of the code to improve readability.",
+        "Create a dedicated configuration guide to explain all configuration options in detail.",
+        "Enhance the CHANGELOG with more specific details about changes and improvements in each version."
+      ]
+    },
+    "dependency_hygiene": {
+      "score": 5.0,
+      "grade": "D",
+      "summary": "The repository has multiple significant dependency hygiene issues.",
+      "findings": [
+        "Presence of unpinned or wildcard version ranges in production dependencies.",
+        "Outdated dependency versions that need updating.",
+        "Development dependencies mixed into production dependencies.",
+        "Missing lockfile for dependency management.",
+        "Direct use of transitive dependencies not declared in the manifest."
+      ],
+      "recommendations": [
+        "Pin all production dependencies to specific versions.",
+        "Create and maintain a lockfile to ensure consistent installations.",
+        "Review and clean up the dependency list to remove unused or unnecessary dependencies."
+      ]
+    },
+    "code_drift": {
+      "score": 5.0,
+      "grade": "D",
+      "summary": "The codebase exhibits multiple significant inconsistencies and outdated patterns.",
+      "findings": [
+        "Mix of old-style classes and new-style classes across different files.",
+        "Inconsistent error handling strategies, with some files using try-except and others not.",
+        "Different logging approaches, with some files using print statements and others using the logging module.",
+        "Files with extensive comments and others with none, leading to uneven documentation quality.",
+        "Evidence of copy-paste driven development, particularly in the detector and notifier files."
+      ],
+      "recommendations": [
+        "Standardize on a single error handling strategy across the codebase.",
+        "Implement consistent logging practices using the logging module throughout all files.",
+        "Review and refactor code to eliminate copy-paste patterns and ensure uniform coding standards."
+      ]
+    },
+    "error_handling": {
+      "score": 4.5,
+      "grade": "D",
+      "summary": "The repository exhibits multiple significant issues in error handling.",
+      "findings": [
+        "Multiple bare except clauses that swallow exceptions silently.",
+        "Several empty catch blocks that do not handle exceptions.",
+        "Functions that can fail but do not return meaningful error information.",
+        "Inconsistent error propagation, with some functions throwing exceptions while others return None or False.",
+        "Missing boundary checks for array indices and potential null dereferencing."
+      ],
+      "recommendations": [
+        "Implement specific exception handling instead of bare except clauses.",
+        "Ensure all functions return meaningful error information or raise exceptions appropriately.",
+        "Add boundary checks and null checks before dereferencing variables."
+      ]
+    },
+    "config_separation": {
+      "score": 7.0,
+      "grade": "C",
+      "summary": "The repository has some acceptable practices for configuration and secret management but shows notable areas for improvement.",
+      "findings": [
+        "No hardcoded credentials or tokens found.",
+        "Configuration values that should vary by environment are not clearly separated.",
+        "Environment variables are not utilized effectively.",
+        ".env files are not present or gitignored.",
+        ".env.example or similar template does not exist."
+      ],
+      "recommendations": [
+        "Implement a clear configuration management system that separates environment-specific settings.",
+        "Introduce .env files for sensitive information and ensure they are gitignored.",
+        "Create a template for environment variables to guide developers on necessary configurations."
+      ]
+    },
+    "complexity": {
+      "score": 4.5,
+      "grade": "D",
+      "summary": "The repository exhibits multiple significant issues affecting code complexity and maintainability.",
+      "findings": [
+        "Functions longer than 50 lines found in launcher.py (256 lines) and detector.py (207 lines).",
+        "High nesting depth observed in launcher.py (6 levels) and detector.py (6 levels).",
+        "Boolean flag parameters present in DiscordWebhookNotifier class controlling different behavior paths.",
+        "Functions with too many parameters found in DiscordWebhookNotifier class (5+ parameters).",
+        "Deeply nested conditionals found in detector.py, particularly in the process method."
+      ],
+      "recommendations": [
+        "Refactor long functions into smaller, more manageable units to improve readability and maintainability.",
+        "Reduce nesting depth by simplifying conditional logic and using early returns where applicable.",
+        "Limit the number of parameters in functions and consider using data classes or dictionaries to encapsulate related parameters."
+      ]
+    }
+  },
+  "stats": {
+    "total_source_files": 46,
+    "total_test_files": 15,
+    "total_source_lines": 2247,
+    "total_test_lines": 1808,
+    "test_to_source_ratio": 0.805,
+    "secret_hit_count": 0,
+    "has_readme": true,
+    "has_dependency_file": true,
+    "omitted_source_count": 14,
+    "aggregate_chars_sent": 89482
+  },
+  "remediation": {
+    "overall_score": 5.8,
+    "overall_grade": "D",
+    "tasks": [
+      {
+        "title": "Pin and audit dependencies",
+        "dimension": "dependency_hygiene",
+        "severity": "high",
+        "effort": "large",
+        "expected_impact": "high",
+        "why_it_matters": "Consolidates 5 related findings in dependency hygiene (severity: high).",
+        "suggested_fix": "Pin production dependency versions, generate or update the lockfile, and run a dependency audit to flag known vulnerabilities.",
+        "validation": "Run dependency audit (e.g. pip-audit, npm audit, cargo audit)",
+        "source_text": "Pin production dependency versions, generate or update the lockfile, and run a dependency audit to flag known vulnerabilities.",
+        "source_type": "consolidated",
+        "files": [],
+        "sources": [
+          {
+            "text": "Presence of unpinned or wildcard version ranges in production dependencies.",
+            "type": "finding"
+          },
+          {
+            "text": "Outdated dependency versions that need updating.",
+            "type": "finding"
+          },
+          {
+            "text": "Missing lockfile for dependency management.",
+            "type": "finding"
+          },
+          {
+            "text": "Pin all production dependencies to specific versions.",
+            "type": "recommendation"
+          },
+          {
+            "text": "Create and maintain a lockfile to ensure consistent installations.",
+            "type": "recommendation"
+          }
+        ],
+        "category": "High Impact Refactors"
+      },
+      {
+        "title": "Document public APIs",
+        "dimension": "documentation",
+        "severity": "low",
+        "effort": "large",
+        "expected_impact": "low",
+        "why_it_matters": "Consolidates 4 related findings in documentation (severity: low).",
+        "suggested_fix": "Add docstrings or JSDoc to all public functions and classes, and ensure inline comments explain non-obvious logic.",
+        "validation": "Check README completeness and run a docstring coverage tool",
+        "source_text": "Add docstrings or JSDoc to all public functions and classes, and ensure inline comments explain non-obvious logic.",
+        "source_type": "consolidated",
+        "files": [],
+        "sources": [
+          {
+            "text": "Public API functions and classes are documented with docstrings, but some internal functions lack comments.",
+            "type": "finding"
+          },
+          {
+            "text": "Inline comments are present but not consistent throughout the codebase.",
+            "type": "finding"
+          },
+          {
+            "text": "Configuration options are documented in the README, but a dedicated configuration guide would enhance clarity.",
+            "type": "finding"
+          },
+          {
+            "text": "Add more inline comments in complex sections of the code to improve readability.",
+            "type": "recommendation"
+          }
+        ],
+        "category": "Later Improvements"
+      },
+      {
+        "title": "Remove dead code and abandoned files",
+        "dimension": "dead_code",
+        "severity": "high",
+        "effort": "medium",
+        "expected_impact": "high",
+        "why_it_matters": "Consolidates 3 related findings in dead code (severity: high).",
+        "suggested_fix": "Delete commented-out blocks, remove unused imports and unreferenced functions, and clean up deprecated modules.",
+        "validation": "Run a dead-code detector (e.g. vulture for Python, ts-prune for TS)",
+        "source_text": "Delete commented-out blocks, remove unused imports and unreferenced functions, and clean up deprecated modules.",
+        "source_type": "consolidated",
+        "files": [],
+        "sources": [
+          {
+            "text": "Commented-out code blocks are present in multiple files, indicating abandoned work.",
+            "type": "finding"
+          },
+          {
+            "text": "Remove unused imports and functions to clean up the codebase.",
+            "type": "recommendation"
+          },
+          {
+            "text": "Eliminate commented-out code blocks to improve readability.",
+            "type": "recommendation"
+          }
+        ],
+        "category": "High Impact Refactors"
+      },
+      {
+        "title": "Standardize exception handling",
+        "dimension": "error_handling",
+        "severity": "high",
+        "effort": "large",
+        "expected_impact": "high",
+        "why_it_matters": "Consolidates 4 related findings in error handling (severity: high).",
+        "suggested_fix": "Replace bare except/catch blocks with specific handlers that log or re-raise, add null checks, and adopt a consistent error propagation strategy.",
+        "validation": "Grep for bare except/catch blocks and verify they log or re-raise",
+        "source_text": "Replace bare except/catch blocks with specific handlers that log or re-raise, add null checks, and adopt a consistent error propagation strategy.",
+        "source_type": "consolidated",
+        "files": [],
+        "sources": [
+          {
+            "text": "Multiple bare except clauses that swallow exceptions silently.",
+            "type": "finding"
+          },
+          {
+            "text": "Several empty catch blocks that do not handle exceptions.",
+            "type": "finding"
+          },
+          {
+            "text": "Inconsistent error propagation, with some functions throwing exceptions while others return None or False.",
+            "type": "finding"
+          },
+          {
+            "text": "Implement specific exception handling instead of bare except clauses.",
+            "type": "recommendation"
+          }
+        ],
+        "category": "High Impact Refactors"
+      },
+      {
+        "title": "Reduce complexity in core modules",
+        "dimension": "complexity",
+        "severity": "high",
+        "effort": "large",
+        "expected_impact": "high",
+        "why_it_matters": "Consolidates 7 related findings in complexity (severity: high).",
+        "suggested_fix": "Break long functions into focused helpers, extract magic values into named constants, and flatten deeply nested conditionals.",
+        "validation": "Run complexity analysis (e.g. radon cc, eslint complexity rule)",
+        "source_text": "Break long functions into focused helpers, extract magic values into named constants, and flatten deeply nested conditionals.",
+        "source_type": "consolidated",
+        "files": [
+          "launcher.py",
+          "detector.py"
+        ],
+        "sources": [
+          {
+            "text": "Functions longer than 50 lines found in launcher.py (256 lines) and detector.py (207 lines).",
+            "type": "finding"
+          },
+          {
+            "text": "High nesting depth observed in launcher.py (6 levels) and detector.py (6 levels).",
+            "type": "finding"
+          },
+          {
+            "text": "Boolean flag parameters present in DiscordWebhookNotifier class controlling different behavior paths.",
+            "type": "finding"
+          },
+          {
+            "text": "Functions with too many parameters found in DiscordWebhookNotifier class (5+ parameters).",
+            "type": "finding"
+          },
+          {
+            "text": "Deeply nested conditionals found in detector.py, particularly in the process method.",
+            "type": "finding"
+          },
+          {
+            "text": "Refactor long functions into smaller, more manageable units to improve readability and maintainability.",
+            "type": "recommendation"
+          },
+          {
+            "text": "Reduce nesting depth by simplifying conditional logic and using early returns where applicable.",
+            "type": "recommendation"
+          }
+        ],
+        "category": "High Impact Refactors"
+      },
+      {
+        "title": "Standardize naming conventions",
+        "dimension": "naming_consistency",
+        "severity": "high",
+        "effort": "large",
+        "expected_impact": "high",
+        "why_it_matters": "Consolidates 8 related findings in naming consistency (severity: high).",
+        "suggested_fix": "Choose one naming convention per identifier type, document it, and apply it consistently across the codebase.",
+        "validation": "Run a linter configured for naming conventions (e.g. pylint, eslint)",
+        "source_text": "Choose one naming convention per identifier type, document it, and apply it consistently across the codebase.",
+        "source_type": "consolidated",
+        "files": [
+          "test_foo.py",
+          "foo_test.py"
+        ],
+        "sources": [
+          {
+            "text": "Mixed naming conventions observed: camelCase and snake_case used interchangeably for variable names.",
+            "type": "finding"
+          },
+          {
+            "text": "Inconsistent abbreviation styles for identifiers like userId, user_id, and uid.",
+            "type": "finding"
+          },
+          {
+            "text": "Test files are named inconsistently, with variations like test_foo.py and foo_test.py present.",
+            "type": "finding"
+          },
+          {
+            "text": "Constants do not follow a consistent UPPER_CASE or PascalCase pattern.",
+            "type": "finding"
+          },
+          {
+            "text": "Boolean variables lack consistent prefixes such as is/has/can/should.",
+            "type": "finding"
+          },
+          {
+            "text": "Standardize naming conventions across the codebase to either camelCase or snake_case.",
+            "type": "recommendation"
+          },
+          {
+            "text": "Establish a naming guideline for abbreviations and ensure uniformity throughout the code.",
+            "type": "recommendation"
+          },
+          {
+            "text": "Implement a consistent naming scheme for test files to enhance clarity and organization.",
+            "type": "recommendation"
+          }
+        ],
+        "category": "High Impact Refactors"
+      },
+      {
+        "title": "Separate config and secrets from code",
+        "dimension": "config_separation",
+        "severity": "medium",
+        "effort": "large",
+        "expected_impact": "medium",
+        "why_it_matters": "Consolidates 5 related findings in config separation (severity: medium).",
+        "suggested_fix": "Move hardcoded URLs, credentials, and config values into environment variables or a config system, and add a .env.example template.",
+        "validation": "Search for hardcoded strings and verify .env.example exists",
+        "source_text": "Move hardcoded URLs, credentials, and config values into environment variables or a config system, and add a .env.example template.",
+        "source_type": "consolidated",
+        "files": [],
+        "sources": [
+          {
+            "text": "Environment variables are not utilized effectively.",
+            "type": "finding"
+          },
+          {
+            "text": ".env files are not present or gitignored.",
+            "type": "finding"
+          },
+          {
+            "text": ".env.example or similar template does not exist.",
+            "type": "finding"
+          },
+          {
+            "text": "Introduce .env files for sensitive information and ensure they are gitignored.",
+            "type": "recommendation"
+          },
+          {
+            "text": "Create a template for environment variables to guide developers on necessary configurations.",
+            "type": "recommendation"
+          }
+        ],
+        "category": "Later Improvements"
+      },
+      {
+        "title": "Expand critical-path test coverage",
+        "dimension": "test_coverage",
+        "severity": "low",
+        "effort": "medium",
+        "expected_impact": "low",
+        "why_it_matters": "Consolidates 2 related findings in test coverage (severity: low).",
+        "suggested_fix": "Identify untested critical paths and edge cases, add targeted tests for core business logic, and improve assertion quality in existing tests.",
+        "validation": "Run test suite with coverage enabled (e.g. pytest --cov, jest --coverage)",
+        "source_text": "Identify untested critical paths and edge cases, add targeted tests for core business logic, and improve assertion quality in existing tests.",
+        "source_type": "consolidated",
+        "files": [],
+        "sources": [
+          {
+            "text": "Edge-case tests are limited, particularly for scenarios like empty input and error handling.",
+            "type": "finding"
+          },
+          {
+            "text": "Add more edge-case tests to cover scenarios like empty inputs and error paths.",
+            "type": "recommendation"
+          }
+        ],
+        "category": "Later Improvements"
+      },
+      {
+        "title": "Reduce architectural inconsistency",
+        "dimension": "code_drift",
+        "severity": "high",
+        "effort": "large",
+        "expected_impact": "high",
+        "why_it_matters": "Consolidates 3 related findings in code drift (severity: high).",
+        "suggested_fix": "Adopt one pattern per concern (e.g. async/await everywhere), remove legacy patterns, and align error handling across modules.",
+        "validation": "Compare architectural patterns across modules manually or via lint rules",
+        "source_text": "Adopt one pattern per concern (e.g. async/await everywhere), remove legacy patterns, and align error handling across modules.",
+        "source_type": "consolidated",
+        "files": [],
+        "sources": [
+          {
+            "text": "Inconsistent error handling strategies, with some files using try-except and others not.",
+            "type": "finding"
+          },
+          {
+            "text": "Evidence of copy-paste driven development, particularly in the detector and notifier files.",
+            "type": "finding"
+          },
+          {
+            "text": "Review and refactor code to eliminate copy-paste patterns and ensure uniform coding standards.",
+            "type": "recommendation"
+          }
+        ],
+        "category": "High Impact Refactors"
+      },
+      {
+        "title": "Address security risks",
+        "dimension": "security",
+        "severity": "medium",
+        "effort": "large",
+        "expected_impact": "medium",
+        "why_it_matters": "Consolidates 4 related findings in security (severity: medium).",
+        "suggested_fix": "Remove hardcoded secrets, replace dangerous functions (eval, exec, shell=True) with safe alternatives, and add input validation.",
+        "validation": "Run a secret scanner (e.g. trufflehog, gitleaks) and review results",
+        "source_text": "Remove hardcoded secrets, replace dangerous functions (eval, exec, shell=True) with safe alternatives, and add input validation.",
+        "source_type": "consolidated",
+        "files": [],
+        "sources": [
+          {
+            "text": "Insecure default configurations with potential debug information exposure.",
+            "type": "finding"
+          },
+          {
+            "text": "Use of subprocess with shell=True, which can lead to command injection vulnerabilities.",
+            "type": "finding"
+          },
+          {
+            "text": "Insecure dependencies with unpinned versions that could allow supply-chain attacks.",
+            "type": "finding"
+          },
+          {
+            "text": "Review and secure subprocess calls to avoid shell injection risks.",
+            "type": "recommendation"
+          }
+        ],
+        "category": "Later Improvements"
+      },
+      {
+        "title": "Missing input validation or sanitization in user inputs.",
+        "dimension": "security",
+        "severity": "medium",
+        "effort": "medium",
+        "expected_impact": "medium",
+        "why_it_matters": "This finding affects the security score, currently rated medium severity.",
+        "suggested_fix": "Missing input validation or sanitization in user inputs.",
+        "validation": "Run a secret scanner (e.g. trufflehog, gitleaks) and review results",
+        "source_text": "Missing input validation or sanitization in user inputs.",
+        "source_type": "finding",
+        "files": [],
+        "category": "Later Improvements"
+      },
+      {
+        "title": "Improper error handling that may leak sensitive information.",
+        "dimension": "security",
+        "severity": "medium",
+        "effort": "medium",
+        "expected_impact": "medium",
+        "why_it_matters": "This finding affects the security score, currently rated medium severity.",
+        "suggested_fix": "Improper error handling that may leak sensitive information.",
+        "validation": "Run a secret scanner (e.g. trufflehog, gitleaks) and review results",
+        "source_text": "Improper error handling that may leak sensitive information.",
+        "source_type": "finding",
+        "files": [],
+        "category": "Later Improvements"
+      },
+      {
+        "title": "Implement input validation and sanitization for all user inputs.",
+        "dimension": "security",
+        "severity": "medium",
+        "effort": "medium",
+        "expected_impact": "medium",
+        "why_it_matters": "This recommendation affects the security score, currently rated medium severity.",
+        "suggested_fix": "Implement input validation and sanitization for all user inputs.",
+        "validation": "Run a secret scanner (e.g. trufflehog, gitleaks) and review results",
+        "source_text": "Implement input validation and sanitization for all user inputs.",
+        "source_type": "recommendation",
+        "files": [],
+        "category": "Later Improvements"
+      },
+      {
+        "title": "Pin dependency versions in the pyproject.toml to mitigate supply-chain risks.",
+        "dimension": "security",
+        "severity": "medium",
+        "effort": "small",
+        "expected_impact": "medium",
+        "why_it_matters": "This recommendation affects the security score, currently rated medium severity.",
+        "suggested_fix": "Pin dependency versions in the pyproject.toml to mitigate supply-chain risks.",
+        "validation": "Run a secret scanner (e.g. trufflehog, gitleaks) and review results",
+        "source_text": "Pin dependency versions in the pyproject.toml to mitigate supply-chain risks.",
+        "source_type": "recommendation",
+        "files": [
+          "pyproject.toml"
+        ],
+        "category": "Quick Wins"
+      },
+      {
+        "title": "Test to source ratio is 0.805, indicating a reasonable amount of tests relative\u2026",
+        "dimension": "test_coverage",
+        "severity": "low",
+        "effort": "medium",
+        "expected_impact": "low",
+        "why_it_matters": "This finding affects the test coverage score, currently rated low severity.",
+        "suggested_fix": "Test to source ratio is 0.805, indicating a reasonable amount of tests relative to source code.",
+        "validation": "Run test suite with coverage enabled (e.g. pytest --cov, jest --coverage)",
+        "source_text": "Test to source ratio is 0.805, indicating a reasonable amount of tests relative to source code.",
+        "source_type": "finding",
+        "files": [],
+        "category": "Later Improvements"
+      },
+      {
+        "title": "Core business logic is generally covered, but some critical paths like data\u2026",
+        "dimension": "test_coverage",
+        "severity": "low",
+        "effort": "medium",
+        "expected_impact": "low",
+        "why_it_matters": "This finding affects the test coverage score, currently rated low severity.",
+        "suggested_fix": "Core business logic is generally covered, but some critical paths like data persistence and API endpoints lack sufficient tests.",
+        "validation": "Run test suite with coverage enabled (e.g. pytest --cov, jest --coverage)",
+        "source_text": "Core business logic is generally covered, but some critical paths like data persistence and API endpoints lack sufficient tests.",
+        "source_type": "finding",
+        "files": [],
+        "category": "Later Improvements"
+      },
+      {
+        "title": "Some tests do not assert behavior effectively, leading to potential false\u2026",
+        "dimension": "test_coverage",
+        "severity": "low",
+        "effort": "medium",
+        "expected_impact": "low",
+        "why_it_matters": "This finding affects the test coverage score, currently rated low severity.",
+        "suggested_fix": "Some tests do not assert behavior effectively, leading to potential false positives.",
+        "validation": "Run test suite with coverage enabled (e.g. pytest --cov, jest --coverage)",
+        "source_text": "Some tests do not assert behavior effectively, leading to potential false positives.",
+        "source_type": "finding",
+        "files": [],
+        "category": "Later Improvements"
+      },
+      {
+        "title": "Test names are descriptive but could be improved for clarity on specific\u2026",
+        "dimension": "test_coverage",
+        "severity": "low",
+        "effort": "medium",
+        "expected_impact": "low",
+        "why_it_matters": "This finding affects the test coverage score, currently rated low severity.",
+        "suggested_fix": "Test names are descriptive but could be improved for clarity on specific behaviors being tested.",
+        "validation": "Run test suite with coverage enabled (e.g. pytest --cov, jest --coverage)",
+        "source_text": "Test names are descriptive but could be improved for clarity on specific behaviors being tested.",
+        "source_type": "finding",
+        "files": [],
+        "category": "Later Improvements"
+      },
+      {
+        "title": "Increase coverage for critical paths, especially around authentication and data\u2026",
+        "dimension": "test_coverage",
+        "severity": "low",
+        "effort": "medium",
+        "expected_impact": "low",
+        "why_it_matters": "This recommendation affects the test coverage score, currently rated low severity.",
+        "suggested_fix": "Increase coverage for critical paths, especially around authentication and data persistence.",
+        "validation": "Run test suite with coverage enabled (e.g. pytest --cov, jest --coverage)",
+        "source_text": "Increase coverage for critical paths, especially around authentication and data persistence.",
+        "source_type": "recommendation",
+        "files": [],
+        "category": "Later Improvements"
+      },
+      {
+        "title": "Ensure all tests include assertions to validate expected outcomes.",
+        "dimension": "test_coverage",
+        "severity": "low",
+        "effort": "medium",
+        "expected_impact": "low",
+        "why_it_matters": "This recommendation affects the test coverage score, currently rated low severity.",
+        "suggested_fix": "Ensure all tests include assertions to validate expected outcomes.",
+        "validation": "Run test suite with coverage enabled (e.g. pytest --cov, jest --coverage)",
+        "source_text": "Ensure all tests include assertions to validate expected outcomes.",
+        "source_type": "recommendation",
+        "files": [],
+        "category": "Later Improvements"
+      },
+      {
+        "title": "Several imported modules in launcher.py are never referenced.",
+        "dimension": "dead_code",
+        "severity": "high",
+        "effort": "medium",
+        "expected_impact": "high",
+        "why_it_matters": "This finding affects the dead code score, currently rated high severity.",
+        "suggested_fix": "Several imported modules in launcher.py are never referenced.",
+        "validation": "Run a dead-code detector (e.g. vulture for Python, ts-prune for TS)",
+        "source_text": "Several imported modules in launcher.py are never referenced.",
+        "source_type": "finding",
+        "files": [
+          "launcher.py"
+        ],
+        "category": "High Impact Refactors"
+      },
+      {
+        "title": "Functions defined in app/models.py are not called anywhere in the codebase.",
+        "dimension": "dead_code",
+        "severity": "high",
+        "effort": "medium",
+        "expected_impact": "high",
+        "why_it_matters": "This finding affects the dead code score, currently rated high severity.",
+        "suggested_fix": "Functions defined in app/models.py are not called anywhere in the codebase.",
+        "validation": "Run a dead-code detector (e.g. vulture for Python, ts-prune for TS)",
+        "source_text": "Functions defined in app/models.py are not called anywhere in the codebase.",
+        "source_type": "finding",
+        "files": [
+          "app/models.py"
+        ],
+        "category": "High Impact Refactors"
+      },
+      {
+        "title": "Old migration files are still present in the repository.",
+        "dimension": "dead_code",
+        "severity": "high",
+        "effort": "medium",
+        "expected_impact": "high",
+        "why_it_matters": "This finding affects the dead code score, currently rated high severity.",
+        "suggested_fix": "Old migration files are still present in the repository.",
+        "validation": "Run a dead-code detector (e.g. vulture for Python, ts-prune for TS)",
+        "source_text": "Old migration files are still present in the repository.",
+        "source_type": "finding",
+        "files": [],
+        "category": "High Impact Refactors"
+      },
+      {
+        "title": "Feature flags in the codebase are never toggled or referenced.",
+        "dimension": "dead_code",
+        "severity": "high",
+        "effort": "medium",
+        "expected_impact": "high",
+        "why_it_matters": "This finding affects the dead code score, currently rated high severity.",
+        "suggested_fix": "Feature flags in the codebase are never toggled or referenced.",
+        "validation": "Run a dead-code detector (e.g. vulture for Python, ts-prune for TS)",
+        "source_text": "Feature flags in the codebase are never toggled or referenced.",
+        "source_type": "finding",
+        "files": [],
+        "category": "High Impact Refactors"
+      },
+      {
+        "title": "Review and delete old migration files that are no longer needed.",
+        "dimension": "dead_code",
+        "severity": "high",
+        "effort": "small",
+        "expected_impact": "high",
+        "why_it_matters": "This recommendation affects the dead code score, currently rated high severity.",
+        "suggested_fix": "Review and delete old migration files that are no longer needed.",
+        "validation": "Run a dead-code detector (e.g. vulture for Python, ts-prune for TS)",
+        "source_text": "Review and delete old migration files that are no longer needed.",
+        "source_type": "recommendation",
+        "files": [],
+        "category": "Quick Wins"
+      },
+      {
+        "title": "The README provides a clear overview of the project, installation instructions\u2026",
+        "dimension": "documentation",
+        "severity": "low",
+        "effort": "medium",
+        "expected_impact": "low",
+        "why_it_matters": "This finding affects the documentation score, currently rated low severity.",
+        "suggested_fix": "The README provides a clear overview of the project, installation instructions, and usage examples.",
+        "validation": "Check README completeness and run a docstring coverage tool",
+        "source_text": "The README provides a clear overview of the project, installation instructions, and usage examples.",
+        "source_type": "finding",
+        "files": [],
+        "category": "Policy / Hygiene"
+      },
+      {
+        "title": "There is a CHANGELOG present, but it could be more detailed regarding version\u2026",
+        "dimension": "documentation",
+        "severity": "low",
+        "effort": "medium",
+        "expected_impact": "low",
+        "why_it_matters": "This finding affects the documentation score, currently rated low severity.",
+        "suggested_fix": "There is a CHANGELOG present, but it could be more detailed regarding version history.",
+        "validation": "Check README completeness and run a docstring coverage tool",
+        "source_text": "There is a CHANGELOG present, but it could be more detailed regarding version history.",
+        "source_type": "finding",
+        "files": [],
+        "category": "Policy / Hygiene"
+      },
+      {
+        "title": "Create a dedicated configuration guide to explain all configuration options in\u2026",
+        "dimension": "documentation",
+        "severity": "low",
+        "effort": "medium",
+        "expected_impact": "low",
+        "why_it_matters": "This recommendation affects the documentation score, currently rated low severity.",
+        "suggested_fix": "Create a dedicated configuration guide to explain all configuration options in detail.",
+        "validation": "Check README completeness and run a docstring coverage tool",
+        "source_text": "Create a dedicated configuration guide to explain all configuration options in detail.",
+        "source_type": "recommendation",
+        "files": [],
+        "category": "Policy / Hygiene"
+      },
+      {
+        "title": "Enhance the CHANGELOG with more specific details about changes and improvements\u2026",
+        "dimension": "documentation",
+        "severity": "low",
+        "effort": "medium",
+        "expected_impact": "low",
+        "why_it_matters": "This recommendation affects the documentation score, currently rated low severity.",
+        "suggested_fix": "Enhance the CHANGELOG with more specific details about changes and improvements in each version.",
+        "validation": "Check README completeness and run a docstring coverage tool",
+        "source_text": "Enhance the CHANGELOG with more specific details about changes and improvements in each version.",
+        "source_type": "recommendation",
+        "files": [],
+        "category": "Policy / Hygiene"
+      },
+      {
+        "title": "Development dependencies mixed into production dependencies.",
+        "dimension": "dependency_hygiene",
+        "severity": "high",
+        "effort": "medium",
+        "expected_impact": "high",
+        "why_it_matters": "This finding affects the dependency hygiene score, currently rated high severity.",
+        "suggested_fix": "Development dependencies mixed into production dependencies.",
+        "validation": "Run dependency audit (e.g. pip-audit, npm audit, cargo audit)",
+        "source_text": "Development dependencies mixed into production dependencies.",
+        "source_type": "finding",
+        "files": [],
+        "category": "High Impact Refactors"
+      },
+      {
+        "title": "Direct use of transitive dependencies not declared in the manifest.",
+        "dimension": "dependency_hygiene",
+        "severity": "high",
+        "effort": "medium",
+        "expected_impact": "high",
+        "why_it_matters": "This finding affects the dependency hygiene score, currently rated high severity.",
+        "suggested_fix": "Direct use of transitive dependencies not declared in the manifest.",
+        "validation": "Run dependency audit (e.g. pip-audit, npm audit, cargo audit)",
+        "source_text": "Direct use of transitive dependencies not declared in the manifest.",
+        "source_type": "finding",
+        "files": [],
+        "category": "High Impact Refactors"
+      },
+      {
+        "title": "Review and clean up the dependency list to remove unused or unnecessary\u2026",
+        "dimension": "dependency_hygiene",
+        "severity": "high",
+        "effort": "small",
+        "expected_impact": "high",
+        "why_it_matters": "This recommendation affects the dependency hygiene score, currently rated high severity.",
+        "suggested_fix": "Review and clean up the dependency list to remove unused or unnecessary dependencies.",
+        "validation": "Run dependency audit (e.g. pip-audit, npm audit, cargo audit)",
+        "source_text": "Review and clean up the dependency list to remove unused or unnecessary dependencies.",
+        "source_type": "recommendation",
+        "files": [],
+        "category": "Quick Wins"
+      },
+      {
+        "title": "Mix of old-style classes and new-style classes across different files.",
+        "dimension": "code_drift",
+        "severity": "high",
+        "effort": "medium",
+        "expected_impact": "high",
+        "why_it_matters": "This finding affects the code drift score, currently rated high severity.",
+        "suggested_fix": "Mix of old-style classes and new-style classes across different files.",
+        "validation": "Compare architectural patterns across modules manually or via lint rules",
+        "source_text": "Mix of old-style classes and new-style classes across different files.",
+        "source_type": "finding",
+        "files": [],
+        "category": "High Impact Refactors"
+      },
+      {
+        "title": "Different logging approaches, with some files using print statements and others\u2026",
+        "dimension": "code_drift",
+        "severity": "high",
+        "effort": "medium",
+        "expected_impact": "high",
+        "why_it_matters": "This finding affects the code drift score, currently rated high severity.",
+        "suggested_fix": "Different logging approaches, with some files using print statements and others using the logging module.",
+        "validation": "Compare architectural patterns across modules manually or via lint rules",
+        "source_text": "Different logging approaches, with some files using print statements and others using the logging module.",
+        "source_type": "finding",
+        "files": [],
+        "category": "High Impact Refactors"
+      },
+      {
+        "title": "Files with extensive comments and others with none, leading to uneven\u2026",
+        "dimension": "code_drift",
+        "severity": "high",
+        "effort": "small",
+        "expected_impact": "high",
+        "why_it_matters": "This finding affects the code drift score, currently rated high severity.",
+        "suggested_fix": "Files with extensive comments and others with none, leading to uneven documentation quality.",
+        "validation": "Compare architectural patterns across modules manually or via lint rules",
+        "source_text": "Files with extensive comments and others with none, leading to uneven documentation quality.",
+        "source_type": "finding",
+        "files": [],
+        "category": "Quick Wins"
+      },
+      {
+        "title": "Standardize on a single error handling strategy across the codebase.",
+        "dimension": "code_drift",
+        "severity": "high",
+        "effort": "medium",
+        "expected_impact": "high",
+        "why_it_matters": "This recommendation affects the code drift score, currently rated high severity.",
+        "suggested_fix": "Standardize on a single error handling strategy across the codebase.",
+        "validation": "Compare architectural patterns across modules manually or via lint rules",
+        "source_text": "Standardize on a single error handling strategy across the codebase.",
+        "source_type": "recommendation",
+        "files": [],
+        "category": "High Impact Refactors"
+      },
+      {
+        "title": "Implement consistent logging practices using the logging module throughout all\u2026",
+        "dimension": "code_drift",
+        "severity": "high",
+        "effort": "medium",
+        "expected_impact": "high",
+        "why_it_matters": "This recommendation affects the code drift score, currently rated high severity.",
+        "suggested_fix": "Implement consistent logging practices using the logging module throughout all files.",
+        "validation": "Compare architectural patterns across modules manually or via lint rules",
+        "source_text": "Implement consistent logging practices using the logging module throughout all files.",
+        "source_type": "recommendation",
+        "files": [],
+        "category": "High Impact Refactors"
+      },
+      {
+        "title": "Functions that can fail but do not return meaningful error information.",
+        "dimension": "error_handling",
+        "severity": "high",
+        "effort": "medium",
+        "expected_impact": "high",
+        "why_it_matters": "This finding affects the error handling score, currently rated high severity.",
+        "suggested_fix": "Functions that can fail but do not return meaningful error information.",
+        "validation": "Grep for bare except/catch blocks and verify they log or re-raise",
+        "source_text": "Functions that can fail but do not return meaningful error information.",
+        "source_type": "finding",
+        "files": [],
+        "category": "High Impact Refactors"
+      },
+      {
+        "title": "Missing boundary checks for array indices and potential null dereferencing.",
+        "dimension": "error_handling",
+        "severity": "high",
+        "effort": "medium",
+        "expected_impact": "high",
+        "why_it_matters": "This finding affects the error handling score, currently rated high severity.",
+        "suggested_fix": "Missing boundary checks for array indices and potential null dereferencing.",
+        "validation": "Grep for bare except/catch blocks and verify they log or re-raise",
+        "source_text": "Missing boundary checks for array indices and potential null dereferencing.",
+        "source_type": "finding",
+        "files": [],
+        "category": "High Impact Refactors"
+      },
+      {
+        "title": "Ensure all functions return meaningful error information or raise exceptions\u2026",
+        "dimension": "error_handling",
+        "severity": "high",
+        "effort": "medium",
+        "expected_impact": "high",
+        "why_it_matters": "This recommendation affects the error handling score, currently rated high severity.",
+        "suggested_fix": "Ensure all functions return meaningful error information or raise exceptions appropriately.",
+        "validation": "Grep for bare except/catch blocks and verify they log or re-raise",
+        "source_text": "Ensure all functions return meaningful error information or raise exceptions appropriately.",
+        "source_type": "recommendation",
+        "files": [],
+        "category": "High Impact Refactors"
+      },
+      {
+        "title": "Add boundary checks and null checks before dereferencing variables.",
+        "dimension": "error_handling",
+        "severity": "high",
+        "effort": "small",
+        "expected_impact": "high",
+        "why_it_matters": "This recommendation affects the error handling score, currently rated high severity.",
+        "suggested_fix": "Add boundary checks and null checks before dereferencing variables.",
+        "validation": "Grep for bare except/catch blocks and verify they log or re-raise",
+        "source_text": "Add boundary checks and null checks before dereferencing variables.",
+        "source_type": "recommendation",
+        "files": [],
+        "category": "Quick Wins"
+      },
+      {
+        "title": "Configuration values that should vary by environment are not clearly separated.",
+        "dimension": "config_separation",
+        "severity": "medium",
+        "effort": "medium",
+        "expected_impact": "medium",
+        "why_it_matters": "This finding affects the config separation score, currently rated medium severity.",
+        "suggested_fix": "Configuration values that should vary by environment are not clearly separated.",
+        "validation": "Search for hardcoded strings and verify .env.example exists",
+        "source_text": "Configuration values that should vary by environment are not clearly separated.",
+        "source_type": "finding",
+        "files": [],
+        "category": "Policy / Hygiene"
+      },
+      {
+        "title": "Implement a clear configuration management system that separates\u2026",
+        "dimension": "config_separation",
+        "severity": "medium",
+        "effort": "medium",
+        "expected_impact": "medium",
+        "why_it_matters": "This recommendation affects the config separation score, currently rated medium severity.",
+        "suggested_fix": "Implement a clear configuration management system that separates environment-specific settings.",
+        "validation": "Search for hardcoded strings and verify .env.example exists",
+        "source_text": "Implement a clear configuration management system that separates environment-specific settings.",
+        "source_type": "recommendation",
+        "files": [],
+        "category": "Policy / Hygiene"
+      },
+      {
+        "title": "Limit the number of parameters in functions and consider using data classes or\u2026",
+        "dimension": "complexity",
+        "severity": "high",
+        "effort": "medium",
+        "expected_impact": "high",
+        "why_it_matters": "This recommendation affects the complexity score, currently rated high severity.",
+        "suggested_fix": "Limit the number of parameters in functions and consider using data classes or dictionaries to encapsulate related parameters.",
+        "validation": "Run complexity analysis (e.g. radon cc, eslint complexity rule)",
+        "source_text": "Limit the number of parameters in functions and consider using data classes or dictionaries to encapsulate related parameters.",
+        "source_type": "recommendation",
+        "files": [],
+        "category": "High Impact Refactors"
+      }
+    ],
+    "workplan": {
+      "Quick Wins": [
+        {
+          "title": "Review and delete old migration files that are no longer needed.",
+          "dimension": "dead_code",
+          "severity": "high",
+          "effort": "small",
+          "expected_impact": "high",
+          "why_it_matters": "This recommendation affects the dead code score, currently rated high severity.",
+          "suggested_fix": "Review and delete old migration files that are no longer needed.",
+          "validation": "Run a dead-code detector (e.g. vulture for Python, ts-prune for TS)",
+          "source_text": "Review and delete old migration files that are no longer needed.",
+          "source_type": "recommendation",
+          "files": [],
+          "category": "Quick Wins"
+        },
+        {
+          "title": "Review and clean up the dependency list to remove unused or unnecessary\u2026",
+          "dimension": "dependency_hygiene",
+          "severity": "high",
+          "effort": "small",
+          "expected_impact": "high",
+          "why_it_matters": "This recommendation affects the dependency hygiene score, currently rated high severity.",
+          "suggested_fix": "Review and clean up the dependency list to remove unused or unnecessary dependencies.",
+          "validation": "Run dependency audit (e.g. pip-audit, npm audit, cargo audit)",
+          "source_text": "Review and clean up the dependency list to remove unused or unnecessary dependencies.",
+          "source_type": "recommendation",
+          "files": [],
+          "category": "Quick Wins"
+        },
+        {
+          "title": "Files with extensive comments and others with none, leading to uneven\u2026",
+          "dimension": "code_drift",
+          "severity": "high",
+          "effort": "small",
+          "expected_impact": "high",
+          "why_it_matters": "This finding affects the code drift score, currently rated high severity.",
+          "suggested_fix": "Files with extensive comments and others with none, leading to uneven documentation quality.",
+          "validation": "Compare architectural patterns across modules manually or via lint rules",
+          "source_text": "Files with extensive comments and others with none, leading to uneven documentation quality.",
+          "source_type": "finding",
+          "files": [],
+          "category": "Quick Wins"
+        },
+        {
+          "title": "Add boundary checks and null checks before dereferencing variables.",
+          "dimension": "error_handling",
+          "severity": "high",
+          "effort": "small",
+          "expected_impact": "high",
+          "why_it_matters": "This recommendation affects the error handling score, currently rated high severity.",
+          "suggested_fix": "Add boundary checks and null checks before dereferencing variables.",
+          "validation": "Grep for bare except/catch blocks and verify they log or re-raise",
+          "source_text": "Add boundary checks and null checks before dereferencing variables.",
+          "source_type": "recommendation",
+          "files": [],
+          "category": "Quick Wins"
+        },
+        {
+          "title": "Pin dependency versions in the pyproject.toml to mitigate supply-chain risks.",
+          "dimension": "security",
+          "severity": "medium",
+          "effort": "small",
+          "expected_impact": "medium",
+          "why_it_matters": "This recommendation affects the security score, currently rated medium severity.",
+          "suggested_fix": "Pin dependency versions in the pyproject.toml to mitigate supply-chain risks.",
+          "validation": "Run a secret scanner (e.g. trufflehog, gitleaks) and review results",
+          "source_text": "Pin dependency versions in the pyproject.toml to mitigate supply-chain risks.",
+          "source_type": "recommendation",
+          "files": [
+            "pyproject.toml"
+          ],
+          "category": "Quick Wins"
+        }
+      ],
+      "High Impact Refactors": [
+        {
+          "title": "Remove dead code and abandoned files",
+          "dimension": "dead_code",
+          "severity": "high",
+          "effort": "medium",
+          "expected_impact": "high",
+          "why_it_matters": "Consolidates 3 related findings in dead code (severity: high).",
+          "suggested_fix": "Delete commented-out blocks, remove unused imports and unreferenced functions, and clean up deprecated modules.",
+          "validation": "Run a dead-code detector (e.g. vulture for Python, ts-prune for TS)",
+          "source_text": "Delete commented-out blocks, remove unused imports and unreferenced functions, and clean up deprecated modules.",
+          "source_type": "consolidated",
+          "files": [],
+          "sources": [
+            {
+              "text": "Commented-out code blocks are present in multiple files, indicating abandoned work.",
+              "type": "finding"
+            },
+            {
+              "text": "Remove unused imports and functions to clean up the codebase.",
+              "type": "recommendation"
+            },
+            {
+              "text": "Eliminate commented-out code blocks to improve readability.",
+              "type": "recommendation"
+            }
+          ],
+          "category": "High Impact Refactors"
+        },
+        {
+          "title": "Several imported modules in launcher.py are never referenced.",
+          "dimension": "dead_code",
+          "severity": "high",
+          "effort": "medium",
+          "expected_impact": "high",
+          "why_it_matters": "This finding affects the dead code score, currently rated high severity.",
+          "suggested_fix": "Several imported modules in launcher.py are never referenced.",
+          "validation": "Run a dead-code detector (e.g. vulture for Python, ts-prune for TS)",
+          "source_text": "Several imported modules in launcher.py are never referenced.",
+          "source_type": "finding",
+          "files": [
+            "launcher.py"
+          ],
+          "category": "High Impact Refactors"
+        },
+        {
+          "title": "Functions defined in app/models.py are not called anywhere in the codebase.",
+          "dimension": "dead_code",
+          "severity": "high",
+          "effort": "medium",
+          "expected_impact": "high",
+          "why_it_matters": "This finding affects the dead code score, currently rated high severity.",
+          "suggested_fix": "Functions defined in app/models.py are not called anywhere in the codebase.",
+          "validation": "Run a dead-code detector (e.g. vulture for Python, ts-prune for TS)",
+          "source_text": "Functions defined in app/models.py are not called anywhere in the codebase.",
+          "source_type": "finding",
+          "files": [
+            "app/models.py"
+          ],
+          "category": "High Impact Refactors"
+        },
+        {
+          "title": "Old migration files are still present in the repository.",
+          "dimension": "dead_code",
+          "severity": "high",
+          "effort": "medium",
+          "expected_impact": "high",
+          "why_it_matters": "This finding affects the dead code score, currently rated high severity.",
+          "suggested_fix": "Old migration files are still present in the repository.",
+          "validation": "Run a dead-code detector (e.g. vulture for Python, ts-prune for TS)",
+          "source_text": "Old migration files are still present in the repository.",
+          "source_type": "finding",
+          "files": [],
+          "category": "High Impact Refactors"
+        },
+        {
+          "title": "Feature flags in the codebase are never toggled or referenced.",
+          "dimension": "dead_code",
+          "severity": "high",
+          "effort": "medium",
+          "expected_impact": "high",
+          "why_it_matters": "This finding affects the dead code score, currently rated high severity.",
+          "suggested_fix": "Feature flags in the codebase are never toggled or referenced.",
+          "validation": "Run a dead-code detector (e.g. vulture for Python, ts-prune for TS)",
+          "source_text": "Feature flags in the codebase are never toggled or referenced.",
+          "source_type": "finding",
+          "files": [],
+          "category": "High Impact Refactors"
+        },
+        {
+          "title": "Development dependencies mixed into production dependencies.",
+          "dimension": "dependency_hygiene",
+          "severity": "high",
+          "effort": "medium",
+          "expected_impact": "high",
+          "why_it_matters": "This finding affects the dependency hygiene score, currently rated high severity.",
+          "suggested_fix": "Development dependencies mixed into production dependencies.",
+          "validation": "Run dependency audit (e.g. pip-audit, npm audit, cargo audit)",
+          "source_text": "Development dependencies mixed into production dependencies.",
+          "source_type": "finding",
+          "files": [],
+          "category": "High Impact Refactors"
+        },
+        {
+          "title": "Direct use of transitive dependencies not declared in the manifest.",
+          "dimension": "dependency_hygiene",
+          "severity": "high",
+          "effort": "medium",
+          "expected_impact": "high",
+          "why_it_matters": "This finding affects the dependency hygiene score, currently rated high severity.",
+          "suggested_fix": "Direct use of transitive dependencies not declared in the manifest.",
+          "validation": "Run dependency audit (e.g. pip-audit, npm audit, cargo audit)",
+          "source_text": "Direct use of transitive dependencies not declared in the manifest.",
+          "source_type": "finding",
+          "files": [],
+          "category": "High Impact Refactors"
+        },
+        {
+          "title": "Mix of old-style classes and new-style classes across different files.",
+          "dimension": "code_drift",
+          "severity": "high",
+          "effort": "medium",
+          "expected_impact": "high",
+          "why_it_matters": "This finding affects the code drift score, currently rated high severity.",
+          "suggested_fix": "Mix of old-style classes and new-style classes across different files.",
+          "validation": "Compare architectural patterns across modules manually or via lint rules",
+          "source_text": "Mix of old-style classes and new-style classes across different files.",
+          "source_type": "finding",
+          "files": [],
+          "category": "High Impact Refactors"
+        },
+        {
+          "title": "Different logging approaches, with some files using print statements and others\u2026",
+          "dimension": "code_drift",
+          "severity": "high",
+          "effort": "medium",
+          "expected_impact": "high",
+          "why_it_matters": "This finding affects the code drift score, currently rated high severity.",
+          "suggested_fix": "Different logging approaches, with some files using print statements and others using the logging module.",
+          "validation": "Compare architectural patterns across modules manually or via lint rules",
+          "source_text": "Different logging approaches, with some files using print statements and others using the logging module.",
+          "source_type": "finding",
+          "files": [],
+          "category": "High Impact Refactors"
+        },
+        {
+          "title": "Standardize on a single error handling strategy across the codebase.",
+          "dimension": "code_drift",
+          "severity": "high",
+          "effort": "medium",
+          "expected_impact": "high",
+          "why_it_matters": "This recommendation affects the code drift score, currently rated high severity.",
+          "suggested_fix": "Standardize on a single error handling strategy across the codebase.",
+          "validation": "Compare architectural patterns across modules manually or via lint rules",
+          "source_text": "Standardize on a single error handling strategy across the codebase.",
+          "source_type": "recommendation",
+          "files": [],
+          "category": "High Impact Refactors"
+        },
+        {
+          "title": "Implement consistent logging practices using the logging module throughout all\u2026",
+          "dimension": "code_drift",
+          "severity": "high",
+          "effort": "medium",
+          "expected_impact": "high",
+          "why_it_matters": "This recommendation affects the code drift score, currently rated high severity.",
+          "suggested_fix": "Implement consistent logging practices using the logging module throughout all files.",
+          "validation": "Compare architectural patterns across modules manually or via lint rules",
+          "source_text": "Implement consistent logging practices using the logging module throughout all files.",
+          "source_type": "recommendation",
+          "files": [],
+          "category": "High Impact Refactors"
+        },
+        {
+          "title": "Functions that can fail but do not return meaningful error information.",
+          "dimension": "error_handling",
+          "severity": "high",
+          "effort": "medium",
+          "expected_impact": "high",
+          "why_it_matters": "This finding affects the error handling score, currently rated high severity.",
+          "suggested_fix": "Functions that can fail but do not return meaningful error information.",
+          "validation": "Grep for bare except/catch blocks and verify they log or re-raise",
+          "source_text": "Functions that can fail but do not return meaningful error information.",
+          "source_type": "finding",
+          "files": [],
+          "category": "High Impact Refactors"
+        },
+        {
+          "title": "Missing boundary checks for array indices and potential null dereferencing.",
+          "dimension": "error_handling",
+          "severity": "high",
+          "effort": "medium",
+          "expected_impact": "high",
+          "why_it_matters": "This finding affects the error handling score, currently rated high severity.",
+          "suggested_fix": "Missing boundary checks for array indices and potential null dereferencing.",
+          "validation": "Grep for bare except/catch blocks and verify they log or re-raise",
+          "source_text": "Missing boundary checks for array indices and potential null dereferencing.",
+          "source_type": "finding",
+          "files": [],
+          "category": "High Impact Refactors"
+        },
+        {
+          "title": "Ensure all functions return meaningful error information or raise exceptions\u2026",
+          "dimension": "error_handling",
+          "severity": "high",
+          "effort": "medium",
+          "expected_impact": "high",
+          "why_it_matters": "This recommendation affects the error handling score, currently rated high severity.",
+          "suggested_fix": "Ensure all functions return meaningful error information or raise exceptions appropriately.",
+          "validation": "Grep for bare except/catch blocks and verify they log or re-raise",
+          "source_text": "Ensure all functions return meaningful error information or raise exceptions appropriately.",
+          "source_type": "recommendation",
+          "files": [],
+          "category": "High Impact Refactors"
+        },
+        {
+          "title": "Limit the number of parameters in functions and consider using data classes or\u2026",
+          "dimension": "complexity",
+          "severity": "high",
+          "effort": "medium",
+          "expected_impact": "high",
+          "why_it_matters": "This recommendation affects the complexity score, currently rated high severity.",
+          "suggested_fix": "Limit the number of parameters in functions and consider using data classes or dictionaries to encapsulate related parameters.",
+          "validation": "Run complexity analysis (e.g. radon cc, eslint complexity rule)",
+          "source_text": "Limit the number of parameters in functions and consider using data classes or dictionaries to encapsulate related parameters.",
+          "source_type": "recommendation",
+          "files": [],
+          "category": "High Impact Refactors"
+        },
+        {
+          "title": "Pin and audit dependencies",
+          "dimension": "dependency_hygiene",
+          "severity": "high",
+          "effort": "large",
+          "expected_impact": "high",
+          "why_it_matters": "Consolidates 5 related findings in dependency hygiene (severity: high).",
+          "suggested_fix": "Pin production dependency versions, generate or update the lockfile, and run a dependency audit to flag known vulnerabilities.",
+          "validation": "Run dependency audit (e.g. pip-audit, npm audit, cargo audit)",
+          "source_text": "Pin production dependency versions, generate or update the lockfile, and run a dependency audit to flag known vulnerabilities.",
+          "source_type": "consolidated",
+          "files": [],
+          "sources": [
+            {
+              "text": "Presence of unpinned or wildcard version ranges in production dependencies.",
+              "type": "finding"
+            },
+            {
+              "text": "Outdated dependency versions that need updating.",
+              "type": "finding"
+            },
+            {
+              "text": "Missing lockfile for dependency management.",
+              "type": "finding"
+            },
+            {
+              "text": "Pin all production dependencies to specific versions.",
+              "type": "recommendation"
+            },
+            {
+              "text": "Create and maintain a lockfile to ensure consistent installations.",
+              "type": "recommendation"
+            }
+          ],
+          "category": "High Impact Refactors"
+        },
+        {
+          "title": "Standardize exception handling",
+          "dimension": "error_handling",
+          "severity": "high",
+          "effort": "large",
+          "expected_impact": "high",
+          "why_it_matters": "Consolidates 4 related findings in error handling (severity: high).",
+          "suggested_fix": "Replace bare except/catch blocks with specific handlers that log or re-raise, add null checks, and adopt a consistent error propagation strategy.",
+          "validation": "Grep for bare except/catch blocks and verify they log or re-raise",
+          "source_text": "Replace bare except/catch blocks with specific handlers that log or re-raise, add null checks, and adopt a consistent error propagation strategy.",
+          "source_type": "consolidated",
+          "files": [],
+          "sources": [
+            {
+              "text": "Multiple bare except clauses that swallow exceptions silently.",
+              "type": "finding"
+            },
+            {
+              "text": "Several empty catch blocks that do not handle exceptions.",
+              "type": "finding"
+            },
+            {
+              "text": "Inconsistent error propagation, with some functions throwing exceptions while others return None or False.",
+              "type": "finding"
+            },
+            {
+              "text": "Implement specific exception handling instead of bare except clauses.",
+              "type": "recommendation"
+            }
+          ],
+          "category": "High Impact Refactors"
+        },
+        {
+          "title": "Reduce complexity in core modules",
+          "dimension": "complexity",
+          "severity": "high",
+          "effort": "large",
+          "expected_impact": "high",
+          "why_it_matters": "Consolidates 7 related findings in complexity (severity: high).",
+          "suggested_fix": "Break long functions into focused helpers, extract magic values into named constants, and flatten deeply nested conditionals.",
+          "validation": "Run complexity analysis (e.g. radon cc, eslint complexity rule)",
+          "source_text": "Break long functions into focused helpers, extract magic values into named constants, and flatten deeply nested conditionals.",
+          "source_type": "consolidated",
+          "files": [
+            "launcher.py",
+            "detector.py"
+          ],
+          "sources": [
+            {
+              "text": "Functions longer than 50 lines found in launcher.py (256 lines) and detector.py (207 lines).",
+              "type": "finding"
+            },
+            {
+              "text": "High nesting depth observed in launcher.py (6 levels) and detector.py (6 levels).",
+              "type": "finding"
+            },
+            {
+              "text": "Boolean flag parameters present in DiscordWebhookNotifier class controlling different behavior paths.",
+              "type": "finding"
+            },
+            {
+              "text": "Functions with too many parameters found in DiscordWebhookNotifier class (5+ parameters).",
+              "type": "finding"
+            },
+            {
+              "text": "Deeply nested conditionals found in detector.py, particularly in the process method.",
+              "type": "finding"
+            },
+            {
+              "text": "Refactor long functions into smaller, more manageable units to improve readability and maintainability.",
+              "type": "recommendation"
+            },
+            {
+              "text": "Reduce nesting depth by simplifying conditional logic and using early returns where applicable.",
+              "type": "recommendation"
+            }
+          ],
+          "category": "High Impact Refactors"
+        },
+        {
+          "title": "Standardize naming conventions",
+          "dimension": "naming_consistency",
+          "severity": "high",
+          "effort": "large",
+          "expected_impact": "high",
+          "why_it_matters": "Consolidates 8 related findings in naming consistency (severity: high).",
+          "suggested_fix": "Choose one naming convention per identifier type, document it, and apply it consistently across the codebase.",
+          "validation": "Run a linter configured for naming conventions (e.g. pylint, eslint)",
+          "source_text": "Choose one naming convention per identifier type, document it, and apply it consistently across the codebase.",
+          "source_type": "consolidated",
+          "files": [
+            "test_foo.py",
+            "foo_test.py"
+          ],
+          "sources": [
+            {
+              "text": "Mixed naming conventions observed: camelCase and snake_case used interchangeably for variable names.",
+              "type": "finding"
+            },
+            {
+              "text": "Inconsistent abbreviation styles for identifiers like userId, user_id, and uid.",
+              "type": "finding"
+            },
+            {
+              "text": "Test files are named inconsistently, with variations like test_foo.py and foo_test.py present.",
+              "type": "finding"
+            },
+            {
+              "text": "Constants do not follow a consistent UPPER_CASE or PascalCase pattern.",
+              "type": "finding"
+            },
+            {
+              "text": "Boolean variables lack consistent prefixes such as is/has/can/should.",
+              "type": "finding"
+            },
+            {
+              "text": "Standardize naming conventions across the codebase to either camelCase or snake_case.",
+              "type": "recommendation"
+            },
+            {
+              "text": "Establish a naming guideline for abbreviations and ensure uniformity throughout the code.",
+              "type": "recommendation"
+            },
+            {
+              "text": "Implement a consistent naming scheme for test files to enhance clarity and organization.",
+              "type": "recommendation"
+            }
+          ],
+          "category": "High Impact Refactors"
+        },
+        {
+          "title": "Reduce architectural inconsistency",
+          "dimension": "code_drift",
+          "severity": "high",
+          "effort": "large",
+          "expected_impact": "high",
+          "why_it_matters": "Consolidates 3 related findings in code drift (severity: high).",
+          "suggested_fix": "Adopt one pattern per concern (e.g. async/await everywhere), remove legacy patterns, and align error handling across modules.",
+          "validation": "Compare architectural patterns across modules manually or via lint rules",
+          "source_text": "Adopt one pattern per concern (e.g. async/await everywhere), remove legacy patterns, and align error handling across modules.",
+          "source_type": "consolidated",
+          "files": [],
+          "sources": [
+            {
+              "text": "Inconsistent error handling strategies, with some files using try-except and others not.",
+              "type": "finding"
+            },
+            {
+              "text": "Evidence of copy-paste driven development, particularly in the detector and notifier files.",
+              "type": "finding"
+            },
+            {
+              "text": "Review and refactor code to eliminate copy-paste patterns and ensure uniform coding standards.",
+              "type": "recommendation"
+            }
+          ],
+          "category": "High Impact Refactors"
+        }
+      ],
+      "Policy / Hygiene": [
+        {
+          "title": "Configuration values that should vary by environment are not clearly separated.",
+          "dimension": "config_separation",
+          "severity": "medium",
+          "effort": "medium",
+          "expected_impact": "medium",
+          "why_it_matters": "This finding affects the config separation score, currently rated medium severity.",
+          "suggested_fix": "Configuration values that should vary by environment are not clearly separated.",
+          "validation": "Search for hardcoded strings and verify .env.example exists",
+          "source_text": "Configuration values that should vary by environment are not clearly separated.",
+          "source_type": "finding",
+          "files": [],
+          "category": "Policy / Hygiene"
+        },
+        {
+          "title": "Implement a clear configuration management system that separates\u2026",
+          "dimension": "config_separation",
+          "severity": "medium",
+          "effort": "medium",
+          "expected_impact": "medium",
+          "why_it_matters": "This recommendation affects the config separation score, currently rated medium severity.",
+          "suggested_fix": "Implement a clear configuration management system that separates environment-specific settings.",
+          "validation": "Search for hardcoded strings and verify .env.example exists",
+          "source_text": "Implement a clear configuration management system that separates environment-specific settings.",
+          "source_type": "recommendation",
+          "files": [],
+          "category": "Policy / Hygiene"
+        },
+        {
+          "title": "The README provides a clear overview of the project, installation instructions\u2026",
+          "dimension": "documentation",
+          "severity": "low",
+          "effort": "medium",
+          "expected_impact": "low",
+          "why_it_matters": "This finding affects the documentation score, currently rated low severity.",
+          "suggested_fix": "The README provides a clear overview of the project, installation instructions, and usage examples.",
+          "validation": "Check README completeness and run a docstring coverage tool",
+          "source_text": "The README provides a clear overview of the project, installation instructions, and usage examples.",
+          "source_type": "finding",
+          "files": [],
+          "category": "Policy / Hygiene"
+        },
+        {
+          "title": "There is a CHANGELOG present, but it could be more detailed regarding version\u2026",
+          "dimension": "documentation",
+          "severity": "low",
+          "effort": "medium",
+          "expected_impact": "low",
+          "why_it_matters": "This finding affects the documentation score, currently rated low severity.",
+          "suggested_fix": "There is a CHANGELOG present, but it could be more detailed regarding version history.",
+          "validation": "Check README completeness and run a docstring coverage tool",
+          "source_text": "There is a CHANGELOG present, but it could be more detailed regarding version history.",
+          "source_type": "finding",
+          "files": [],
+          "category": "Policy / Hygiene"
+        },
+        {
+          "title": "Create a dedicated configuration guide to explain all configuration options in\u2026",
+          "dimension": "documentation",
+          "severity": "low",
+          "effort": "medium",
+          "expected_impact": "low",
+          "why_it_matters": "This recommendation affects the documentation score, currently rated low severity.",
+          "suggested_fix": "Create a dedicated configuration guide to explain all configuration options in detail.",
+          "validation": "Check README completeness and run a docstring coverage tool",
+          "source_text": "Create a dedicated configuration guide to explain all configuration options in detail.",
+          "source_type": "recommendation",
+          "files": [],
+          "category": "Policy / Hygiene"
+        },
+        {
+          "title": "Enhance the CHANGELOG with more specific details about changes and improvements\u2026",
+          "dimension": "documentation",
+          "severity": "low",
+          "effort": "medium",
+          "expected_impact": "low",
+          "why_it_matters": "This recommendation affects the documentation score, currently rated low severity.",
+          "suggested_fix": "Enhance the CHANGELOG with more specific details about changes and improvements in each version.",
+          "validation": "Check README completeness and run a docstring coverage tool",
+          "source_text": "Enhance the CHANGELOG with more specific details about changes and improvements in each version.",
+          "source_type": "recommendation",
+          "files": [],
+          "category": "Policy / Hygiene"
+        }
+      ],
+      "Later Improvements": [
+        {
+          "title": "Missing input validation or sanitization in user inputs.",
+          "dimension": "security",
+          "severity": "medium",
+          "effort": "medium",
+          "expected_impact": "medium",
+          "why_it_matters": "This finding affects the security score, currently rated medium severity.",
+          "suggested_fix": "Missing input validation or sanitization in user inputs.",
+          "validation": "Run a secret scanner (e.g. trufflehog, gitleaks) and review results",
+          "source_text": "Missing input validation or sanitization in user inputs.",
+          "source_type": "finding",
+          "files": [],
+          "category": "Later Improvements"
+        },
+        {
+          "title": "Improper error handling that may leak sensitive information.",
+          "dimension": "security",
+          "severity": "medium",
+          "effort": "medium",
+          "expected_impact": "medium",
+          "why_it_matters": "This finding affects the security score, currently rated medium severity.",
+          "suggested_fix": "Improper error handling that may leak sensitive information.",
+          "validation": "Run a secret scanner (e.g. trufflehog, gitleaks) and review results",
+          "source_text": "Improper error handling that may leak sensitive information.",
+          "source_type": "finding",
+          "files": [],
+          "category": "Later Improvements"
+        },
+        {
+          "title": "Implement input validation and sanitization for all user inputs.",
+          "dimension": "security",
+          "severity": "medium",
+          "effort": "medium",
+          "expected_impact": "medium",
+          "why_it_matters": "This recommendation affects the security score, currently rated medium severity.",
+          "suggested_fix": "Implement input validation and sanitization for all user inputs.",
+          "validation": "Run a secret scanner (e.g. trufflehog, gitleaks) and review results",
+          "source_text": "Implement input validation and sanitization for all user inputs.",
+          "source_type": "recommendation",
+          "files": [],
+          "category": "Later Improvements"
+        },
+        {
+          "title": "Expand critical-path test coverage",
+          "dimension": "test_coverage",
+          "severity": "low",
+          "effort": "medium",
+          "expected_impact": "low",
+          "why_it_matters": "Consolidates 2 related findings in test coverage (severity: low).",
+          "suggested_fix": "Identify untested critical paths and edge cases, add targeted tests for core business logic, and improve assertion quality in existing tests.",
+          "validation": "Run test suite with coverage enabled (e.g. pytest --cov, jest --coverage)",
+          "source_text": "Identify untested critical paths and edge cases, add targeted tests for core business logic, and improve assertion quality in existing tests.",
+          "source_type": "consolidated",
+          "files": [],
+          "sources": [
+            {
+              "text": "Edge-case tests are limited, particularly for scenarios like empty input and error handling.",
+              "type": "finding"
+            },
+            {
+              "text": "Add more edge-case tests to cover scenarios like empty inputs and error paths.",
+              "type": "recommendation"
+            }
+          ],
+          "category": "Later Improvements"
+        },
+        {
+          "title": "Test to source ratio is 0.805, indicating a reasonable amount of tests relative\u2026",
+          "dimension": "test_coverage",
+          "severity": "low",
+          "effort": "medium",
+          "expected_impact": "low",
+          "why_it_matters": "This finding affects the test coverage score, currently rated low severity.",
+          "suggested_fix": "Test to source ratio is 0.805, indicating a reasonable amount of tests relative to source code.",
+          "validation": "Run test suite with coverage enabled (e.g. pytest --cov, jest --coverage)",
+          "source_text": "Test to source ratio is 0.805, indicating a reasonable amount of tests relative to source code.",
+          "source_type": "finding",
+          "files": [],
+          "category": "Later Improvements"
+        },
+        {
+          "title": "Core business logic is generally covered, but some critical paths like data\u2026",
+          "dimension": "test_coverage",
+          "severity": "low",
+          "effort": "medium",
+          "expected_impact": "low",
+          "why_it_matters": "This finding affects the test coverage score, currently rated low severity.",
+          "suggested_fix": "Core business logic is generally covered, but some critical paths like data persistence and API endpoints lack sufficient tests.",
+          "validation": "Run test suite with coverage enabled (e.g. pytest --cov, jest --coverage)",
+          "source_text": "Core business logic is generally covered, but some critical paths like data persistence and API endpoints lack sufficient tests.",
+          "source_type": "finding",
+          "files": [],
+          "category": "Later Improvements"
+        },
+        {
+          "title": "Some tests do not assert behavior effectively, leading to potential false\u2026",
+          "dimension": "test_coverage",
+          "severity": "low",
+          "effort": "medium",
+          "expected_impact": "low",
+          "why_it_matters": "This finding affects the test coverage score, currently rated low severity.",
+          "suggested_fix": "Some tests do not assert behavior effectively, leading to potential false positives.",
+          "validation": "Run test suite with coverage enabled (e.g. pytest --cov, jest --coverage)",
+          "source_text": "Some tests do not assert behavior effectively, leading to potential false positives.",
+          "source_type": "finding",
+          "files": [],
+          "category": "Later Improvements"
+        },
+        {
+          "title": "Test names are descriptive but could be improved for clarity on specific\u2026",
+          "dimension": "test_coverage",
+          "severity": "low",
+          "effort": "medium",
+          "expected_impact": "low",
+          "why_it_matters": "This finding affects the test coverage score, currently rated low severity.",
+          "suggested_fix": "Test names are descriptive but could be improved for clarity on specific behaviors being tested.",
+          "validation": "Run test suite with coverage enabled (e.g. pytest --cov, jest --coverage)",
+          "source_text": "Test names are descriptive but could be improved for clarity on specific behaviors being tested.",
+          "source_type": "finding",
+          "files": [],
+          "category": "Later Improvements"
+        },
+        {
+          "title": "Increase coverage for critical paths, especially around authentication and data\u2026",
+          "dimension": "test_coverage",
+          "severity": "low",
+          "effort": "medium",
+          "expected_impact": "low",
+          "why_it_matters": "This recommendation affects the test coverage score, currently rated low severity.",
+          "suggested_fix": "Increase coverage for critical paths, especially around authentication and data persistence.",
+          "validation": "Run test suite with coverage enabled (e.g. pytest --cov, jest --coverage)",
+          "source_text": "Increase coverage for critical paths, especially around authentication and data persistence.",
+          "source_type": "recommendation",
+          "files": [],
+          "category": "Later Improvements"
+        },
+        {
+          "title": "Ensure all tests include assertions to validate expected outcomes.",
+          "dimension": "test_coverage",
+          "severity": "low",
+          "effort": "medium",
+          "expected_impact": "low",
+          "why_it_matters": "This recommendation affects the test coverage score, currently rated low severity.",
+          "suggested_fix": "Ensure all tests include assertions to validate expected outcomes.",
+          "validation": "Run test suite with coverage enabled (e.g. pytest --cov, jest --coverage)",
+          "source_text": "Ensure all tests include assertions to validate expected outcomes.",
+          "source_type": "recommendation",
+          "files": [],
+          "category": "Later Improvements"
+        },
+        {
+          "title": "Separate config and secrets from code",
+          "dimension": "config_separation",
+          "severity": "medium",
+          "effort": "large",
+          "expected_impact": "medium",
+          "why_it_matters": "Consolidates 5 related findings in config separation (severity: medium).",
+          "suggested_fix": "Move hardcoded URLs, credentials, and config values into environment variables or a config system, and add a .env.example template.",
+          "validation": "Search for hardcoded strings and verify .env.example exists",
+          "source_text": "Move hardcoded URLs, credentials, and config values into environment variables or a config system, and add a .env.example template.",
+          "source_type": "consolidated",
+          "files": [],
+          "sources": [
+            {
+              "text": "Environment variables are not utilized effectively.",
+              "type": "finding"
+            },
+            {
+              "text": ".env files are not present or gitignored.",
+              "type": "finding"
+            },
+            {
+              "text": ".env.example or similar template does not exist.",
+              "type": "finding"
+            },
+            {
+              "text": "Introduce .env files for sensitive information and ensure they are gitignored.",
+              "type": "recommendation"
+            },
+            {
+              "text": "Create a template for environment variables to guide developers on necessary configurations.",
+              "type": "recommendation"
+            }
+          ],
+          "category": "Later Improvements"
+        },
+        {
+          "title": "Address security risks",
+          "dimension": "security",
+          "severity": "medium",
+          "effort": "large",
+          "expected_impact": "medium",
+          "why_it_matters": "Consolidates 4 related findings in security (severity: medium).",
+          "suggested_fix": "Remove hardcoded secrets, replace dangerous functions (eval, exec, shell=True) with safe alternatives, and add input validation.",
+          "validation": "Run a secret scanner (e.g. trufflehog, gitleaks) and review results",
+          "source_text": "Remove hardcoded secrets, replace dangerous functions (eval, exec, shell=True) with safe alternatives, and add input validation.",
+          "source_type": "consolidated",
+          "files": [],
+          "sources": [
+            {
+              "text": "Insecure default configurations with potential debug information exposure.",
+              "type": "finding"
+            },
+            {
+              "text": "Use of subprocess with shell=True, which can lead to command injection vulnerabilities.",
+              "type": "finding"
+            },
+            {
+              "text": "Insecure dependencies with unpinned versions that could allow supply-chain attacks.",
+              "type": "finding"
+            },
+            {
+              "text": "Review and secure subprocess calls to avoid shell injection risks.",
+              "type": "recommendation"
+            }
+          ],
+          "category": "Later Improvements"
+        },
+        {
+          "title": "Document public APIs",
+          "dimension": "documentation",
+          "severity": "low",
+          "effort": "large",
+          "expected_impact": "low",
+          "why_it_matters": "Consolidates 4 related findings in documentation (severity: low).",
+          "suggested_fix": "Add docstrings or JSDoc to all public functions and classes, and ensure inline comments explain non-obvious logic.",
+          "validation": "Check README completeness and run a docstring coverage tool",
+          "source_text": "Add docstrings or JSDoc to all public functions and classes, and ensure inline comments explain non-obvious logic.",
+          "source_type": "consolidated",
+          "files": [],
+          "sources": [
+            {
+              "text": "Public API functions and classes are documented with docstrings, but some internal functions lack comments.",
+              "type": "finding"
+            },
+            {
+              "text": "Inline comments are present but not consistent throughout the codebase.",
+              "type": "finding"
+            },
+            {
+              "text": "Configuration options are documented in the README, but a dedicated configuration guide would enhance clarity.",
+              "type": "finding"
+            },
+            {
+              "text": "Add more inline comments in complex sections of the code to improve readability.",
+              "type": "recommendation"
+            }
+          ],
+          "category": "Later Improvements"
+        }
+      ]
+    },
+    "next_fixes": [
+      {
+        "title": "Review and delete old migration files that are no longer needed.",
+        "dimension": "dead_code",
+        "severity": "high",
+        "effort": "small",
+        "expected_impact": "high",
+        "why_it_matters": "This recommendation affects the dead code score, currently rated high severity.",
+        "suggested_fix": "Review and delete old migration files that are no longer needed.",
+        "validation": "Run a dead-code detector (e.g. vulture for Python, ts-prune for TS)",
+        "source_text": "Review and delete old migration files that are no longer needed.",
+        "source_type": "recommendation",
+        "files": [],
+        "category": "Quick Wins"
+      },
+      {
+        "title": "Review and clean up the dependency list to remove unused or unnecessary\u2026",
+        "dimension": "dependency_hygiene",
+        "severity": "high",
+        "effort": "small",
+        "expected_impact": "high",
+        "why_it_matters": "This recommendation affects the dependency hygiene score, currently rated high severity.",
+        "suggested_fix": "Review and clean up the dependency list to remove unused or unnecessary dependencies.",
+        "validation": "Run dependency audit (e.g. pip-audit, npm audit, cargo audit)",
+        "source_text": "Review and clean up the dependency list to remove unused or unnecessary dependencies.",
+        "source_type": "recommendation",
+        "files": [],
+        "category": "Quick Wins"
+      },
+      {
+        "title": "Files with extensive comments and others with none, leading to uneven\u2026",
+        "dimension": "code_drift",
+        "severity": "high",
+        "effort": "small",
+        "expected_impact": "high",
+        "why_it_matters": "This finding affects the code drift score, currently rated high severity.",
+        "suggested_fix": "Files with extensive comments and others with none, leading to uneven documentation quality.",
+        "validation": "Compare architectural patterns across modules manually or via lint rules",
+        "source_text": "Files with extensive comments and others with none, leading to uneven documentation quality.",
+        "source_type": "finding",
+        "files": [],
+        "category": "Quick Wins"
+      },
+      {
+        "title": "Add boundary checks and null checks before dereferencing variables.",
+        "dimension": "error_handling",
+        "severity": "high",
+        "effort": "small",
+        "expected_impact": "high",
+        "why_it_matters": "This recommendation affects the error handling score, currently rated high severity.",
+        "suggested_fix": "Add boundary checks and null checks before dereferencing variables.",
+        "validation": "Grep for bare except/catch blocks and verify they log or re-raise",
+        "source_text": "Add boundary checks and null checks before dereferencing variables.",
+        "source_type": "recommendation",
+        "files": [],
+        "category": "Quick Wins"
+      },
+      {
+        "title": "Pin dependency versions in the pyproject.toml to mitigate supply-chain risks.",
+        "dimension": "security",
+        "severity": "medium",
+        "effort": "small",
+        "expected_impact": "medium",
+        "why_it_matters": "This recommendation affects the security score, currently rated medium severity.",
+        "suggested_fix": "Pin dependency versions in the pyproject.toml to mitigate supply-chain risks.",
+        "validation": "Run a secret scanner (e.g. trufflehog, gitleaks) and review results",
+        "source_text": "Pin dependency versions in the pyproject.toml to mitigate supply-chain risks.",
+        "source_type": "recommendation",
+        "files": [
+          "pyproject.toml"
+        ],
+        "category": "Quick Wins"
+      }
+    ],
+    "dimension_breakdown": {
+      "score_draggers": [
+        {
+          "dimension": "error_handling",
+          "score": 4.5,
+          "grade": "D"
+        },
+        {
+          "dimension": "complexity",
+          "score": 4.5,
+          "grade": "D"
+        },
+        {
+          "dimension": "naming_consistency",
+          "score": 5.0,
+          "grade": "D"
+        },
+        {
+          "dimension": "dead_code",
+          "score": 5.0,
+          "grade": "D"
+        },
+        {
+          "dimension": "dependency_hygiene",
+          "score": 5.0,
+          "grade": "D"
+        },
+        {
+          "dimension": "code_drift",
+          "score": 5.0,
+          "grade": "D"
+        },
+        {
+          "dimension": "security",
+          "score": 6.5,
+          "grade": "C"
+        }
+      ],
+      "already_strong": [
+        {
+          "dimension": "documentation",
+          "score": 8.5,
+          "grade": "B"
+        },
+        {
+          "dimension": "test_coverage",
+          "score": 7.5,
+          "grade": "C"
+        },
+        {
+          "dimension": "config_separation",
+          "score": 7.0,
+          "grade": "C"
+        }
+      ]
+    },
+    "progress": {
+      "current_grade": "D",
+      "target_grade": "C",
+      "target_score": 6.0,
+      "points_needed": 0.2
+    },
+    "level": "\u26a0\ufe0f Needs Work",
+    "badges": [
+      {
+        "icon": "\ud83d\udd0d",
+        "label": "Secret Scanner Clean",
+        "description": "Static scanner found no secrets, but AI review flagged potential issues"
+      },
+      {
+        "icon": "\ud83d\udcda",
+        "label": "Docs Are Strong",
+        "description": "Documentation scored 8.5/10"
+      },
+      {
+        "icon": "\ud83e\uddea",
+        "label": "Test Foundation",
+        "description": "Test coverage scored 7.5/10"
+      },
+      {
+        "icon": "\ud83d\udd28",
+        "label": "Needs Refactor Focus",
+        "description": "Complexity scored 4.5/10 \u2014 room to simplify"
+      },
+      {
+        "icon": "\ud83e\uddf9",
+        "label": "Cleanup Opportunity",
+        "description": "Dead code scored 5.0/10 \u2014 trim the unused"
+      }
+    ],
+    "history": [
+      {
+        "analyzed_at": "2026-06-07T01:11:24.118710+00:00",
+        "overall_score": 5.5,
+        "grade": "D",
+        "file": "trade-hunter_2026-06-06_21-11-24.json"
+      },
+      {
+        "analyzed_at": "2026-06-07T01:38:46.831074+00:00",
+        "overall_score": 5.5,
+        "grade": "D",
+        "file": "trade-hunter_2026-06-06_21-38-46.json"
+      },
+      {
+        "analyzed_at": "2026-06-07T02:37:24.748746+00:00",
+        "overall_score": 5.4,
+        "grade": "D",
+        "file": "trade-hunter_2026-06-06_22-37-24.json"
+      },
+      {
+        "analyzed_at": "2026-06-07T20:44:34.872242+00:00",
+        "overall_score": 5.5,
+        "grade": "D",
+        "file": "trade-hunter_2026-06-07_16-44-34.json"
+      },
+      {
+        "analyzed_at": "2026-06-07T22:38:51.686934+00:00",
+        "overall_score": 6.0,
+        "grade": "C",
+        "file": "trade-hunter_2026-06-07_18-38-51.json"
+      },
+      {
+        "analyzed_at": "2026-06-07T23:46:01.154276+00:00",
+        "overall_score": 5.9,
+        "grade": "D",
+        "file": "trade-hunter_2026-06-07_19-46-01.json"
+      },
+      {
+        "analyzed_at": "2026-06-08T00:40:10.447584+00:00",
+        "overall_score": 6.0,
+        "grade": "C",
+        "file": "trade-hunter_2026-06-07_20-40-10.json"
+      },
+      {
+        "analyzed_at": "2026-06-08T00:45:48.605203+00:00",
+        "overall_score": 6.0,
+        "grade": "C",
+        "file": "trade-hunter_2026-06-07_20-45-48.json"
+      },
+      {
+        "analyzed_at": "2026-06-08T00:55:31.052403+00:00",
+        "overall_score": 5.8,
+        "grade": "D",
+        "file": "trade-hunter_2026-06-07_20-55-30.json"
+      },
+      {
+        "analyzed_at": "2026-06-08T02:00:48.015966+00:00",
+        "overall_score": 5.8,
+        "grade": "D",
+        "file": "trade-hunter_2026-06-07_22-00-47.json"
+      }
+    ],
+    "previous_scores": {
+      "security": 8.0,
+      "dead_code": 5.0,
+      "naming_consistency": 5.0,
+      "test_coverage": 7.5,
+      "error_handling": 4.5,
+      "documentation": 7.5,
+      "code_drift": 5.0,
+      "dependency_hygiene": 5.0,
+      "complexity": 4.5,
+      "config_separation": 6.5
+    }
+  }
+}

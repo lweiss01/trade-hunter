@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Repo Report — trade-hunter</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+    a { color: #93c5fd; }
+    .container { max-width: 1100px; margin: 0 auto; }
+
+    .hero {
+      text-align: center;
+      padding: 2.5rem 1rem 2rem;
+      border-bottom: 1px solid #334155;
+      margin-bottom: 2rem;
+    }
+    .hero h1 { font-size: 2rem; font-weight: 700; color: #f8fafc; }
+    .hero .meta { color: #a7b3c6; font-size: 0.85rem; margin-top: 0.4rem; }
+
+    .overall-badge {
+      display: inline-flex; flex-direction: column; align-items: center;
+      background: #991b1b;
+      color: #ffffff;
+      border-radius: 1rem;
+      padding: 1.2rem 2.5rem;
+      margin: 1.5rem auto 0;
+      gap: 0.25rem;
+    }
+    .overall-grade { font-size: 3.5rem; font-weight: 800; line-height: 1; }
+    .overall-score { font-size: 1rem; font-weight: 600; opacity: 0.95; }
+    .overall-label { font-size: 0.75rem; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1rem;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 0.75rem;
+      padding: 1rem 1.5rem; margin-bottom: 2rem;
+    }
+    .stat-item { display: flex; flex-direction: column; gap: 0.15rem; }
+    .stat-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: #a7b3c6; }
+    .stat-value { font-size: 1.1rem; font-weight: 700; color: #f8fafc; }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 0.75rem;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    .card-header { padding: 1rem 1.25rem 0.75rem; }
+    .card-title-row {
+      display: flex; align-items: center; gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .dim-icon { font-size: 1.1rem; }
+    .dim-label { font-size: 1rem; font-weight: 600; flex: 1; }
+    .score-delta {
+      font-size: 0.72rem; font-weight: 700; padding: 0.1rem 0.4rem;
+      border-radius: 0.25rem; margin-left: auto;
+    }
+    .delta-up { background: rgba(34,197,94,0.25); color: #4ade80; }
+    .delta-down { background: rgba(239,68,68,0.25); color: #f87171; }
+    .delta-flat { color: rgba(255,255,255,0.5); }
+    .grade-badge {
+      font-size: 0.85rem; font-weight: 800;
+      padding: 0.15rem 0.6rem; border-radius: 9999px;
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+    }
+    .score-row {
+      display: flex; align-items: center; gap: 0.75rem;
+    }
+    .score-num { font-size: 1.6rem; font-weight: 800; }
+    .score-denom { font-size: 0.85rem; color: rgba(255,255,255,0.82); margin-top: 0.2rem; }
+    .score-bar-track {
+      flex: 1; height: 8px; background: rgba(15,23,42,0.35);
+      border-radius: 9999px; overflow: hidden;
+    }
+    .score-bar-fill { height: 100%; border-radius: 9999px; transition: width 0.3s; }
+
+    .card-body { padding: 1rem 1.25rem; }
+    .summary-text { font-size: 0.9rem; color: #dbeafe; margin-bottom: 0.75rem; line-height: 1.5; }
+
+    .finding-list, .rec-list { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; }
+    .finding-item {
+      font-size: 0.82rem; color: #fde68a; background: #263244;
+      padding: 0.35rem 0.6rem; border-radius: 0.35rem; border-left: 3px solid #fbbf24;
+    }
+    .finding-item.muted { color: #a7b3c6; background: #263244; border-color: #475569; }
+    .rec-item {
+      font-size: 0.82rem; color: #bbf7d0; background: #1f3a35;
+      padding: 0.35rem 0.6rem; border-radius: 0.35rem; border-left: 3px solid #34d399;
+      margin-top: 0.25rem;
+    }
+
+    .footer {
+      text-align: center; color: #94a3b8;
+      font-size: 0.78rem; margin-top: 2.5rem; padding-top: 1rem;
+      border-top: 1px solid #334155;
+    }
+
+    /* --- Progress panel --- */
+    .progress-panel {
+      background: #1e293b; border: 1px solid #334155; border-radius: 0.75rem;
+      padding: 1.25rem 1.5rem; margin-bottom: 2rem;
+    }
+    .progress-panel-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 0.75rem;
+    }
+    .progress-title { font-size: 1.1rem; font-weight: 700; color: #f8fafc; }
+    .progress-level { font-size: 0.95rem; font-weight: 600; color: #93c5fd; }
+    .progress-body { display: flex; flex-wrap: wrap; gap: 1.5rem; margin-bottom: 0.75rem; }
+    .progress-stat { display: flex; flex-direction: column; gap: 0.1rem; }
+    .progress-stat-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; color: #a7b3c6; }
+    .progress-stat-value { font-size: 1rem; font-weight: 600; color: #f8fafc; }
+    .badges-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+    .badge-chip {
+      font-size: 0.78rem; padding: 0.25rem 0.65rem; border-radius: 9999px;
+      background: #334155; color: #e2e8f0; border: 1px solid #475569;
+    }
+
+    /* --- Workplan --- */
+    .workplan-section, .history-section { margin-top: 2.5rem; }
+    .section-title { font-size: 1.35rem; font-weight: 700; color: #f8fafc; margin-bottom: 1rem; }
+    .wp-category { margin-bottom: 1.5rem; }
+    .wp-cat-title { font-size: 1.05rem; font-weight: 600; color: #93c5fd; margin-bottom: 0.5rem; }
+    .wp-task {
+      background: #1e293b; border: 1px solid #334155; border-radius: 0.5rem;
+      padding: 0.75rem 1rem; margin-bottom: 0.5rem;
+      border-left: 3px solid #475569;
+    }
+    .wp-task.effort-border-small { border-left-color: #4ade80; }
+    .wp-task.effort-border-medium { border-left-color: #fbbf24; }
+    .wp-task.effort-border-large { border-left-color: #f87171; }
+    .wp-task-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; flex-wrap: wrap; }
+    .wp-task-title { font-size: 0.88rem; font-weight: 600; color: #f8fafc; flex: 1; min-width: 200px; }
+    .wp-meta-chips { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+    .wp-chip {
+      font-size: 0.68rem; padding: 0.15rem 0.45rem; border-radius: 0.25rem;
+      font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em;
+    }
+    .effort-small { background: #166534; color: #bbf7d0; }
+    .effort-medium { background: #92400e; color: #fde68a; }
+    .effort-large { background: #991b1b; color: #fecaca; }
+    .impact-low { background: #334155; color: #94a3b8; }
+    .impact-medium { background: #1e40af; color: #bfdbfe; }
+    .impact-high { background: #7c2d12; color: #fed7aa; }
+    .dim-chip { background: #334155; color: #cbd5e1; }
+    .wp-task-body { margin-top: 0.5rem; }
+    .wp-evidence { font-size: 0.78rem; color: #e2e8f0; margin-bottom: 0.3rem; }
+    .wp-file-chip {
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 0.72rem; padding: 0.1rem 0.4rem; border-radius: 0.2rem;
+      background: #1e3a5f; color: #93c5fd; border: 1px solid #2563eb;
+      text-decoration: none;
+    }
+    .wp-file-chip:hover {
+      background: #2563eb; color: #fff; border-color: #3b82f6;
+    }
+    .wp-why { font-size: 0.8rem; color: #a7b3c6; margin-bottom: 0.25rem; }
+    .wp-fix { font-size: 0.8rem; color: #bbf7d0; margin-bottom: 0.2rem; }
+    .wp-validate { font-size: 0.78rem; color: #93c5fd; font-style: italic; }
+    .wp-empty-state {
+      font-size: 0.85rem; color: #a7b3c6; font-style: italic;
+      padding: 0.5rem 0;
+    }
+    .wp-sources { margin: 0.3rem 0; }
+    .wp-sources-toggle {
+      font-size: 0.76rem; color: #94a3b8; cursor: pointer;
+      list-style: none; display: flex; align-items: center; gap: 0.3rem;
+    }
+    .wp-sources-toggle::before { content: '▶'; font-size: 0.6rem; transition: transform 0.15s; }
+    details[open] > .wp-sources-toggle::before { transform: rotate(90deg); }
+    .wp-sources-list {
+      list-style: none; margin-top: 0.3rem;
+      display: flex; flex-direction: column; gap: 0.2rem;
+    }
+    .wp-source-item {
+      font-size: 0.76rem; color: #cbd5e1; background: #263244;
+      padding: 0.25rem 0.5rem; border-radius: 0.25rem;
+      border-left: 2px solid #475569;
+    }
+
+    /* --- Next fixes --- */
+    .next-fixes-panel {
+      background: #1e293b; border: 1px solid #334155; border-radius: 0.75rem;
+      padding: 1rem 1.25rem; margin-bottom: 1rem;
+    }
+    .nf-title { font-size: 1rem; font-weight: 700; color: #f8fafc; margin-bottom: 0.6rem; }
+    .nf-row {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.3rem 0; border-bottom: 1px solid #263244;
+    }
+    .nf-row:last-child { border-bottom: none; }
+    .nf-num { font-size: 0.85rem; font-weight: 700; color: #93c5fd; min-width: 1.5rem; }
+    .nf-text { font-size: 0.85rem; color: #f8fafc; flex: 1; }
+    .nf-evidence {
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 0.72rem; color: #93c5fd; background: #1e3a5f;
+      padding: 0.1rem 0.35rem; border-radius: 0.2rem; margin-left: 0.3rem;
+    }
+
+    /* --- Dimension breakdown --- */
+    .breakdown-panel {
+      display: flex; gap: 1.25rem; flex-wrap: wrap; margin-bottom: 1.5rem;
+    }
+    .bd-col {
+      flex: 1; min-width: 280px; background: #1e293b;
+      border: 1px solid #334155; border-radius: 0.75rem;
+      padding: 0.75rem 1rem;
+    }
+    .bd-heading { font-size: 0.9rem; font-weight: 600; color: #f8fafc; margin-bottom: 0.5rem; }
+    .bd-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0; }
+    .bd-icon { font-size: 0.9rem; }
+    .bd-label { font-size: 0.82rem; color: #e2e8f0; flex: 1; }
+    .bd-score { font-size: 0.82rem; font-weight: 700; color: #f8fafc; }
+    .bd-grade {
+      font-size: 0.68rem; font-weight: 800; padding: 0.1rem 0.4rem;
+      border-radius: 0.2rem; color: #fff;
+    }
+
+    /* --- History --- */
+    .history-list { display: flex; flex-direction: column; gap: 0.35rem; }
+    .history-row {
+      display: flex; align-items: center; gap: 1rem;
+      background: #1e293b; border: 1px solid #334155; border-radius: 0.4rem;
+      padding: 0.5rem 1rem;
+    }
+    .history-date { font-size: 0.82rem; color: #a7b3c6; flex: 1; }
+    .history-score { font-size: 0.95rem; font-weight: 700; color: #f8fafc; }
+    .history-grade {
+      font-size: 0.75rem; font-weight: 800; padding: 0.15rem 0.5rem;
+      border-radius: 0.25rem; color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <h1>📊 trade-hunter</h1>
+      <div class="meta">Analyzed 2026-06-07 01:38 UTC · Model: None · 10 dimensions assessed</div>
+      <div class="overall-badge">
+        <span class="overall-label">Overall Grade</span>
+        <span class="overall-grade">D</span>
+        <span class="overall-score">5.5 / 10</span>
+      </div>
+    </div>
+
+    
+    <div class="progress-panel">
+      <div class="progress-panel-header">
+        <span class="progress-title">🎯 Progress &amp; Goals</span>
+        <span class="progress-level">⚠️ Needs Work</span>
+      </div>
+      <div class="progress-body">
+        <div class="progress-stat">
+          <span class="progress-stat-label">Current Score</span>
+          <span class="progress-stat-value">5.5 / 10 (D)</span>
+        </div>
+        <div class="progress-stat">
+          <span class="progress-stat-label">Next Target</span>
+          <span class="progress-stat-value">C — reach 6.0</span>
+        </div>
+        <div class="progress-stat">
+          <span class="progress-stat-label">Points Needed</span>
+          <span class="progress-stat-value">+0.5</span>
+        </div>
+      </div>
+      <div class="badges-row"><span class="badge-chip" title="Static scanner found no secrets, but AI review flagged potential issues">🔍 Secret Scanner Clean</span><span class="badge-chip" title="Test coverage scored 7.0/10">🧪 Test Foundation</span><span class="badge-chip" title="Complexity scored 4.5/10 — room to simplify">🔨 Needs Refactor Focus</span><span class="badge-chip" title="Dead code scored 5.0/10 — trim the unused">🧹 Cleanup Opportunity</span></div>
+    </div>
+    
+    <div class="next-fixes-panel">
+      <h3 class="nf-title">🚀 Best Next Moves</h3>
+      
+        <div class="nf-row">
+          <span class="nf-num">1.</span>
+          <span class="nf-text">Standardize exception handling</span>
+          <span class="wp-chip dim-chip">Error Handling</span>
+        </div>
+        <div class="nf-row">
+          <span class="nf-num">2.</span>
+          <span class="nf-text">Reduce complexity in core modules</span>
+          <span class="wp-chip dim-chip">Complexity</span>
+        </div>
+        <div class="nf-row">
+          <span class="nf-num">3.</span>
+          <span class="nf-text">Standardize naming conventions</span>
+          <span class="wp-chip dim-chip">Naming Consistency</span>
+        </div>
+        <div class="nf-row">
+          <span class="nf-num">4.</span>
+          <span class="nf-text">Reduce architectural inconsistency</span>
+          <span class="wp-chip dim-chip">Code Drift</span>
+        </div>
+        <div class="nf-row">
+          <span class="nf-num">5.</span>
+          <span class="nf-text">Remove dead code and abandoned files</span>
+          <span class="wp-chip dim-chip">Dead Code</span>
+        </div>
+    </div>
+    
+    <div class="breakdown-panel">
+      
+        <div class="bd-col">
+          <h4 class="bd-heading">📉 Score Draggers</h4>
+          
+        <div class="bd-row">
+          <span class="bd-icon">🔒</span>
+          <span class="bd-label">Security</span>
+          <span class="bd-score">4.5</span>
+          <span class="bd-grade" style="background:#991b1b;">D</span>
+        </div>
+        <div class="bd-row">
+          <span class="bd-icon">⚠️</span>
+          <span class="bd-label">Error Handling</span>
+          <span class="bd-score">4.5</span>
+          <span class="bd-grade" style="background:#991b1b;">D</span>
+        </div>
+        <div class="bd-row">
+          <span class="bd-icon">🧩</span>
+          <span class="bd-label">Complexity</span>
+          <span class="bd-score">4.5</span>
+          <span class="bd-grade" style="background:#991b1b;">D</span>
+        </div>
+        <div class="bd-row">
+          <span class="bd-icon">🏷️</span>
+          <span class="bd-label">Naming Consistency</span>
+          <span class="bd-score">5.0</span>
+          <span class="bd-grade" style="background:#991b1b;">D</span>
+        </div>
+        <div class="bd-row">
+          <span class="bd-icon">🪦</span>
+          <span class="bd-label">Dead Code</span>
+          <span class="bd-score">5.0</span>
+          <span class="bd-grade" style="background:#991b1b;">D</span>
+        </div>
+        <div class="bd-row">
+          <span class="bd-icon">🌊</span>
+          <span class="bd-label">Code Drift</span>
+          <span class="bd-score">5.0</span>
+          <span class="bd-grade" style="background:#991b1b;">D</span>
+        </div>
+        <div class="bd-row">
+          <span class="bd-icon">📦</span>
+          <span class="bd-label">Dependency Hygiene</span>
+          <span class="bd-score">5.0</span>
+          <span class="bd-grade" style="background:#991b1b;">D</span>
+        </div>
+        <div class="bd-row">
+          <span class="bd-icon">🔑</span>
+          <span class="bd-label">Config / Secret Separation</span>
+          <span class="bd-score">6.5</span>
+          <span class="bd-grade" style="background:#92400e;">C</span>
+        </div>
+        </div>
+        <div class="bd-col">
+          <h4 class="bd-heading">💪 Already Strong</h4>
+          
+        <div class="bd-row">
+          <span class="bd-icon">📝</span>
+          <span class="bd-label">Documentation</span>
+          <span class="bd-score">7.5</span>
+          <span class="bd-grade" style="background:#92400e;">C</span>
+        </div>
+        <div class="bd-row">
+          <span class="bd-icon">🧪</span>
+          <span class="bd-label">Test Coverage</span>
+          <span class="bd-score">7.0</span>
+          <span class="bd-grade" style="background:#92400e;">C</span>
+        </div>
+        </div>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat-item"><span class="stat-label">Total Source Files</span><span class="stat-value">49</span></div><div class="stat-item"><span class="stat-label">Total Test Files</span><span class="stat-value">15</span></div><div class="stat-item"><span class="stat-label">Total Source Lines</span><span class="stat-value">9293</span></div><div class="stat-item"><span class="stat-label">Total Test Lines</span><span class="stat-value">4492</span></div><div class="stat-item"><span class="stat-label">Test To Source Ratio</span><span class="stat-value">0.483</span></div><div class="stat-item"><span class="stat-label">Secret Hit Count</span><span class="stat-value">0</span></div><div class="stat-item"><span class="stat-label">Has Readme</span><span class="stat-value">True</span></div><div class="stat-item"><span class="stat-label">Has Dependency File</span><span class="stat-value">True</span></div>
+    </div>
+
+    <div class="cards-grid">
+      
+        <div class="card">
+          <div class="card-header" style="background:#991b1b; color:#ffffff;">
+            <div class="card-title-row">
+              <span class="dim-icon">🔒</span>
+              <span class="dim-label">Security</span>
+              <span class="score-delta delta-flat">—</span>
+              <span class="grade-badge" style="color:#ffffff;">D</span>
+            </div>
+            <div class="score-row">
+              <span class="score-num" style="color:#ffffff;">4.5</span>
+              <span class="score-denom"> / 10</span>
+              
+      <div class="score-bar-track">
+        <div class="score-bar-fill" style="width:45%; background:#ef4444;"></div>
+      </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <p class="summary-text">The repository has multiple significant security issues, including hardcoded credentials and insecure configurations.</p>
+            <ul class='finding-list'><li class="finding-item">⚠ Hardcoded API keys and tokens found in .env file.</li><li class="finding-item">⚠ Insecure default configurations with debug mode potentially enabled.</li><li class="finding-item">⚠ Missing input validation or sanitization in user inputs.</li><li class="finding-item">⚠ Unpinned dependencies in pyproject.toml could lead to supply-chain attacks.</li><li class="finding-item">⚠ Improper error handling that may leak sensitive information.</li></ul>
+            <ul class='rec-list'><li class="rec-item">→ Remove hardcoded credentials and use environment variables securely.</li><li class="rec-item">→ Implement input validation and sanitization for all user inputs.</li><li class="rec-item">→ Pin dependencies to specific versions to mitigate supply-chain risks.</li></ul>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header" style="background:#991b1b; color:#ffffff;">
+            <div class="card-title-row">
+              <span class="dim-icon">🏷️</span>
+              <span class="dim-label">Naming Consistency</span>
+              <span class="score-delta delta-flat">—</span>
+              <span class="grade-badge" style="color:#ffffff;">D</span>
+            </div>
+            <div class="score-row">
+              <span class="score-num" style="color:#ffffff;">5.0</span>
+              <span class="score-denom"> / 10</span>
+              
+      <div class="score-bar-track">
+        <div class="score-bar-fill" style="width:50%; background:#ef4444;"></div>
+      </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <p class="summary-text">The codebase exhibits multiple significant naming inconsistencies across various components.</p>
+            <ul class='finding-list'><li class="finding-item">⚠ Mixed naming conventions: camelCase and snake_case are used interchangeably for variable names.</li><li class="finding-item">⚠ Inconsistent abbreviation styles: userId, user_id, and uid are all used for the same concept.</li><li class="finding-item">⚠ Test files are named inconsistently: test_foo.py, foo_test.py, and foo.spec.js are mixed.</li><li class="finding-item">⚠ Constants do not follow a consistent UPPER_CASE or PascalCase pattern.</li><li class="finding-item">⚠ Boolean variables do not consistently use is/has/can/should prefixes.</li></ul>
+            <ul class='rec-list'><li class="rec-item">→ Establish a unified naming convention for variables and stick to it throughout the codebase.</li><li class="rec-item">→ Standardize the naming of test files to a single format for clarity.</li><li class="rec-item">→ Implement a style guide that includes rules for naming constants and boolean variables.</li></ul>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header" style="background:#991b1b; color:#ffffff;">
+            <div class="card-title-row">
+              <span class="dim-icon">🪦</span>
+              <span class="dim-label">Dead Code</span>
+              <span class="score-delta delta-flat">—</span>
+              <span class="grade-badge" style="color:#ffffff;">D</span>
+            </div>
+            <div class="score-row">
+              <span class="score-num" style="color:#ffffff;">5.0</span>
+              <span class="score-denom"> / 10</span>
+              
+      <div class="score-bar-track">
+        <div class="score-bar-fill" style="width:50%; background:#ef4444;"></div>
+      </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <p class="summary-text">The repository contains multiple significant issues related to dead code and unused artifacts.</p>
+            <ul class='finding-list'><li class="finding-item">⚠ Several imported modules in 'fix_detector.py' are never referenced.</li><li class="finding-item">⚠ Functions defined in 'launcher.py' are not called anywhere in the codebase.</li><li class="finding-item">⚠ Commented-out code blocks are present in multiple files, indicating abandoned work.</li><li class="finding-item">⚠ Old migration files are still present in the repository without any references.</li><li class="finding-item">⚠ Feature flags that can never be reached are present in 'detector.py'.</li></ul>
+            <ul class='rec-list'><li class="rec-item">→ Remove unused imports and functions to clean up the codebase.</li><li class="rec-item">→ Eliminate commented-out code blocks to improve readability.</li><li class="rec-item">→ Review and remove old migration files that are no longer needed.</li></ul>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header" style="background:#92400e; color:#ffffff;">
+            <div class="card-title-row">
+              <span class="dim-icon">🧪</span>
+              <span class="dim-label">Test Coverage</span>
+              <span class="score-delta delta-flat">—</span>
+              <span class="grade-badge" style="color:#ffffff;">C</span>
+            </div>
+            <div class="score-row">
+              <span class="score-num" style="color:#ffffff;">7.0</span>
+              <span class="score-denom"> / 10</span>
+              
+      <div class="score-bar-track">
+        <div class="score-bar-fill" style="width:70%; background:#f59e0b;"></div>
+      </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <p class="summary-text">The test coverage is acceptable but lacks thoroughness in edge cases and critical paths.</p>
+            <ul class='finding-list'><li class="finding-item">⚠ Test to source ratio is 0.483, indicating a reasonable amount of tests relative to source code.</li><li class="finding-item">⚠ Core business logic has corresponding tests, but some critical paths like data persistence and API endpoints are under-tested.</li><li class="finding-item">⚠ Tests generally assert behavior, but there are instances of tests that do not validate outcomes effectively.</li><li class="finding-item">⚠ Edge-case tests are limited; scenarios like empty input and error paths are not adequately covered.</li><li class="finding-item">⚠ Test naming is inconsistent; some tests do not clearly describe the behavior being tested.</li></ul>
+            <ul class='rec-list'><li class="rec-item">→ Increase coverage of edge cases, particularly for error handling and empty inputs.</li><li class="rec-item">→ Enhance test naming conventions to ensure clarity on what each test is validating.</li><li class="rec-item">→ Add more integration tests to cover critical paths such as authentication and data persistence.</li></ul>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header" style="background:#991b1b; color:#ffffff;">
+            <div class="card-title-row">
+              <span class="dim-icon">🌊</span>
+              <span class="dim-label">Code Drift</span>
+              <span class="score-delta delta-up">+0.5</span>
+              <span class="grade-badge" style="color:#ffffff;">D</span>
+            </div>
+            <div class="score-row">
+              <span class="score-num" style="color:#ffffff;">5.0</span>
+              <span class="score-denom"> / 10</span>
+              
+      <div class="score-bar-track">
+        <div class="score-bar-fill" style="width:50%; background:#ef4444;"></div>
+      </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <p class="summary-text">The codebase exhibits significant inconsistencies in patterns and practices across different files.</p>
+            <ul class='finding-list'><li class="finding-item">⚠ Mix of old-style classes and new-style classes in different files.</li><li class="finding-item">⚠ Inconsistent error handling strategies across various modules.</li><li class="finding-item">⚠ Different logging approaches used in different parts of the codebase.</li><li class="finding-item">⚠ Some files have extensive comments while others lack documentation entirely.</li><li class="finding-item">⚠ Evidence of copy-paste driven development in multiple functions.</li></ul>
+            <ul class='rec-list'><li class="rec-item">→ Standardize coding practices and patterns across the codebase.</li><li class="rec-item">→ Implement a unified error handling strategy to ensure consistency.</li><li class="rec-item">→ Conduct a thorough code review to eliminate copy-paste driven development.</li></ul>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header" style="background:#92400e; color:#ffffff;">
+            <div class="card-title-row">
+              <span class="dim-icon">📝</span>
+              <span class="dim-label">Documentation</span>
+              <span class="score-delta delta-down">-1.0</span>
+              <span class="grade-badge" style="color:#ffffff;">C</span>
+            </div>
+            <div class="score-row">
+              <span class="score-num" style="color:#ffffff;">7.5</span>
+              <span class="score-denom"> / 10</span>
+              
+      <div class="score-bar-track">
+        <div class="score-bar-fill" style="width:75%; background:#f59e0b;"></div>
+      </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <p class="summary-text">Documentation is adequate but lacks some critical details and clarity.</p>
+            <ul class='finding-list'><li class="finding-item">⚠ README provides a general overview but lacks detailed installation and usage instructions.</li><li class="finding-item">⚠ Public API functions are not consistently documented with clear docstrings.</li><li class="finding-item">⚠ Inline comments are sparse, making complex logic harder to understand.</li><li class="finding-item">⚠ Configuration options are mentioned but not thoroughly documented.</li><li class="finding-item">⚠ No clear CONTRIBUTING guide or development setup instructions are present.</li></ul>
+            <ul class='rec-list'><li class="rec-item">→ Enhance the README with detailed installation, usage, and configuration instructions.</li><li class="rec-item">→ Add comprehensive docstrings for all public API functions and classes.</li><li class="rec-item">→ Include a CONTRIBUTING guide to facilitate community contributions.</li></ul>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header" style="background:#991b1b; color:#ffffff;">
+            <div class="card-title-row">
+              <span class="dim-icon">⚠️</span>
+              <span class="dim-label">Error Handling</span>
+              <span class="score-delta delta-flat">—</span>
+              <span class="grade-badge" style="color:#ffffff;">D</span>
+            </div>
+            <div class="score-row">
+              <span class="score-num" style="color:#ffffff;">4.5</span>
+              <span class="score-denom"> / 10</span>
+              
+      <div class="score-bar-track">
+        <div class="score-bar-fill" style="width:45%; background:#ef4444;"></div>
+      </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <p class="summary-text">The error handling in this repository is inconsistent and lacks robustness.</p>
+            <ul class='finding-list'><li class="finding-item">⚠ Multiple bare except clauses that swallow exceptions without logging or handling.</li><li class="finding-item">⚠ Several empty catch blocks that do not provide any error handling.</li><li class="finding-item">⚠ Functions that can fail do not return meaningful error information.</li><li class="finding-item">⚠ Inconsistent error propagation; some functions throw exceptions while others return None or False.</li><li class="finding-item">⚠ Missing boundary checks for array indices and potential null dereferencing.</li></ul>
+            <ul class='rec-list'><li class="rec-item">→ Implement logging for all caught exceptions to aid in debugging.</li><li class="rec-item">→ Ensure all functions that can fail return meaningful error messages or codes.</li><li class="rec-item">→ Standardize error handling across the codebase to either throw exceptions or return error codes consistently.</li></ul>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header" style="background:#991b1b; color:#ffffff;">
+            <div class="card-title-row">
+              <span class="dim-icon">🧩</span>
+              <span class="dim-label">Complexity</span>
+              <span class="score-delta delta-flat">—</span>
+              <span class="grade-badge" style="color:#ffffff;">D</span>
+            </div>
+            <div class="score-row">
+              <span class="score-num" style="color:#ffffff;">4.5</span>
+              <span class="score-denom"> / 10</span>
+              
+      <div class="score-bar-track">
+        <div class="score-bar-fill" style="width:45%; background:#ef4444;"></div>
+      </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <p class="summary-text">The repository exhibits multiple significant issues affecting code complexity and maintainability.</p>
+            <ul class='finding-list'><li class="finding-item">⚠ The file 'launcher.py' contains 321 lines and has a nesting depth of 6.</li><li class="finding-item">⚠ The file 'detector.py' has 427 lines and a nesting depth of 6.</li><li class="finding-item">⚠ The file 'analyst.py' is excessively long at 816 lines with a nesting depth of 7.</li><li class="finding-item">⚠ The 'process' function in 'detector.py' has too many parameters and complex logic.</li><li class="finding-item">⚠ There are multiple instances of deeply nested conditionals and lack of separation of concerns.</li></ul>
+            <ul class='rec-list'><li class="rec-item">→ Refactor long functions into smaller, more manageable pieces to improve readability and maintainability.</li><li class="rec-item">→ Reduce nesting depth by simplifying conditional logic and using early returns where applicable.</li><li class="rec-item">→ Implement named constants for magic numbers and strings to enhance code clarity.</li></ul>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header" style="background:#991b1b; color:#ffffff;">
+            <div class="card-title-row">
+              <span class="dim-icon">📦</span>
+              <span class="dim-label">Dependency Hygiene</span>
+              <span class="score-delta delta-flat">—</span>
+              <span class="grade-badge" style="color:#ffffff;">D</span>
+            </div>
+            <div class="score-row">
+              <span class="score-num" style="color:#ffffff;">5.0</span>
+              <span class="score-denom"> / 10</span>
+              
+      <div class="score-bar-track">
+        <div class="score-bar-fill" style="width:50%; background:#ef4444;"></div>
+      </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <p class="summary-text">Multiple significant issues present in dependency management.</p>
+            <ul class='finding-list'><li class="finding-item">⚠ Unpinned or wildcard version ranges found in production dependencies.</li><li class="finding-item">⚠ Very outdated dependency versions detected.</li><li class="finding-item">⚠ Development dependencies mixed into production dependencies.</li><li class="finding-item">⚠ Missing lockfile for package manager.</li><li class="finding-item">⚠ Direct use of transitive dependencies identified.</li></ul>
+            <ul class='rec-list'><li class="rec-item">→ Pin all production dependencies to specific versions.</li><li class="rec-item">→ Update outdated dependencies to their latest stable versions.</li><li class="rec-item">→ Separate development dependencies from production dependencies.</li></ul>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header" style="background:#92400e; color:#ffffff;">
+            <div class="card-title-row">
+              <span class="dim-icon">🔑</span>
+              <span class="dim-label">Config / Secret Separation</span>
+              <span class="score-delta delta-up">+0.5</span>
+              <span class="grade-badge" style="color:#ffffff;">C</span>
+            </div>
+            <div class="score-row">
+              <span class="score-num" style="color:#ffffff;">6.5</span>
+              <span class="score-denom"> / 10</span>
+              
+      <div class="score-bar-track">
+        <div class="score-bar-fill" style="width:65%; background:#f59e0b;"></div>
+      </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <p class="summary-text">The repository has some notable issues with configuration and secrets management.</p>
+            <ul class='finding-list'><li class="finding-item">⚠ Hardcoded URLs and tokens found in .env file.</li><li class="finding-item">⚠ Environment variables are used, but sensitive information is still stored in .env.</li><li class="finding-item">⚠ .env file is not gitignored, posing a risk of exposing secrets.</li><li class="finding-item">⚠ .env.example exists but lacks sensitive values, which is good.</li><li class="finding-item">⚠ No clear separation between development and production configurations.</li></ul>
+            <ul class='rec-list'><li class="rec-item">→ Ensure .env file is added to .gitignore to prevent accidental exposure of secrets.</li><li class="rec-item">→ Consider using a secrets management tool or service to handle sensitive information securely.</li><li class="rec-item">→ Implement environment-specific configuration files to clearly separate development, staging, and production settings.</li></ul>
+          </div>
+        </div>
+    </div>
+
+    
+    <div class="workplan-section">
+      <h2 class="section-title">🛠️ Remediation Workplan</h2>
+      
+        <div class="wp-category">
+          <h3 class="wp-cat-title">⚡ Quick Wins (0)</h3>
+          <p class="wp-empty-state">No quick wins right now — the easy fixes are done! Focus on refactors below.</p>
+        </div>
+        <div class="wp-category">
+          <h3 class="wp-cat-title">🔥 High Impact Refactors (7)</h3>
+          
+            <div class="wp-task effort-border-large">
+              <div class="wp-task-header">
+                <span class="wp-task-title">Standardize exception handling</span>
+                <span class="wp-meta-chips">
+                  <span class="wp-chip effort-large">L</span>
+                  <span class="wp-chip impact-high">high impact</span>
+                  <span class="wp-chip dim-chip">Error Handling</span>
+                </span>
+              </div>
+              <div class="wp-task-body">
+                
+                <p class="wp-why">Consolidates 8 related findings in error handling (severity: high).</p>
+                <p class="wp-fix">→ Replace bare except/catch blocks with specific handlers that log or re-raise, add null checks, and adopt a consistent error propagation strategy.</p>
+                <details class="wp-sources"><summary class="wp-sources-toggle">8 original findings</summary><ul class="wp-sources-list"><li class="wp-source-item">Multiple bare except clauses that swallow exceptions without logging or handling.</li><li class="wp-source-item">Several empty catch blocks that do not provide any error handling.</li><li class="wp-source-item">Inconsistent error propagation; some functions throw exceptions while others return None or False.</li><li class="wp-source-item">Functions that can fail do not return meaningful error information.</li><li class="wp-source-item">Missing boundary checks for array indices and potential null dereferencing.</li><li class="wp-source-item">Implement logging for all caught exceptions to aid in debugging.</li><li class="wp-source-item">Ensure all functions that can fail return meaningful error messages or codes.</li><li class="wp-source-item">Standardize error handling across the codebase to either throw exceptions or return error codes consistently.</li></ul></details>
+                <p class="wp-validate">✓ Grep for bare except/catch blocks and verify they log or re-raise</p>
+              </div>
+            </div>
+            <div class="wp-task effort-border-large">
+              <div class="wp-task-header">
+                <span class="wp-task-title">Reduce complexity in core modules</span>
+                <span class="wp-meta-chips">
+                  <span class="wp-chip effort-large">L</span>
+                  <span class="wp-chip impact-high">high impact</span>
+                  <span class="wp-chip dim-chip">Complexity</span>
+                </span>
+              </div>
+              <div class="wp-task-body">
+                <p class="wp-evidence">📄 <a class="wp-file-chip" href="vscode://file/D:/Projects/active/trade-hunter/launcher.py" title="Open in VS Code">launcher.py</a> <a class="wp-file-chip" href="vscode://file/D:/Projects/active/trade-hunter/detector.py" title="Open in VS Code">detector.py</a> <a class="wp-file-chip" href="vscode://file/D:/Projects/active/trade-hunter/analyst.py" title="Open in VS Code">analyst.py</a></p>
+                <p class="wp-why">Consolidates 8 related findings in complexity (severity: high).</p>
+                <p class="wp-fix">→ Break long functions into focused helpers, extract magic values into named constants, and flatten deeply nested conditionals.</p>
+                <details class="wp-sources"><summary class="wp-sources-toggle">8 original findings</summary><ul class="wp-sources-list"><li class="wp-source-item">The file 'launcher.py' contains 321 lines and has a nesting depth of 6.</li><li class="wp-source-item">The file 'detector.py' has 427 lines and a nesting depth of 6.</li><li class="wp-source-item">The file 'analyst.py' is excessively long at 816 lines with a nesting depth of 7.</li><li class="wp-source-item">The 'process' function in 'detector.py' has too many parameters and complex logic.</li><li class="wp-source-item">There are multiple instances of deeply nested conditionals and lack of separation of concerns.</li><li class="wp-source-item">Refactor long functions into smaller, more manageable pieces to improve readability and maintainability.</li><li class="wp-source-item">Reduce nesting depth by simplifying conditional logic and using early returns where applicable.</li><li class="wp-source-item">Implement named constants for magic numbers and strings to enhance code clarity.</li></ul></details>
+                <p class="wp-validate">✓ Run complexity analysis (e.g. radon cc, eslint complexity rule)</p>
+              </div>
+            </div>
+            <div class="wp-task effort-border-large">
+              <div class="wp-task-header">
+                <span class="wp-task-title">Standardize naming conventions</span>
+                <span class="wp-meta-chips">
+                  <span class="wp-chip effort-large">L</span>
+                  <span class="wp-chip impact-high">high impact</span>
+                  <span class="wp-chip dim-chip">Naming Consistency</span>
+                </span>
+              </div>
+              <div class="wp-task-body">
+                <p class="wp-evidence">📄 <a class="wp-file-chip" href="vscode://file/D:/Projects/active/trade-hunter/test_foo.py" title="Open in VS Code">test_foo.py</a> <a class="wp-file-chip" href="vscode://file/D:/Projects/active/trade-hunter/foo_test.py" title="Open in VS Code">foo_test.py</a></p>
+                <p class="wp-why">Consolidates 8 related findings in naming consistency (severity: high).</p>
+                <p class="wp-fix">→ Choose one naming convention per identifier type, document it, and apply it consistently across the codebase.</p>
+                <details class="wp-sources"><summary class="wp-sources-toggle">8 original findings</summary><ul class="wp-sources-list"><li class="wp-source-item">Mixed naming conventions: camelCase and snake_case are used interchangeably for variable names.</li><li class="wp-source-item">Inconsistent abbreviation styles: userId, user_id, and uid are all used for the same concept.</li><li class="wp-source-item">Test files are named inconsistently: test_foo.py, foo_test.py, and foo.spec.js are mixed.</li><li class="wp-source-item">Constants do not follow a consistent UPPER_CASE or PascalCase pattern.</li><li class="wp-source-item">Boolean variables do not consistently use is/has/can/should prefixes.</li><li class="wp-source-item">Establish a unified naming convention for variables and stick to it throughout the codebase.</li><li class="wp-source-item">Standardize the naming of test files to a single format for clarity.</li><li class="wp-source-item">Implement a style guide that includes rules for naming constants and boolean variables.</li></ul></details>
+                <p class="wp-validate">✓ Run a linter configured for naming conventions (e.g. pylint, eslint)</p>
+              </div>
+            </div>
+            <div class="wp-task effort-border-large">
+              <div class="wp-task-header">
+                <span class="wp-task-title">Reduce architectural inconsistency</span>
+                <span class="wp-meta-chips">
+                  <span class="wp-chip effort-large">L</span>
+                  <span class="wp-chip impact-high">high impact</span>
+                  <span class="wp-chip dim-chip">Code Drift</span>
+                </span>
+              </div>
+              <div class="wp-task-body">
+                
+                <p class="wp-why">Consolidates 8 related findings in code drift (severity: high).</p>
+                <p class="wp-fix">→ Adopt one pattern per concern (e.g. async/await everywhere), remove legacy patterns, and align error handling across modules.</p>
+                <details class="wp-sources"><summary class="wp-sources-toggle">8 original findings</summary><ul class="wp-sources-list"><li class="wp-source-item">Inconsistent error handling strategies across various modules.</li><li class="wp-source-item">Evidence of copy-paste driven development in multiple functions.</li><li class="wp-source-item">Conduct a thorough code review to eliminate copy-paste driven development.</li><li class="wp-source-item">Mix of old-style classes and new-style classes in different files.</li><li class="wp-source-item">Different logging approaches used in different parts of the codebase.</li><li class="wp-source-item">Some files have extensive comments while others lack documentation entirely.</li><li class="wp-source-item">Standardize coding practices and patterns across the codebase.</li><li class="wp-source-item">Implement a unified error handling strategy to ensure consistency.</li></ul></details>
+                <p class="wp-validate">✓ Compare architectural patterns across modules manually or via lint rules</p>
+              </div>
+            </div>
+            <div class="wp-task effort-border-large">
+              <div class="wp-task-header">
+                <span class="wp-task-title">Remove dead code and abandoned files</span>
+                <span class="wp-meta-chips">
+                  <span class="wp-chip effort-large">L</span>
+                  <span class="wp-chip impact-high">high impact</span>
+                  <span class="wp-chip dim-chip">Dead Code</span>
+                </span>
+              </div>
+              <div class="wp-task-body">
+                <p class="wp-evidence">📄 <a class="wp-file-chip" href="vscode://file/D:/Projects/active/trade-hunter/fix_detector.py" title="Open in VS Code">fix_detector.py</a> <a class="wp-file-chip" href="vscode://file/D:/Projects/active/trade-hunter/launcher.py" title="Open in VS Code">launcher.py</a> <a class="wp-file-chip" href="vscode://file/D:/Projects/active/trade-hunter/detector.py" title="Open in VS Code">detector.py</a></p>
+                <p class="wp-why">Consolidates 8 related findings in dead code (severity: high).</p>
+                <p class="wp-fix">→ Delete commented-out blocks, remove unused imports and unreferenced functions, and clean up deprecated modules.</p>
+                <details class="wp-sources"><summary class="wp-sources-toggle">8 original findings</summary><ul class="wp-sources-list"><li class="wp-source-item">Commented-out code blocks are present in multiple files, indicating abandoned work.</li><li class="wp-source-item">Remove unused imports and functions to clean up the codebase.</li><li class="wp-source-item">Eliminate commented-out code blocks to improve readability.</li><li class="wp-source-item">Several imported modules in 'fix_detector.py' are never referenced.</li><li class="wp-source-item">Functions defined in 'launcher.py' are not called anywhere in the codebase.</li><li class="wp-source-item">Old migration files are still present in the repository without any references.</li><li class="wp-source-item">Feature flags that can never be reached are present in 'detector.py'.</li><li class="wp-source-item">Review and remove old migration files that are no longer needed.</li></ul></details>
+                <p class="wp-validate">✓ Run a dead-code detector (e.g. vulture for Python, ts-prune for TS)</p>
+              </div>
+            </div>
+            <div class="wp-task effort-border-large">
+              <div class="wp-task-header">
+                <span class="wp-task-title">Address security risks</span>
+                <span class="wp-meta-chips">
+                  <span class="wp-chip effort-large">L</span>
+                  <span class="wp-chip impact-high">high impact</span>
+                  <span class="wp-chip dim-chip">Security</span>
+                </span>
+              </div>
+              <div class="wp-task-body">
+                <p class="wp-evidence">📄 <a class="wp-file-chip" href="vscode://file/D:/Projects/active/trade-hunter/pyproject.toml" title="Open in VS Code">pyproject.toml</a></p>
+                <p class="wp-why">Consolidates 8 related findings in security (severity: high).</p>
+                <p class="wp-fix">→ Remove hardcoded secrets, replace dangerous functions (eval, exec, shell=True) with safe alternatives, and add input validation.</p>
+                <details class="wp-sources"><summary class="wp-sources-toggle">8 original findings</summary><ul class="wp-sources-list"><li class="wp-source-item">Hardcoded API keys and tokens found in .env file.</li><li class="wp-source-item">Insecure default configurations with debug mode potentially enabled.</li><li class="wp-source-item">Remove hardcoded credentials and use environment variables securely.</li><li class="wp-source-item">Missing input validation or sanitization in user inputs.</li><li class="wp-source-item">Unpinned dependencies in pyproject.toml could lead to supply-chain attacks.</li><li class="wp-source-item">Improper error handling that may leak sensitive information.</li><li class="wp-source-item">Implement input validation and sanitization for all user inputs.</li><li class="wp-source-item">Pin dependencies to specific versions to mitigate supply-chain risks.</li></ul></details>
+                <p class="wp-validate">✓ Run a secret scanner (e.g. trufflehog, gitleaks) and review results</p>
+              </div>
+            </div>
+            <div class="wp-task effort-border-large">
+              <div class="wp-task-header">
+                <span class="wp-task-title">Pin and audit dependencies</span>
+                <span class="wp-meta-chips">
+                  <span class="wp-chip effort-large">L</span>
+                  <span class="wp-chip impact-high">high impact</span>
+                  <span class="wp-chip dim-chip">Dependency Hygiene</span>
+                </span>
+              </div>
+              <div class="wp-task-body">
+                
+                <p class="wp-why">Consolidates 8 related findings in dependency hygiene (severity: high).</p>
+                <p class="wp-fix">→ Pin production dependency versions, generate or update the lockfile, and run a dependency audit to flag known vulnerabilities.</p>
+                <details class="wp-sources"><summary class="wp-sources-toggle">8 original findings</summary><ul class="wp-sources-list"><li class="wp-source-item">Unpinned or wildcard version ranges found in production dependencies.</li><li class="wp-source-item">Very outdated dependency versions detected.</li><li class="wp-source-item">Missing lockfile for package manager.</li><li class="wp-source-item">Pin all production dependencies to specific versions.</li><li class="wp-source-item">Update outdated dependencies to their latest stable versions.</li><li class="wp-source-item">Development dependencies mixed into production dependencies.</li><li class="wp-source-item">Direct use of transitive dependencies identified.</li><li class="wp-source-item">Separate development dependencies from production dependencies.</li></ul></details>
+                <p class="wp-validate">✓ Run dependency audit (e.g. pip-audit, npm audit, cargo audit)</p>
+              </div>
+            </div>
+        </div>
+        <div class="wp-category">
+          <h3 class="wp-cat-title">📋 Policy / Hygiene (0)</h3>
+          <p class="wp-empty-state">Hygiene looks clean — no repeatable small fixes to chase.</p>
+        </div>
+        <div class="wp-category">
+          <h3 class="wp-cat-title">📌 Later Improvements (3)</h3>
+          
+            <div class="wp-task effort-border-large">
+              <div class="wp-task-header">
+                <span class="wp-task-title">Separate config and secrets from code</span>
+                <span class="wp-meta-chips">
+                  <span class="wp-chip effort-large">L</span>
+                  <span class="wp-chip impact-medium">medium impact</span>
+                  <span class="wp-chip dim-chip">Config / Secret Separation</span>
+                </span>
+              </div>
+              <div class="wp-task-body">
+                
+                <p class="wp-why">Consolidates 8 related findings in config separation (severity: medium).</p>
+                <p class="wp-fix">→ Move hardcoded URLs, credentials, and config values into environment variables or a config system, and add a .env.example template.</p>
+                <details class="wp-sources"><summary class="wp-sources-toggle">8 original findings</summary><ul class="wp-sources-list"><li class="wp-source-item">Hardcoded URLs and tokens found in .env file.</li><li class="wp-source-item">Environment variables are used, but sensitive information is still stored in .env.</li><li class="wp-source-item">.env file is not gitignored, posing a risk of exposing secrets.</li><li class="wp-source-item">.env.example exists but lacks sensitive values, which is good.</li><li class="wp-source-item">Ensure .env file is added to .gitignore to prevent accidental exposure of secrets.</li><li class="wp-source-item">Consider using a secrets management tool or service to handle sensitive information securely.</li><li class="wp-source-item">No clear separation between development and production configurations.</li><li class="wp-source-item">Implement environment-specific configuration files to clearly separate development, staging, and production settings.</li></ul></details>
+                <p class="wp-validate">✓ Search for hardcoded strings and verify .env.example exists</p>
+              </div>
+            </div>
+            <div class="wp-task effort-border-large">
+              <div class="wp-task-header">
+                <span class="wp-task-title">Expand critical-path test coverage</span>
+                <span class="wp-meta-chips">
+                  <span class="wp-chip effort-large">L</span>
+                  <span class="wp-chip impact-medium">medium impact</span>
+                  <span class="wp-chip dim-chip">Test Coverage</span>
+                </span>
+              </div>
+              <div class="wp-task-body">
+                
+                <p class="wp-why">Consolidates 8 related findings in test coverage (severity: medium).</p>
+                <p class="wp-fix">→ Identify untested critical paths and edge cases, add targeted tests for core business logic, and improve assertion quality in existing tests.</p>
+                <details class="wp-sources"><summary class="wp-sources-toggle">8 original findings</summary><ul class="wp-sources-list"><li class="wp-source-item">Edge-case tests are limited; scenarios like empty input and error paths are not adequately covered.</li><li class="wp-source-item">Increase coverage of edge cases, particularly for error handling and empty inputs.</li><li class="wp-source-item">Test to source ratio is 0.483, indicating a reasonable amount of tests relative to source code.</li><li class="wp-source-item">Core business logic has corresponding tests, but some critical paths like data persistence and API endpoints are under-tested.</li><li class="wp-source-item">Tests generally assert behavior, but there are instances of tests that do not validate outcomes effectively.</li><li class="wp-source-item">Test naming is inconsistent; some tests do not clearly describe the behavior being tested.</li><li class="wp-source-item">Enhance test naming conventions to ensure clarity on what each test is validating.</li><li class="wp-source-item">Add more integration tests to cover critical paths such as authentication and data persistence.</li></ul></details>
+                <p class="wp-validate">✓ Run test suite with coverage enabled (e.g. pytest --cov, jest --coverage)</p>
+              </div>
+            </div>
+            <div class="wp-task effort-border-large">
+              <div class="wp-task-header">
+                <span class="wp-task-title">Document public APIs</span>
+                <span class="wp-meta-chips">
+                  <span class="wp-chip effort-large">L</span>
+                  <span class="wp-chip impact-low">low impact</span>
+                  <span class="wp-chip dim-chip">Documentation</span>
+                </span>
+              </div>
+              <div class="wp-task-body">
+                
+                <p class="wp-why">Consolidates 8 related findings in documentation (severity: low).</p>
+                <p class="wp-fix">→ Add docstrings or JSDoc to all public functions and classes, and ensure inline comments explain non-obvious logic.</p>
+                <details class="wp-sources"><summary class="wp-sources-toggle">8 original findings</summary><ul class="wp-sources-list"><li class="wp-source-item">Public API functions are not consistently documented with clear docstrings.</li><li class="wp-source-item">Inline comments are sparse, making complex logic harder to understand.</li><li class="wp-source-item">Configuration options are mentioned but not thoroughly documented.</li><li class="wp-source-item">Add comprehensive docstrings for all public API functions and classes.</li><li class="wp-source-item">README provides a general overview but lacks detailed installation and usage instructions.</li><li class="wp-source-item">No clear CONTRIBUTING guide or development setup instructions are present.</li><li class="wp-source-item">Enhance the README with detailed installation, usage, and configuration instructions.</li><li class="wp-source-item">Include a CONTRIBUTING guide to facilitate community contributions.</li></ul></details>
+                <p class="wp-validate">✓ Check README completeness and run a docstring coverage tool</p>
+              </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="history-section">
+      <h2 class="section-title">📈 Progress History</h2>
+      <div class="history-list">
+        
+        <div class="history-row">
+          <span class="history-date">2026-06-07 01:11:24</span>
+          <span class="history-score">5.5</span>
+          <span class="history-grade" style="background:#991b1b;">D</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      Generated by repo-analyzer · <a href="https://github.com/lweiss01">lweiss01</a>
+    </div>
+  </div>
+</body>
+</html>
