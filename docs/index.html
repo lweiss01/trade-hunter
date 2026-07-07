@@ -199,6 +199,7 @@
     }
     .price-line { display:flex; align-items:flex-end; gap: .8rem; flex-wrap:wrap; margin: .8rem 0 1.5rem; }
     .price-big { font-size: clamp(2.5rem, 4vw, 4.25rem); line-height: .9; letter-spacing: -.05em; }
+    .price-was { font-family: var(--font-mono); font-size: 1.4rem; color: var(--faint); text-decoration: line-through; align-self: flex-end; }
     .list { list-style:none; display:grid; gap: .75rem; }
     .list li { padding-left: 1.5rem; position:relative; color: var(--muted); }
     .list li::before { content: "✦"; position:absolute; left:0; color: var(--primary-2); top: 2px; }
@@ -259,7 +260,7 @@
         <a href="#compare">Ownership</a>
         <a href="#pricing">Pricing</a>
       </nav>
-      <div class="cta-nav mono">Trade Hunter Commercial · $49.99</div>
+      <div class="cta-nav mono">Launch Price · Pay what you want from $9</div>
     </div>
   </header>
 
@@ -271,7 +272,7 @@
           <h1>Don't trade against the Whales. Trade with them.</h1>
           <p class="lead">Trade Hunter watches every Kalshi market simultaneously and fires when something moves unusually — with an AI read on whether the spike looks like real flow or noise. Double-click to run. No cloud. No subscription. You own the code.</p>
           <div class="hero-actions">
-            <a class="button primary" href="#pricing">Secure One-Time License — $49.99</a>
+            <a class="button primary" href="#pricing">Get the Launch Price · From $9</a>
             <a class="button secondary" href="https://github.com/lweiss01/trade-hunter" target="_blank" rel="noopener noreferrer">Explore the Public Edition</a>
           </div>
           <div class="microproof">
@@ -375,7 +376,6 @@
            </div>
            <aside class="card animate-in" style="background: var(--surface-2); border-color: var(--primary-2);">
              <h3 class="mono" style="color: var(--primary-2)">Multilateral Flow Detection</h3>
-<p style="margin-bottom: 1rem; color: var(--faint);">Current build v0.3.0 · Kalshi active</p>
               <div class="signal-row" style="margin-bottom: 0.5rem; opacity: 0.5;">
                 <div class="mono">ROADMAP: POLYMARKET</div>
                 <div class="mono" style="color: var(--muted);">PENDING INTEGRATION</div>
@@ -473,11 +473,12 @@
     <section class="section" id="pricing">
       <div class="container pricing">
         <div class="pricing-main animate-in">
-          <div class="eyebrow">Commercial Launch</div>
+          <div class="eyebrow">Introductory Launch Price</div>
           <h2 style="font-size:var(--text-xl); margin-top:.8rem;">The edge is yours.</h2>
           <div class="price-line">
-            <div class="price-big">$49.99</div>
-            <div class="muted">One-Time License · Source Included</div>
+            <div class="price-big">$9+</div>
+            <div class="price-was">$49.99</div>
+            <div class="muted">Pay what you want · $9 minimum · $19 suggested · Source included</div>
           </div>
           <ul class="list">
             <li>Windows exe — double-click to launch, no install</li>
@@ -489,8 +490,9 @@
             <li>Free updates as the product ships new features</li>
           </ul>
           <div class="hero-actions" style="margin-top:2rem;">
-            <a class="button primary" href="https://lweiss.gumroad.com/l/trade-hunter" target="_blank" rel="noopener noreferrer">Get Trade Hunter Commercial — $49.99</a>
+            <a class="button primary" href="https://lweiss.gumroad.com/l/trade-hunter" target="_blank" rel="noopener noreferrer">Name Your Price · Get Trade Hunter from $9</a>
           </div>
+          <div class="notice">Introductory launch pricing. Name your price on Gumroad starting at $9. The free simulation build lets you try the full dashboard first, no Kalshi account needed.</div>
         </div>
         <aside class="card animate-in" id="faq" style="animation-delay: 0.3s">
           <h3>Buyer FAQ</h3>
