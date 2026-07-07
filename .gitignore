@@ -1,0 +1,69 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Secrets / local config (keep .env.example tracked)
+.env
+.env.*
+!.env.example
+*.backup
+env.backup
+.bg-shell/
+.kalshi-keys/
+
+# Local runtime / generated state
+trade_hunter.db
+trade_hunter.db-shm
+trade_hunter.db-wal
+trade_hunter.db.bak-*
+**/trade_hunter.corrupt*.db
+trade_hunter.corrupt*.db
+data/tuning/
+data/eval/
+data/watchlist.json
+eval_log.jsonl
+*.log
+
+# Build output
+dist/
+build/
+target/
+trade-hunter-v*.exe
+
+# Editor / OS cruft
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.code-workspace
+
+# Tooling caches / vendored deps
+node_modules/
+.next/
+vendor/
+coverage/
+.cache/
+tmp/
+.tmp/
+
+# Agent / session state
+.gsd
+.gsd-id
+.gsd.migrating/
+.beads/
+.antigravity_session/
+.holistic/draft-handoff.json
+
+# Local mockups, summaries, and checklists
+trade-hunter_dashboard_mockup.html
+design-proposal.html
+trade-hunter-ui-revision-checklist.md
+SESSION_SUMMARY.md
+FINAL_SESSION_SUMMARY.md
+.repo-report/
