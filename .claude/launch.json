@@ -1,0 +1,16 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "trade-hunter",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "app"],
+      "port": 8799,
+      "env": {
+        "APP_PORT": "8799",
+        "ENABLE_SIMULATION": "true",
+        "ENABLE_KALSHI": "false"
+      }
+    }
+  ]
+}

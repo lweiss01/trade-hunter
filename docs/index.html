@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Trade Hunter is an elite, local-first prediction market intelligence tool. Detect hidden whale movement, correlate across platforms, and maintain 100% data sovereignty." />
+  <title>Trade Hunter — Institutional-Grade Prediction Market Intelligence</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --text-xs: clamp(0.75rem, 0.72rem + 0.16vw, 0.875rem);
+      --text-sm: clamp(0.875rem, 0.84rem + 0.2vw, 1rem);
+      --text-base: clamp(1rem, 0.96rem + 0.25vw, 1.125rem);
+      --text-lg: clamp(1.125rem, 1rem + 0.55vw, 1.45rem);
+      --text-xl: clamp(1.5rem, 1.2rem + 1vw, 2.2rem);
+      --text-2xl: clamp(2.2rem, 1.6rem + 3vw, 4.8rem);
+      --space-1: .25rem; --space-2: .5rem; --space-3: .75rem; --space-4: 1rem;
+      --space-5: 1.25rem; --space-6: 1.5rem; --space-8: 2rem; --space-10: 2.5rem;
+      --space-12: 3rem; --space-16: 4rem; --space-20: 5rem; --space-24: 6rem;
+      --radius-sm: .45rem; --radius-md: .75rem; --radius-lg: 1rem; --radius-xl: 1.4rem;
+      --font-display: 'Space Grotesk', system-ui, sans-serif;
+      --font-body: 'Space Grotesk', system-ui, sans-serif;
+      --font-mono: 'Space Mono', monospace;
+      --bg: #0b0e11;
+      --surface: #11161b;
+      --surface-2: #171d23;
+      --surface-3: #1c242c;
+      --border: rgba(187, 225, 250, 0.12);
+      --border-strong: rgba(187, 225, 250, 0.22);
+      --text: #edf4fb;
+      --muted: #92a0ad;
+      --faint: #60707f;
+      --primary: #35c2d0;
+      --primary-2: #7ee7d7;
+      --warning: #ffb25b;
+      --danger: #ff7d72;
+      --success: #8dd18d;
+      --shadow-lg: 0 24px 80px rgba(0,0,0,.42);
+      --shadow-md: 0 10px 30px rgba(0,0,0,.28);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+    body {
+      font-family: var(--font-body);
+      background:
+        radial-gradient(circle at top right, rgba(53,194,208,.14), transparent 30%),
+        radial-gradient(circle at 15% 20%, rgba(126,231,215,.08), transparent 22%),
+        linear-gradient(180deg, #091014 0%, #0b0e11 25%, #0b0e11 100%);
+      color: var(--text);
+      font-size: var(--text-base);
+      line-height: 1.6;
+    }
+    a { color: inherit; text-decoration: none; }
+    img, svg { display: block; max-width: 100%; }
+    .container { width: min(1180px, calc(100% - 2rem)); margin: 0 auto; }
+    .mono { font-family: var(--font-mono); }
+    .muted { color: var(--muted); }
+    .faint { color: var(--faint); }
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: .6rem;
+      padding: .38rem .72rem; border-radius: 999px;
+      border: 1px solid rgba(53,194,208,.28);
+      background: rgba(53,194,208,.08);
+      color: var(--primary-2); font-family: var(--font-mono);
+      font-size: var(--text-xs); letter-spacing: .08em; text-transform: uppercase;
+    }
+    .eyebrow::before {
+      content: ""; width: .45rem; height: .45rem; border-radius: 999px;
+      background: var(--primary); box-shadow: 0 0 18px rgba(53,194,208,.7);
+    }
+    header {
+      position: sticky; top: 0; z-index: 50;
+      backdrop-filter: blur(14px);
+      background: rgba(11,14,17,.72);
+      border-bottom: 1px solid rgba(187,225,250,.08);
+    }
+    .nav { display:flex; align-items:center; justify-content:space-between; padding: 1rem 0; gap: 1rem; }
+    .brand { display:flex; align-items:center; gap: .9rem; font-weight: 700; letter-spacing: -.02em; }
+    .brand-logo {
+      width: 42px;
+      height: 42px;
+      object-fit: contain;
+      border-radius: .6rem;
+      border: 1px solid rgba(126,231,215,.16);
+      background: rgba(255,255,255,.02);
+      padding: .2rem;
+    }
+    .mark {
+      width: 2.2rem; height: 2.2rem; border-radius: .8rem;
+      border: 1px solid rgba(126,231,215,.22);
+      background: linear-gradient(135deg, rgba(53,194,208,.2), rgba(126,231,215,.08));
+      position: relative; box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+      flex: 0 0 auto;
+    }
+    .mark::before, .mark::after {
+      content: ""; position: absolute; inset: .45rem; border-left: 2px solid var(--primary); border-bottom: 2px solid var(--primary-2);
+      transform: skew(-18deg);
+    }
+    .mark::after { inset: .75rem .55rem .55rem .9rem; opacity: .55; }
+    .nav-links { display:flex; gap: 1.25rem; color: var(--muted); font-size: var(--text-sm); }
+    .nav-links a:hover { color: var(--text); }
+    .cta-nav {
+      padding: .75rem 1rem; border-radius: .8rem; border: 1px solid var(--border-strong);
+      background: rgba(255,255,255,.02); color: var(--text); font-family: var(--font-mono); font-size: var(--text-xs);
+      white-space: nowrap;
+    }
+    .hero { padding: clamp(3.5rem, 8vw, 7rem) 0 clamp(2.8rem, 6vw, 5rem); }
+    .hero-grid { display:grid; grid-template-columns: 1.15fr .85fr; gap: 2rem; align-items: start; }
+    h1 {
+      font-family: var(--font-display); font-size: var(--text-2xl); line-height: .96; letter-spacing: -.05em;
+      max-width: 14ch; margin-top: 1.1rem; margin-bottom: 1.15rem;
+    }
+    .hero p.lead { max-width: 64ch; color: var(--muted); font-size: var(--text-lg); }
+    .hero-actions { display:flex; flex-wrap:wrap; gap: .9rem; margin-top: 1.6rem; }
+    .button {
+      display:inline-flex; align-items:center; justify-content:center; min-height: 46px; padding: .9rem 1.1rem;
+      border-radius: .9rem; border: 1px solid var(--border); font-weight: 600; transition: .18s ease;
+      cursor: pointer;
+    }
+    .button.primary { background: linear-gradient(135deg, var(--primary), var(--primary-2)); color: #041014; border: none; box-shadow: 0 10px 30px rgba(53,194,208,.2); }
+    .button.secondary { background: rgba(255,255,255,.02); color: var(--text); }
+    .button:hover { transform: translateY(-2px); filter: brightness(1.1); }
+    .microproof { display:flex; flex-wrap:wrap; gap: 1.5rem; margin-top: 2rem; color: var(--faint); font-family: var(--font-mono); font-size: var(--text-xs); }
+    .microproof span { display: flex; align-items: center; gap: 0.5rem; }
+    .microproof span::before { content: "✓"; color: var(--primary); }
+    
+    .hero-card {
+      background: linear-gradient(180deg, rgba(23,29,35,.92), rgba(14,18,23,.95));
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      transition: transform 0.3s ease;
+    }
+    .hero-card:hover { transform: scale(1.02); }
+    .hero-card-top {
+      display:grid; grid-template-columns: 1fr auto; gap: 1rem; padding: 1.2rem 1.2rem .8rem;
+      border-bottom: 1px solid rgba(187,225,250,.08);
+    }
+    .signal-board { padding: 1rem 1.2rem 1.2rem; display:grid; gap: .75rem; }
+    .signal-row {
+      display:grid; grid-template-columns: 1.1fr .7fr auto; gap: .8rem; align-items:center;
+      padding: .9rem 1rem; border-radius: .95rem; background: rgba(255,255,255,.025); border: 1px solid rgba(187,225,250,.08);
+    }
+    .pill { display:inline-flex; align-items:center; gap:.5rem; padding:.28rem .55rem; border-radius:999px; font-size: .72rem; font-family: var(--font-mono); letter-spacing:.04em; }
+    .pill.signal { color:#081314; background: var(--primary-2); }
+    .pill.watch { color:#2a1800; background: var(--warning); }
+    .pill.noise { color:#230807; background: var(--danger); }
+    .hero-stats { display:grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; padding: 0 1.2rem 1.2rem; }
+    .stat { border: 1px solid rgba(187,225,250,.08); background: rgba(255,255,255,.02); border-radius: .95rem; padding: .95rem; }
+    .stat .k { font-family: var(--font-mono); color: var(--primary-2); font-size: 1.05rem; }
+    .section { padding: clamp(3.3rem, 7vw, 6rem) 0; }
+    .section-head { max-width: 48rem; margin-bottom: 2rem; }
+    .section-head h2 { font-size: var(--text-xl); letter-spacing: -.03em; margin: .75rem 0; }
+    .grid-3, .grid-2, .grid-4 { display:grid; gap: 1.5rem; }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015));
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-md);
+      transition: border-color 0.2s ease, transform 0.2s ease;
+    }
+    .card:hover { border-color: var(--primary); transform: translateY(-4px); }
+    .card h3 { font-size: 1.15rem; margin-bottom: .75rem; letter-spacing: -.02em; }
+    .card p { color: var(--muted); font-size: .98rem; }
+    .feature-kicker {
+      display:inline-flex;
+      margin-bottom: .85rem;
+      color: var(--primary-2);
+      font-family: var(--font-mono);
+      font-size: .72rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .compare { display:grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    .compare .panel { border-radius: var(--radius-xl); padding: 2rem; border:1px solid var(--border); }
+    .compare .panel.ours { background: linear-gradient(180deg, rgba(53,194,208,.12), rgba(255,255,255,.02)); border-color: rgba(53,194,208,.3); }
+    .compare .panel.theirs { background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.015)); opacity: .9; }
+    .compare ul { list-style:none; display:grid; gap:.8rem; margin-top: 1.5rem; }
+    .compare li { color: var(--muted); padding-left: 1.35rem; position:relative; }
+    .compare li::before { content: "↗"; position:absolute; left:0; color: var(--primary); }
+    .compare .theirs li::before { content: "–"; color: var(--faint); }
+    .path { display:grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; align-items:stretch; }
+    .step {
+      padding: 1.25rem; border-radius: .95rem; background: rgba(255,255,255,.025); border:1px solid var(--border);
+      min-height: 160px;
+    }
+    .step strong { display:block; margin-bottom: .5rem; color: var(--primary); }
+    .pricing { display:grid; grid-template-columns: 1.15fr .85fr; gap: 1.5rem; align-items: stretch; }
+    .pricing-main {
+      padding: 2.5rem; border-radius: var(--radius-xl); border:1px solid rgba(126,231,215,.22);
+      background: linear-gradient(135deg, rgba(53,194,208,.13), rgba(126,231,215,.06) 38%, rgba(255,255,255,.02) 100%);
+    }
+    .price-line { display:flex; align-items:flex-end; gap: .8rem; flex-wrap:wrap; margin: .8rem 0 1.5rem; }
+    .price-big { font-size: clamp(2.5rem, 4vw, 4.25rem); line-height: .9; letter-spacing: -.05em; }
+    .list { list-style:none; display:grid; gap: .75rem; }
+    .list li { padding-left: 1.5rem; position:relative; color: var(--muted); }
+    .list li::before { content: "✦"; position:absolute; left:0; color: var(--primary-2); top: 2px; }
+    .faq { display:grid; gap: .9rem; }
+    .faq-item { padding: 1.05rem 1.1rem; border-radius: .95rem; border:1px solid var(--border); background: rgba(255,255,255,.02); }
+    .faq-item strong { display:block; margin-bottom: .35rem; color: var(--text); }
+    .notice {
+      margin-top: 1.5rem;
+      border: 1px solid rgba(187,225,250,.12);
+      border-radius: .95rem;
+      padding: 1rem;
+      background: rgba(255,255,255,.02);
+      color: var(--muted);
+      font-size: .9rem;
+    }
+    footer { padding: 3rem 0; border-top:1px solid rgba(187,225,250,.08); color: var(--faint); }
+    .footer-wrap { display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap; font-size: var(--text-sm); }
+    
+    /* Animations */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-in { animation: fadeInUp 0.6s ease forwards; }
+
+    @media (max-width: 980px) {
+      .hero-grid, .pricing, .compare, .grid-3, .grid-2, .grid-4, .path { grid-template-columns: 1fr; }
+      .nav-links { display:none; }
+      .hero-stats { grid-template-columns: 1fr; }
+      .cta-nav { display:none; }
+    }
+    @media (max-width: 640px) {
+      .container { width: min(100% - 1rem, 1180px); }
+      .hero { padding-top: 2.6rem; }
+      .hero p.lead { font-size: 1.1rem; }
+      .hero-actions { flex-direction: column; }
+      .button { width: 100%; }
+      .signal-row { grid-template-columns: 1fr; }
+      .hero-card-top { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container nav">
+      <div class="brand">
+        <img src="assets/logo.png" alt="Trade Hunter" class="brand-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+        <div class="mark" style="display:none;"></div>
+        <div>
+          <div style="font-size: 1.25rem;">Trade Hunter</div>
+          <div class="mono faint" style="font-size:.72rem; margin-top:.1rem;">Institutional-Grade Intelligence Layer</div>
+        </div>
+      </div>
+      <nav class="nav-links">
+        <a href="#edge">The Edge</a>
+        <a href="#sync">Whale Sync</a>
+        <a href="#features">Features</a>
+        <a href="#compare">Ownership</a>
+        <a href="#pricing">Pricing</a>
+      </nav>
+      <div class="cta-nav mono">Trade Hunter Commercial · $49.99</div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container hero-grid">
+        <div class="animate-in" style="animation-delay: 0.1s">
+          <div class="eyebrow">Direct Market Feed · Proprietary Whale Tracking</div>
+          <h1>Don't trade against the Whales. Trade with them.</h1>
+          <p class="lead">Trade Hunter watches every Kalshi market simultaneously and fires when something moves unusually — with an AI read on whether the spike looks like real flow or noise. Double-click to run. No cloud. No subscription. You own the code.</p>
+          <div class="hero-actions">
+            <a class="button primary" href="#pricing">Secure One-Time License — $49.99</a>
+            <a class="button secondary" href="https://github.com/lweiss01/trade-hunter" target="_blank" rel="noopener noreferrer">Explore the Public Edition</a>
+          </div>
+          <div class="microproof">
+            <span>Double-click Windows exe</span>
+            <span>Kalshi WebSocket feed</span>
+            <span>Claude + Perplexity AI</span>
+            <span>Full source included</span>
+          </div>
+        </div>
+
+        <aside class="hero-card animate-in" style="animation-delay: 0.3s" aria-label="Trade Hunter preview">
+          <div class="hero-card-top">
+            <div>
+              <div class="mono faint" style="font-size:.78rem; text-transform:uppercase; letter-spacing:.08em;">Intelligence Monitor</div>
+              <div style="margin-top:.4rem; font-size:1.08rem; font-weight:700;">Institutional Flow Feed</div>
+            </div>
+            <div class="pill signal">Live Kalshi Feed</div>
+          </div>
+          <div class="signal-board">
+            <div class="signal-row">
+              <div>
+                <strong>KXNEXTAG-29-TBLA</strong>
+                <div class="mono faint" style="font-size:.75rem; margin-top:.2rem;">3 anomalies · 10h span · escalating — WH personnel office</div>
+              </div>
+              <div class="mono" style="color:#5ac8fa;">score 9.4</div>
+              <div class="pill signal" style="background:rgba(90,200,250,0.1); border-color:rgba(90,200,250,0.3); color:#5ac8fa;">WHALE CLUSTER</div>
+            </div>
+            <div class="signal-row">
+              <div>
+                <strong>KXFED-27APR-T3.50</strong>
+                <div class="mono faint" style="font-size:.75rem; margin-top:.2rem;">Vol spike 8.3σ · block trade ratio 0.41 · rate hold bet</div>
+              </div>
+              <div class="mono" style="color:var(--primary-2);">score 7.8</div>
+              <div class="pill signal">SIGNAL</div>
+            </div>
+            <div class="signal-row">
+              <div>
+                <strong>KXTRUMPPARDONS-29JAN21-GMAX</strong>
+                <div class="mono faint" style="font-size:.75rem; margin-top:.2rem;">Directional NO accumulation · price move +4.2%</div>
+              </div>
+              <div class="mono" style="color:var(--warning);">score 5.2</div>
+              <div class="pill signal">NOTABLE</div>
+            </div>
+            <div class="signal-row">
+              <div>
+                <strong>KXCPI-26MAY-T0.5</strong>
+                <div class="mono faint" style="font-size:.75rem; margin-top:.2rem;">Pre-release positioning · BLS data due in 6h</div>
+              </div>
+              <div class="mono" style="color:var(--danger);">score 3.4</div>
+              <div class="pill watch">WATCH</div>
+            </div>
+          </div>
+          <div class="hero-stats">
+            <div class="stat"><div class="mono faint">Data</div><div class="k">100% Local</div><div class="muted">Nothing leaves your machine</div></div>
+            <div class="stat"><div class="mono faint">Tickers</div><div class="k">Auto-Expand</div><div class="muted">Series → all open markets</div></div>
+            <div class="stat"><div class="mono faint">AI Layer</div><div class="k">Dual-Analyst</div><div class="muted">Claude + Perplexity fallback</div></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section" id="edge">
+      <div class="container">
+        <div class="section-head animate-in">
+          <div class="eyebrow">Proprietary Intelligence</div>
+          <h2>Stop chasing green bars. Start tracking the smart money.</h2>
+          <p class="muted">Prediction markets are won by those who can differentiate retail noise from institutional entry. Trade Hunter uses proprietary cluster-detection logic to identify large, coordinated trade bursts that indicate "The Move" is happening before it hits the headline.</p>
+        </div>
+        <div class="grid-3">
+          <article class="card animate-in" style="animation-delay: 0.1s">
+            <div class="feature-kicker">Cluster Analytics</div>
+            <h3>Proprietary Whale Tracking</h3>
+            <p>Our algorithms group related trades across markets to identify institutional actors moving size, even when they split orders across multiple fills.</p>
+          </article>
+          <article class="card animate-in" style="animation-delay: 0.2s">
+            <div class="feature-kicker">AI Attribution</div>
+            <h3>Explainable Triage</h3>
+            <p>Every major spike is analyzed by our dual-AI stack, providing you with a plain-English "Why" that translates flow metrics into actionable narrative.</p>
+          </article>
+          <article class="card animate-in" style="animation-delay: 0.3s">
+            <div class="feature-kicker">Sovereign Intel</div>
+            <h3>100% Data Sovereignty</h3>
+            <p>Runs on your hardware. Your watchlists, your thresholds, and your performance data never leave your local environment. Total discretion is the ultimate edge.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="sync" style="background: rgba(53,194,208, 0.03); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+      <div class="container">
+         <div class="hero-grid">
+           <div class="animate-in">
+             <div class="eyebrow" style="border-color: var(--warning); background: rgba(255,178,91,0.08); color: var(--warning);">Upcoming: Phase 3</div>
+             <h2>Cross-Platform Whale Correlation</h2>
+             <p class="muted" style="font-size: 1.15rem; margin-top: 1rem;">The next major release brings cross-platform correlation — syncing unusual flow across <strong>Kalshi and Polymarket</strong> simultaneously. When the same position builds on both sides, that's a signal that can't be explained by coincidence.</p>
+             <ul class="list" style="margin-top: 1.5rem;">
+               <li>Detect coordinated Kalshi trades triggered by Polymarket volatility</li>
+               <li>Spot Whale identity signatures across multiple market types</li>
+               <li>Identify arbitrage-driven institutional flow before retail realizes the spread</li>
+             </ul>
+           </div>
+           <aside class="card animate-in" style="background: var(--surface-2); border-color: var(--primary-2);">
+             <h3 class="mono" style="color: var(--primary-2)">Multilateral Flow Detection</h3>
+<p style="margin-bottom: 1rem; color: var(--faint);">Current build v0.3.0 · Kalshi active</p>
+              <div class="signal-row" style="margin-bottom: 0.5rem; opacity: 0.5;">
+                <div class="mono">ROADMAP: POLYMARKET</div>
+                <div class="mono" style="color: var(--muted);">PENDING INTEGRATION</div>
+             </div>
+             <div class="signal-row" style="margin-bottom: 1.5rem;">
+                <div class="mono">PLATFORM_B: KALSHI</div>
+                <div class="mono" style="color: var(--success);">FLOW: $250K BUY</div>
+             </div>
+             <div class="stat" style="text-align: center;">
+                 <div class="mono faint">CORRELATION PROBABILITY</div>
+                <div class="k" style="font-size: 1.5rem;">94.2%</div>
+                <div class="muted">Algorithm in Development</div>
+             </div>
+           </aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="features">
+      <div class="container">
+        <div class="section-head animate-in">
+          <div class="eyebrow">Capabilities</div>
+          <h2>Professional-Grade Tooling.</h2>
+          <p class="muted">Trade Hunter Commercial is built to be the robust foundation for your entire trading day.</p>
+        </div>
+        <div class="grid-4">
+          <article class="card">
+            <h3>Series Auto-Expansion</h3>
+            <p>Track a series ticker like KXFED and get every open contract automatically — no manual ticker hunting as new markets open.</p>
+          </article>
+          <article class="card">
+            <h3>Dual AI Analyst</h3>
+            <p>Every spike gets an immediate read: signal, noise, or uncertain — with direction, confidence, and plain-English rationale. Claude primary, Perplexity fallback.</p>
+          </article>
+          <article class="card">
+            <h3>Simulation Mode</h3>
+            <p>Full dashboard with synthetic data. No Kalshi account needed to try it. Double-click and go.</p>
+          </article>
+          <article class="card">
+            <h3>Discord Routing</h3>
+            <p>Crypto spikes go to your crypto channel. Elections alerts go to elections. Configurable per-topic webhook routing.</p>
+          </article>
+          <article class="card">
+            <h3>Self-Tuning Advisor</h3>
+            <p>A second AI pass looks at your false-positive history and suggests concrete threshold changes you can apply with one click.</p>
+          </article>
+          <article class="card">
+            <h3>External Ingest</h3>
+            <p>Feed external alerts into your local signal board via the authenticated REST relay. Works with PolyAlertHub and custom scrapers.</p>
+          </article>
+          <article class="card">
+            <h3>Local SQLite Storage</h3>
+            <p>7-day rolling history. Every signal, trade event, and analyst read stored on your machine, auto-cleaned, survives restarts.</p>
+          </article>
+          <article class="card">
+            <h3>Full Source Code</h3>
+            <p>No black boxes. Modify the detector thresholds, AI prompts, or alert logic. It's yours to extend.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="compare">
+      <div class="container">
+        <div class="section-head animate-in">
+          <div class="eyebrow">Ownership Model</div>
+          <h2>SaaS is for Renters. Trade Hunter is for Owners.</h2>
+          <p class="muted">Why trust a third-party server with your watchlists and strategies? Trade Hunter gives you the code and the control.</p>
+        </div>
+        <div class="compare">
+          <div class="panel ours animate-in" style="animation-delay: 0.1s">
+            <div class="mono" style="color:var(--primary-2); font-size:.8rem; text-transform:uppercase; letter-spacing:.08em;">Ownership Model</div>
+            <h3 style="margin-top:.5rem; font-size:1.4rem;">Trade Hunter Commercial</h3>
+            <ul>
+              <li>Owned: Pay once, keep the code forever</li>
+              <li>Local: Your intelligence never leaves your CPU</li>
+              <li>Extendable: Add your own proprietary logic</li>
+              <li>Privacy: No one knows which markets you monitor</li>
+            </ul>
+          </div>
+          <div class="panel theirs animate-in" style="animation-delay: 0.2s">
+            <div class="mono" style="color:var(--faint); font-size:.8rem; text-transform:uppercase; letter-spacing:.08em;">Subscription Model</div>
+            <h3 style="margin-top:.5rem; font-size:1.4rem;">Subscription Trading Analysis Services</h3>
+            <ul class="theirs">
+              <li>Rented: Stop paying, lose your edge</li>
+              <li>Exposed: Your monitoring data sits on their cloud</li>
+              <li>Limited: You are locked into their feature roadmap</li>
+              <li>Public: Everyone sees the same generic signals</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="pricing">
+      <div class="container pricing">
+        <div class="pricing-main animate-in">
+          <div class="eyebrow">Commercial Launch</div>
+          <h2 style="font-size:var(--text-xl); margin-top:.8rem;">The edge is yours.</h2>
+          <div class="price-line">
+            <div class="price-big">$49.99</div>
+            <div class="muted">One-Time License · Source Included</div>
+          </div>
+          <ul class="list">
+            <li>Windows exe — double-click to launch, no install</li>
+            <li>Full commercial source code, yours to modify</li>
+            <li>Live Kalshi WebSocket feed with series auto-expansion</li>
+            <li>Dual AI analyst (Claude + Perplexity fallback)</li>
+            <li>Self-tuning advisor with one-click threshold application</li>
+            <li>Discord routing, simulation mode, external ingest</li>
+            <li>Free updates as the product ships new features</li>
+          </ul>
+          <div class="hero-actions" style="margin-top:2rem;">
+            <a class="button primary" href="https://lweiss.gumroad.com/l/trade-hunter" target="_blank" rel="noopener noreferrer">Get Trade Hunter Commercial — $49.99</a>
+          </div>
+        </div>
+        <aside class="card animate-in" id="faq" style="animation-delay: 0.3s">
+          <h3>Buyer FAQ</h3>
+          <div class="faq" style="margin-top:1.5rem;">
+            <div class="faq-item"><strong>Is this a trading bot?</strong><span class="muted">No. It is an intelligence layer designed to help human traders spot high-impact movement.</span></div>
+             <div class="faq-item"><strong>Does it work for Polymarket?</strong><span class="muted">Currently, Trade Hunter is optimized for Kalshi. Full Polymarket integration and cross-platform correlation are scheduled for Phase 3.</span></div>
+            <div class="faq-item"><strong>What are the requirements?</strong><span class="muted">Windows: double-click the exe — no Python, no install. Or run from source with Python 3.11+ on any platform.</span></div>
+             <div class="faq-item"><strong>What if an AI provider goes down?</strong><span class="muted">Our Fallback Layer automatically switches to your secondary provider, maintaining signal flow even during service outages.</span></div>
+            <div class="faq-item"><strong>Do I really keep the source?</strong><span class="muted">Exactly. You are buying a perpetual license to the commercial source code.</span></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-wrap">
+      <div>Informational only. Prediction markets involve risk. Use your own judgement.</div>
+      <div class="mono">© 2026 Trade Hunter</div>
+    </div>
+  </footer>
+</body>
+</html>
